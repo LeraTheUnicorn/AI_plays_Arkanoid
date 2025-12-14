@@ -8,12 +8,23 @@ import sys
 import logging  # pyright: ignore[reportUnusedImport]
 from typing import Dict, List, Any, Optional
 import math
-from sklearn.cluster import KMeans
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import accuracy_score
 import numpy as np
 from .platform_utils import is_frozen
+
+# Условный импорт sklearn для работы без ML библиотек
+try:
+    from sklearn.cluster import KMeans
+    from sklearn.ensemble import RandomForestClassifier
+    from sklearn.model_selection import train_test_split
+    from sklearn.metrics import accuracy_score
+    SKLEARN_AVAILABLE = True
+except ImportError:
+    SKLEARN_AVAILABLE = False
+    # Fallback реализации без ML
+    KMeans = None
+    RandomForestClassifier = None
+    train_test_split = None
+    accuracy_score = None
 
 
 def get_ai_directory() -> str:
@@ -407,6 +418,10 @@ class LearningSystem:
         y: np.ndarray[Any, Any] = np.array(y_list)
 
         # Разделяем на train/test
+        if not SKLEARN_AVAILABLE:
+            self.logger.warning("sklearn недоступен, пропускаем обучение модели предсказания успеха")
+            return
+
         X_train, X_test, y_train, y_test = train_test_split(
             X, y, test_size=0.2, random_state=42
         )
@@ -457,6 +472,10 @@ class LearningSystem:
 
         if len(vectors) < n_clusters:
             n_clusters = len(vectors)
+
+        if not SKLEARN_AVAILABLE:
+            self.logger.warning("sklearn недоступен, пропускаем кластеризацию траекторий")
+            return []
 
         try:
             kmeans = KMeans(n_clusters=n_clusters, random_state=42, n_init="auto")

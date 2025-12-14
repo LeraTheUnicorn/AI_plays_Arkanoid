@@ -7,13 +7,31 @@ import warnings
 from contextlib import contextmanager
 from typing import Generator
 
-# Контекстный менеджер для ограниченного подавления предупреждений
-@contextmanager
-def suppress_pkg_resources_warnings() -> Generator[None, None, None]:
-    """Временно подавляет предупреждения о pkg_resources от pygame в ограниченной области"""
-    with warnings.catch_warnings():
-        warnings.filterwarnings("ignore", message=".*pkg_resources.*", category=UserWarning)
-        yield
+# Импортируем утилиты из модуля
+from .game_utils import (
+    suppress_pkg_resources_warnings,
+    resource_path,
+    is_valid_player_name_char,
+    build_bricks,
+    create_ai_player,
+)
+
+# Импортируем UI функции из модуля
+from .game_ui import (
+    show_highscores,
+    trigger_instant_victory,
+    show_victory_splash,
+    show_game_results,
+    show_settings_window,
+)
+
+# Импортируем вспомогательные функции для main()
+from .game_main_helpers import (
+    handle_game_events,
+    update_game_state,
+    update_ball_physics,
+    render_game_frame,
+)
 
 os.environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "1"  # Скрыть сообщение поддержки pygame
 
@@ -91,41 +109,6 @@ except ImportError:
 from ai.ai_player import AIPlayer
 
 
-def resource_path(relative_path: str) -> str:
-    """
-    Получает абсолютный путь к ресурсу, работает как в разработке, так и в exe.
-    
-    Кросс-платформенная функция для получения правильного пути к ресурсам.
-    Использует os.path.join для корректной работы на разных ОС.
-    
-    Args:
-        relative_path: Относительный путь к ресурсу (например, "audio/file.ogg" или "images/d2.gif")
-                      Путь должен быть относительно src/resources/
-        
-    Returns:
-        Абсолютный путь к ресурсу, нормализованный для текущей ОС
-        
-    Note:
-        В режиме разработки использует директорию src/resources/.
-        В скомпилированном exe (PyInstaller) ресурсы находятся в _MEIPASS/src/resources/.
-    """
-    try:
-        # PyInstaller создает временную папку и сохраняет путь в _MEIPASS
-        base_path = sys._MEIPASS  # type: ignore[attr-defined]
-        # В exe ресурсы находятся в src/resources/ (как указано в --add-data)
-        resources_path = os.path.join(base_path, "src", "resources")
-    except AttributeError:
-        # В режиме разработки файл находится в src/game/, нужно подняться на уровень вверх и войти в src/resources/
-        current_dir = os.path.dirname(os.path.abspath(__file__))  # src/game/
-        src_dir = os.path.dirname(current_dir)  # src/
-        resources_path = os.path.join(src_dir, "resources")  # src/resources/
-
-    # Используем os.path.join для кросс-платформенной совместимости
-    # и нормализуем путь для корректной работы на всех ОС
-    full_path = os.path.join(resources_path, relative_path)
-    return os.path.normpath(full_path)
-
-
 # Импортируем конфигурацию из централизованного файла
 try:
     from .game_config import (
@@ -169,26 +152,14 @@ except ImportError:
     )
 
 
-def is_valid_player_name_char(char: str) -> bool:
-    """
-    Проверяет, является ли символ допустимым для имени игрока.
-    
-    Args:
-        char: Символ для проверки
-        
-    Returns:
-        True если символ допустим (латинские или кириллические буквы), False иначе
-    """
-    if not char or len(char) != 1:  # Проверяем пустые строки и многосимвольные строки
-        return False
-    # Разрешаем только буквы (латинские и кириллические)
-    # isalpha() поддерживает Unicode, включая кириллицу
-    return char.isalpha() and not char.isspace()
+# is_valid_player_name_char импортируется из game_utils
 
 
 
 
-def show_highscores(
+# show_highscores теперь в game_ui.py
+
+def show_highscores_old(
     screen: pygame.Surface,
     font: pygame.font.Font,
     highscore_manager: HighScoreManager,
@@ -321,7 +292,9 @@ def show_highscores(
     return sound_enabled, False  # Возвращаемся, не выходя из игры
 
 
-def trigger_instant_victory(
+# trigger_instant_victory теперь в game_ui.py
+
+def trigger_instant_victory_old(
     screen: pygame.Surface,
     font: pygame.font.Font,
     big_font: pygame.font.Font,
@@ -380,7 +353,9 @@ def trigger_instant_victory(
     )
 
 
-def show_victory_splash(screen: pygame.Surface, duration_seconds: float = 5.0) -> None:
+# show_victory_splash теперь в game_ui.py
+
+def show_victory_splash_old(screen: pygame.Surface, duration_seconds: float = 5.0) -> None:
     # Сохраняем исходный размер экрана в начале функции
     initial_screen_size = screen.get_size()
     if not getattr(sys, "frozen", False):
@@ -736,114 +711,23 @@ def show_game_results(
 # для устранения дубликатов кода (см. docs/DUPLICATE_ANALYSIS.md)
 
 
-def build_bricks() -> List[pygame.Rect]:
-    """
-    Создает сетку кирпичей для игры.
-    
-    Returns:
-        Список pygame.Rect объектов, представляющих кирпичи на экране
-        
-    Note:
-        Для использования новой архитектуры см. game_controllers.GameController.build_bricks()
-    """
-    bricks = []
-    start_x = (
-        SCREEN_WIDTH - (BRICK_COLS * BRICK_WIDTH + (BRICK_COLS - 1) * BRICK_PADDING)
-        ) // 2
-    for row in range(BRICK_ROWS):
-        for col in range(BRICK_COLS):
-            x = start_x + col * (BRICK_WIDTH + BRICK_PADDING)
-            y = BRICK_OFFSET_TOP + row * (BRICK_HEIGHT + BRICK_PADDING)
-            bricks.append(pygame.Rect(x, y, BRICK_WIDTH, BRICK_HEIGHT))
-    return bricks
+# build_bricks импортируется из game_utils
+
+# Импортируем функции отрисовки из модуля
+from .game_rendering import (
+    draw_bricks,
+    draw_hud,
+    render_colored_hint,
+    draw_start_hint,
+)
 
 
-def draw_bricks(screen: pygame.Surface, bricks: List[pygame.Rect]) -> None:
-    """
-    Отрисовывает все кирпичи на экране.
-    
-    Каждый ряд кирпичей имеет свой цвет из палитры. Кирпичи отрисовываются
-    с цветной заливкой и темной рамкой.
-    
-    Args:
-        screen: Поверхность pygame для отрисовки
-        bricks: Список прямоугольников кирпичей для отрисовки
-        
-    Note:
-        Для использования новой архитектуры с оптимизацией отрисовки см. game_views.BricksView
-    """
-    try:
-        from .game_config import BRICK_COLORS, BRICK_BORDER_COLOR
-    except ImportError:
-        from game.game_config import BRICK_COLORS, BRICK_BORDER_COLOR
-    
-    for idx, brick in enumerate(bricks):
-        color = BRICK_COLORS[idx // BRICK_COLS % len(BRICK_COLORS)]
-        pygame.draw.rect(screen, color, brick)
-        pygame.draw.rect(screen, BRICK_BORDER_COLOR, brick, 2)
+# draw_hud, render_colored_hint, draw_start_hint импортируются из game_rendering
 
 
-def draw_hud(
-    screen: pygame.Surface,
-    score: int,
-    lives_left: int,
-    font: pygame.font.Font,
-    ball: Ball,
-    training_mode: bool = False,
-    ai_player: Optional[AIPlayer] = None,
-) -> None:
-    # Добавляем индикатор режима обучения
-    if training_mode:
-        text = f"Очки: {score} | Жизни: {lives_left} | Скорость мяча: {ball.get_speed()} | РЕЖИМ ОБУЧЕНИЯ"
-    else:
-        text = f"Очки: {score} | Жизни: {lives_left} | Скорость: {ball.get_speed()} | ↑ ↓ - скорость"
+# show_settings_window теперь в game_ui.py
 
-    surf = font.render(
-        text,
-        True,
-        (255, 255, 255) if not training_mode else (255, 255, 0),
-    )
-    screen.blit(surf, (SCREEN_WIDTH - surf.get_width() - 20, 20))
-
-
-def render_colored_hint(
-    screen: pygame.Surface,
-    font: pygame.font.Font,
-    text: str,
-    pos: Tuple[int, int],
-    base_color: Tuple[int, int, int] = (200, 200, 200),
-    key_color: Tuple[int, int, int] = (255, 255, 0),
-) -> int:
-    """Отображает подсказку с выделенными ключевыми словами цветом"""
-    words = text.split()
-    x, y = pos
-    key_words = ["Enter", "H", "M", "ESC", "↑", "↓", "0", "8"]
-
-    for word in words:
-        # Убираем знаки препинания для сравнения
-        clean_word = word.rstrip(".,:!?")
-
-        if clean_word in key_words:
-            # Выделяем ключевое слово цветом
-            color = key_color
-        else:
-            color = base_color
-
-        surf = font.render(word, True, color)
-        screen.blit(surf, (x, y))
-        x += surf.get_width() + font.size(" ")[0]  # добавляем пробел
-
-    return x - pos[0]  # возвращаем ширину текста
-
-
-def draw_start_hint(screen: pygame.Surface, font: pygame.font.Font) -> None:
-    text = "Для начала игры нажми ← или →"
-    surf = font.render(text, True, (255, 255, 255))
-    rect = surf.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2))
-    screen.blit(surf, rect)
-
-
-def show_settings_window(
+def show_settings_window_old(
     screen: pygame.Surface,
     font: pygame.font.Font,
     big_font: pygame.font.Font,
@@ -1046,7 +930,7 @@ def main() -> None:
             try:
                 # КРИТИЧНО: Создаем AIPlayer БЕЗ блокирующего сообщения на экране
                 # Сообщение может остаться на экране, если создание занимает время
-                ai_player = AIPlayer(SCREEN_WIDTH, SCREEN_HEIGHT, debug_mode=True)
+                ai_player = create_ai_player(SCREEN_WIDTH, SCREEN_HEIGHT, debug_mode=True)
                 # Логируем создание AIPlayer (только в файл, не в консоль)
                 logger.debug(f"[AI DEBUG] Новый AIPlayer создан. Обучение будет продолжено...")
             except Exception as e:
@@ -1056,7 +940,7 @@ def main() -> None:
                 traceback.print_exc()
                 # Создаем базовый AI без логирования в случае ошибки
                 try:
-                    ai_player = AIPlayer(SCREEN_WIDTH, SCREEN_HEIGHT, debug_mode=True)
+                    ai_player = create_ai_player(SCREEN_WIDTH, SCREEN_HEIGHT, debug_mode=True)
                 except:
                     # Если и это не работает, создаем минимальный AI
                     if not getattr(sys, "frozen", False):
@@ -1234,10 +1118,10 @@ def main() -> None:
                                     lives_left = MAX_LIVES
                                     game_over = False
                                     game_started = False
-                                    ai_player = AIPlayer(
+                                    ai_player = create_ai_player(
                                         SCREEN_WIDTH,
                                         SCREEN_HEIGHT,
-                                        debug_mode=True,
+                                        debug_mode=True
                                     )
                                     ai_player.activate()
                                     game_start_time = time.time()
@@ -1271,7 +1155,7 @@ def main() -> None:
                 game_over = False
                 game_started = False
                 # Пересоздаем AI для новой игры
-                ai_player = AIPlayer(SCREEN_WIDTH, SCREEN_HEIGHT, debug_mode=True)
+                ai_player = create_ai_player(SCREEN_WIDTH, SCREEN_HEIGHT, debug_mode=True)
                 ai_player.activate()
 
             if not game_over:
@@ -2329,10 +2213,10 @@ def main() -> None:
                                         game_over = False
                                         game_started = False
                                         # Пересоздаем AI для новой игры
-                                        ai_player = AIPlayer(
+                                        ai_player = create_ai_player(
                                             SCREEN_WIDTH,
                                             SCREEN_HEIGHT,
-                                            debug_mode=True,
+                                            debug_mode=True
                                         )
                                         ai_player.activate()
                                         # Перезапускаем отсчет времени игры
@@ -2633,10 +2517,10 @@ def main() -> None:
                                         game_over = False
                                         game_started = False
                                         # Пересоздаем AI для новой игры
-                                        ai_player = AIPlayer(
+                                        ai_player = create_ai_player(
                                             SCREEN_WIDTH,
                                             SCREEN_HEIGHT,
-                                            debug_mode=True,
+                                            debug_mode=True
                                         )
                                         ai_player.activate()
                                         # Перезапускаем отсчет времени игры
@@ -2778,7 +2662,7 @@ def main() -> None:
                                     game_over = False
                                     game_started = False
                                     # Пересоздаем AI для новой игры
-                                    ai_player = AIPlayer(
+                                    ai_player = create_ai_player(
                                         SCREEN_WIDTH, SCREEN_HEIGHT, debug_mode=True
                                     )
                                     ai_player.activate()
