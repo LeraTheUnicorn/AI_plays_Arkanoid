@@ -105,7 +105,7 @@
     "39_26_40_27_40_27": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 1
+      "pattern_frequency": 2
     },
     "40_26_40_27_40_27": {
       "accuracy_scores": [],
@@ -3610,7 +3610,7 @@
     "39_26_39_27_38_27": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 7
+      "pattern_frequency": 8
     },
     "38_26_38_27_39_27": {
       "accuracy_scores": [],
@@ -3880,7 +3880,7 @@
     "36_26_36_27_37_27": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 152
+      "pattern_frequency": 153
     },
     "10_7_11_7_11_7": {
       "accuracy_scores": [],
@@ -4670,8 +4670,8 @@
   },
   "success_factors": {
     "ball_speed": {
-      "total_cases": 9224,
-      "successful_cases": 8293,
+      "total_cases": 9237,
+      "successful_cases": 8303,
       "factor_values": [
         8,
         8,
@@ -4806,12 +4806,25 @@
         8,
         5,
         8,
+        8,
+        8,
+        8,
+        8,
+        8,
+        8,
+        8,
+        8,
+        8,
+        8,
+        8,
+        5,
+        8,
         8
       ]
     },
     "bricks_remaining": {
-      "total_cases": 9224,
-      "successful_cases": 8293,
+      "total_cases": 9237,
+      "successful_cases": 8303,
       "factor_values": [
         9,
         8,
@@ -4946,13 +4959,39 @@
         12,
         0,
         49,
+        48,
+        49,
+        48,
+        47,
+        47,
+        46,
+        45,
+        44,
+        44,
+        43,
+        42,
+        0,
+        49,
         48
       ]
     },
     "paddle_distance": {
-      "total_cases": 9224,
-      "successful_cases": 8293,
+      "total_cases": 9237,
+      "successful_cases": 8303,
       "factor_values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
         0,
         0,
         0,
@@ -5090,8 +5129,8 @@
       ]
     },
     "prediction_confidence": {
-      "total_cases": 9224,
-      "successful_cases": 8293,
+      "total_cases": 9237,
+      "successful_cases": 8303,
       "factor_values": [
         1.0,
         1.0,
@@ -5226,16 +5265,29 @@
         1.0,
         0.5,
         1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        0.0,
+        1.0,
+        1.0,
+        1.0,
+        0.0,
+        1.0,
+        1.0,
+        0.5,
+        1.0,
         1.0
       ]
     }
   },
   "historical_performance": [],
   "learning_stats": {
-    "total_learning_iterations": 9224,
-    "successful_adaptations": 8293,
-    "failed_adaptations": 931,
-    "average_improvement": 0.8991036273971366
+    "total_learning_iterations": 9237,
+    "successful_adaptations": 8303,
+    "failed_adaptations": 934,
+    "average_improvement": 0.8989949026940304
   },
   "success_prediction_model": null,
   "paddle_speed_factors": {
@@ -5282,12 +5334,10 @@
         1.0,
         1.0,
         1.0,
-        1.0,
-        1.0,
         1.0
       ],
-      "success_cases": 96,
-      "total_cases": 108
+      "success_cases": 172,
+      "total_cases": 187
     },
     "10": {
       "speed_multipliers": [
@@ -5370,50 +5420,11 @@
         1.0,
         1.0,
         1.0,
-        1.0,
-        1.0,
-        1.0,
-        1.0,
-        1.0,
-        1.0,
-        1.0,
-        1.0,
-        1.0,
-        1.0,
-        1.0,
-        1.0,
-        1.0,
-        1.0,
-        1.0,
-        1.0,
-        1.0,
-        1.0,
-        1.0,
-        1.0,
-        1.0,
-        1.0,
-        1.0,
-        1.0,
-        1.0,
-        1.0,
-        1.0,
-        1.0,
-        1.0,
-        1.0,
-        1.0,
-        1.0,
-        1.0,
         1.0
       ],
-      "success_cases": 172,
-      "total_cases": 187
+      "success_cases": 9,
+      "total_cases": 12
     }
   },
-  "user_prompt_destruction_control": "",
-  "model_metrics": {
-    "last_accuracy": 0.8636363636363636,
-    "training_samples": 88,
-    "test_samples": 22,
-    "features_count": 1
-  }
+  "user_prompt_destruction_control": ""
 }

@@ -38,7 +38,7 @@ if __name__ == "__main__":
 # Это гарантирует, что ВСЕ модули используют централизованную конфигурацию
 try:
     import logging
-    from src.ai.logging_config import setup_root_logger, get_logger
+    from ai.logging_config import setup_root_logger, get_logger
     setup_root_logger()
     # Создаем logger для PyGameBall
     logger = get_logger(__name__)
@@ -84,11 +84,11 @@ try:
     from .game_models import Ball, Paddle
 except ImportError:
     # Если относительные импорты не работают (когда запускается напрямую), используем абсолютные
-    from src.game.highscores import HighScoreManager  # type: ignore[assignment]
-    from src.game.settings import SettingsManager  # type: ignore[assignment]
-    from src.game.game_models import Ball, Paddle  # type: ignore[assignment]
+    from game.highscores import HighScoreManager  # type: ignore[assignment]
+    from game.settings import SettingsManager  # type: ignore[assignment]
+    from game.game_models import Ball, Paddle  # type: ignore[assignment]
 
-from src.ai.ai_player import AIPlayer
+from ai.ai_player import AIPlayer
 
 
 def resource_path(relative_path: str) -> str:
@@ -148,7 +148,7 @@ try:
         SEPARATION_ZONE_TOP,
     )
 except ImportError:
-    from src.game.game_config import (
+    from game.game_config import (
         BALL_SIZE,
         BALL_SPEED_DEFAULT,
         BRICK_COLS,
@@ -775,7 +775,7 @@ def draw_bricks(screen: pygame.Surface, bricks: List[pygame.Rect]) -> None:
     try:
         from .game_config import BRICK_COLORS, BRICK_BORDER_COLOR
     except ImportError:
-        from src.game.game_config import BRICK_COLORS, BRICK_BORDER_COLOR
+        from game.game_config import BRICK_COLORS, BRICK_BORDER_COLOR
     
     for idx, brick in enumerate(bricks):
         color = BRICK_COLORS[idx // BRICK_COLS % len(BRICK_COLORS)]
