@@ -465,104 +465,17 @@ class AIPlayer(
     # _ensure_safe_paddle_position, _calculate_fallback_position, _set_target_position_if_needed
     # теперь в ai_player_target_calculation.py
 
-    def get_optimal_paddle_position(self) -> int:
-        """
-        Получает оптимальную позицию центра платформы
-        с прицельным отбиванием по кубикам.
-        
-        ВАЖНО: Всегда пересчитывает цель, если мяч движется вверх или меняет направление,
-        чтобы учесть отскок от верхней границы.
-        """
-        start_time_monitor = time.time() if self.performance_monitor else None
-        if not self.current_game_state or not self.is_active:
-            # Резервная позиция — центр экрана
-            result = self.screen_width // 2
-            if self.performance_monitor and start_time_monitor:
-                duration = time.time() - start_time_monitor
-                self.performance_monitor.record_metric("get_optimal_paddle_position", duration)
-            return result
-
-        try:
-            ball_y = self.current_game_state.ball_position.y
-            ball_vel_y = (
-                self.current_game_state.ball_velocity.y
-                if hasattr(self.current_game_state, "ball_velocity")
-                else 0
-            )
-            ball_x = self.current_game_state.ball_position.x
-            
-            # КРИТИЧНО: Обновляем отслеживание направления мяча для обнаружения изменений направления
-            # Это позволяет пересчитывать целевую позицию при смене направления движения мяча
-            self.separation_zone_tracker.last_ball_vel_y = ball_vel_y
-
-            # Рассчитываем зоны
-            zones = self.zone_handler.calculate_zones()
-
-            # Если мяч в зоне кубиков - платформа НЕ должна двигаться
-            if ball_y < zones["separation_zone_start"]:
-                return self.zone_handler.handle_bricks_zone(ball_y, self.current_game_state)
-            
-            # Обрабатываем зону разделения
-            separation_result = self.zone_handler.handle_separation_zone(ball_y, ball_vel_y, zones, self.current_game_state)
-            if separation_result is not None:
-                return separation_result
-
-            # Мяч ниже кубиков и движется вниз/в разделительной зоне — считаем прицельную позицию
-            if ball_y < zones["paddle_zone_start"]:
-                # КРИТИЧНО: Используем predict_paddle_intersection для правильной обработки отскоков
-                # Это учитывает отскоки от верхней границы и блоков
-                intersection_point = self.trajectory_predictor.predict_paddle_intersection(
-                    self.current_game_state,
-                    self.current_game_state.paddle_position.y
-                )
-                
-                if intersection_point is None:
-                    # Если предсказание невозможно, используем fallback
-                    landing_x = self._predict_exact_landing_position()
-                else:
-                    landing_x = intersection_point.x
-                
-                # Обновляем отслеживание позиции мяча при расчете цели
-                if not hasattr(self, '_last_target_ball_x'):
-                    self._last_target_ball_x = None
-                self._last_target_ball_x = ball_x
-                
-                return self._calculate_target_position(landing_x, ball_y, zones)
-            else:
-                # Мяч движется вверх — обрабатываем возможный отскок от потолка
-                # self.current_game_state гарантированно не None (проверено на строке 1507)
-                current_x = int(self.current_game_state.paddle_position.x)
-                return self.zone_handler.handle_upward_movement(ball_y, self.current_game_state, current_x)
-
-        except (AttributeError, TypeError) as e:
-            self._logger.error(f"Ошибка типов при расчете оптимальной позиции: {e}", exc_info=True)
-            if self.current_game_state and hasattr(self.current_game_state, "paddle_position"):
-                return int(self.current_game_state.paddle_position.x)
-            return self.screen_width // 2
-        except InvalidStateError as e:
-            self._logger.error(f"Недопустимое состояние при расчете позиции: {e}", exc_info=True)
-            return self.screen_width // 2
-        except PredictionError as e:
-            self._logger.error(f"Ошибка предсказания при расчете позиции: {e}", exc_info=True)
-            if self.current_game_state and hasattr(self.current_game_state, "paddle_position"):
-                return int(self.current_game_state.paddle_position.x)
-            return self.screen_width // 2
-
     # ==========================
     # Выбор целевого кирпича
     # ==========================
     # Метод _find_best_target_brick теперь в ai_player_targeting.py
     # Метод _calculate_precise_position_for_few_bricks теперь в ai_player_positioning.py
     # Метод get_optimal_paddle_position теперь в ai_player_position_optimization_part1.py
-
-    # Методы get_optimal_paddle_position, _force_target_brick_from_coordinates,
-    # _calculate_position_for_max_destruction, _find_optimal_angle_for_max_destruction,
-    # _count_bricks_in_trajectory, _find_first_brick_in_trajectory,
-    # _find_best_target_for_few_bricks, _calculate_optimal_offset
-    # теперь в ai_player_position_optimization.py
-    # Метод _calculate_precise_position_for_few_bricks теперь в ai_player_positioning.py
-
-    # Метод _force_target_brick_from_coordinates теперь в ai_player_position_optimization.py
+    # Методы _force_target_brick_from_coordinates, _calculate_position_for_max_destruction
+    # теперь в ai_player_position_optimization_part1.py
+    # Методы _find_optimal_angle_for_max_destruction, _count_bricks_in_trajectory,
+    # _find_first_brick_in_trajectory, _find_best_target_for_few_bricks, _calculate_optimal_offset
+    # теперь в ai_player_position_optimization_part2.py
 
     def _log_paddle_movement(self, from_x: float, to_x: float, reason: str, confidence: float = 1.0) -> None:
         """
