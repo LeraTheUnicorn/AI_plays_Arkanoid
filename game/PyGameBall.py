@@ -79,9 +79,9 @@ with suppress_pkg_resources_warnings():
 # Импорты с поддержкой как относительных, так и абсолютных путей
 try:
     # Пытаемся использовать относительные импорты (когда запускается как модуль)
-    from .highscores import HighScoreManager
-    from .settings import SettingsManager
-    from .game_models import Ball, Paddle
+    from highscores import HighScoreManager
+    from settings import SettingsManager
+    from game_models import Ball, Paddle
 except ImportError:
     # Если относительные импорты не работают (когда запускается напрямую), используем абсолютные
     from game.highscores import HighScoreManager  # type: ignore[assignment]

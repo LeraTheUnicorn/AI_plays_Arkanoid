@@ -234,3 +234,5 @@ ai/logs/session_*.json
 ai/logs/analysis_*.json
 PygameArkanoid/ai/logs/session_*.json
 PygameArkanoid/ai/logs/analysis_*.json
+
+node_modules/
