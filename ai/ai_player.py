@@ -50,6 +50,9 @@ from .ai_player_zones import AIPlayerZonesMixin
 from .ai_player_target_calculation import AIPlayerTargetCalculationMixin
 from .ai_player_position_optimization_part1 import AIPlayerPositionOptimizationPart1Mixin
 from .ai_player_position_optimization_part2 import AIPlayerPositionOptimizationPart2Mixin
+from .ai_player_loop_prevention import AIPlayerLoopPreventionMixin
+from .ai_player_ball_tracking import AIPlayerBallTrackingMixin
+from .ai_player_fallback import AIPlayerFallbackMixin
 
 
 class AIPlayer(
@@ -60,6 +63,9 @@ class AIPlayer(
     AIPlayerTargetCalculationMixin,
     AIPlayerPositionOptimizationPart1Mixin,
     AIPlayerPositionOptimizationPart2Mixin,
+    AIPlayerLoopPreventionMixin,
+    AIPlayerBallTrackingMixin,
+    AIPlayerFallbackMixin,
     AIPlayerStateMixin,
     AIPlayerTargetingMixin,
     AIPlayerPositioningMixin,
@@ -534,341 +540,9 @@ class AIPlayer(
     # ==========================
     # Предотвращение зацикливания
     # ==========================
-
-    def _detect_loop_pattern(self) -> bool:
-        """
-        Обнаруживает зацикливание в движениях платформы.
-
-        Возвращает True, если обнаружен повторяющийся паттерн движений
-        или вертикальные траектории мяча.
-        """
-        history = self.loop_prevention_system["movement_history"]
-        trajectory_history = self.loop_prevention_system["trajectory_history"]
-
-        threshold = self.loop_prevention_system["loop_detection_threshold"]
-
-        # Нужно достаточно данных
-        if len(history) < threshold * 2:
-            return False
-
-        # Проверяем последние движения
-        recent_movements = history[-threshold:]
-        movement_counts: Dict[int, int] = {}
-        for movement in recent_movements:
-            movement_counts[movement] = movement_counts.get(movement, 0) + 1
-
-        max_count = max(movement_counts.values())
-        # 80% одинаковых движений считается зацикливанием
-        if max_count >= threshold * 0.8:
-            return True
-
-        # Позиционная стагнация
-        position_history = self.loop_prevention_system["position_history"]
-        if len(position_history) >= 10:
-            recent_positions = position_history[-10:]
-            # Если за последние 8 кадров платформа почти не меняла позицию
-            if len(set(recent_positions[-8:])) <= 2:
-                return True
-
-        # Вертикальные траектории мяча
-        if len(trajectory_history) >= 5 and self.current_game_state:
-            recent_trajectories = trajectory_history[-5:]
-            vertical_count = 0
-            for traj in recent_trajectories:
-                prev_ball_x = traj.get("ball_x")
-                if prev_ball_x is None:
-                    continue
-                current_ball_x = self.current_game_state.ball_position.x
-                if abs(current_ball_x - prev_ball_x) < 3:
-                    vertical_count += 1
-            # 4 из 5 почти вертикальные — считаем зацикливанием
-            if vertical_count >= 4:
-                return True
-
-        return False
-    
-    def _change_strategy_if_looping(self) -> None:
-        """Меняет стратегию при обнаружении зацикливания."""
-        if not self._detect_loop_pattern():
-            return
-
-        # Учитываем кулдаун
-        if self.loop_prevention_system["strategy_change_cooldown"] > 0:
-            self.loop_prevention_system["strategy_change_cooldown"] -= 1
-            return
-
-        # Смена стратегии
-        strategies = self.loop_prevention_system["alternative_strategies"]
-        idx = self.loop_prevention_system["current_strategy_index"]
-        self.loop_prevention_system["current_strategy_index"] = (idx + 1) % len(
-            strategies
-        )
-        new_strategy = strategies[self.loop_prevention_system["current_strategy_index"]]
-
-        # Кулдаун и сброс истории
-        self.loop_prevention_system["strategy_change_cooldown"] = 10
-        
-        self.loop_prevention_system["movement_history"] = []
-        self.loop_prevention_system["position_history"] = []
-        self.loop_prevention_system["trajectory_history"] = []
-
-    def _apply_alternative_strategy(self, optimal_position: int) -> int:
-        """
-        Применяет альтернативную стратегию позиционирования для выхода из зацикливания.
-        """
-        strategy_index = self.loop_prevention_system["current_strategy_index"]
-        strategy = self.loop_prevention_system["alternative_strategies"][strategy_index]
-        screen_center = self.screen_width // 2
-
-        if strategy == "center_focus":
-            # Фокусируемся на центре экрана
-            return screen_center
-
-        if strategy == "edge_focus":
-            # Фокусируемся на краях для смены паттерна
-            current_pos = getattr(self.current_game_state, "paddle_position", None)
-            if current_pos and hasattr(current_pos, "x"):
-                return self.screen_width - 70 if current_pos.x < screen_center else 70
-            return 70
-
-        if strategy == "predictive_targeting":
-            # Агрессивное прицеливание в дальние кубики
-            target_brick = self._find_most_distant_brick()
-            if target_brick:
-                landing_x = self._predict_exact_landing_position()
-                brick_center_x = (
-                    getattr(target_brick, "x", 0)
-                    + getattr(target_brick, "width", 60) / 2
-                )
-                offset_direction = 1 if brick_center_x > landing_x else -1
-                return int(optimal_position + offset_direction * 30)
-
-        return optimal_position
-
-    def _find_most_distant_brick(self) -> Optional[Any]:
-        """Находит самый дальний по Y кубик от платформы."""
-        if not self.current_game_state or not self.current_game_state.remaining_bricks:
-            return None
-
-        bricks = self.current_game_state.remaining_bricks
-        paddle_y = self.current_game_state.paddle_position.y
-
-        most_distant_brick = None
-        max_distance = -1.0
-
-        for brick in bricks:
-            brick_y = getattr(brick, "y", 0)
-            distance = abs(paddle_y - brick_y)
-            if distance > max_distance:
-                max_distance = distance
-                most_distant_brick = brick
-
-        return most_distant_brick
-
-    def _update_loop_tracking(
-        self,
-        movement: int,
-        current_x: int,
-        optimal_x: int,
-    ) -> None:
-        """Обновляет данные отслеживания зацикливания."""
-        # История движений
-        self.loop_prevention_system["movement_history"].append(movement)
-        if len(self.loop_prevention_system["movement_history"]) > 10:
-            self.loop_prevention_system["movement_history"] = (
-                self.loop_prevention_system["movement_history"][-10:]
-            )
-
-        # История позиций
-        self.loop_prevention_system["position_history"].append(current_x)
-        if len(self.loop_prevention_system["position_history"]) > 20:
-            self.loop_prevention_system["position_history"] = (
-                self.loop_prevention_system["position_history"][-10:]
-            )
-
-        # История траекторий
-        if self.current_game_state:
-            trajectory_info = {
-                "ball_x": self.current_game_state.ball_position.x,
-                "ball_y": self.current_game_state.ball_position.y,
-                "optimal_x": optimal_x,
-                "timestamp": time.time(),
-            }
-            self.loop_prevention_system["trajectory_history"].append(trajectory_info)
-            if len(self.loop_prevention_system["trajectory_history"]) > 10:
-                self.loop_prevention_system["trajectory_history"] = (
-                    self.loop_prevention_system["trajectory_history"][-5:]
-                )
-
-    def _update_smoothness_tracking(self, movement: int, current_x: int) -> None:
-        """Обновляет данные отслеживания плавности движения."""
-        # История движений
-        self.smoothness_system["recent_movements"].append(movement)
-        if (
-            len(self.smoothness_system["recent_movements"])
-            > self.smoothness_system["jitter_window"]
-        ):
-            self.smoothness_system["recent_movements"] = self.smoothness_system[
-                "recent_movements"
-            ][-self.smoothness_system["jitter_window"] :]
-
-        # История позиций
-        self.smoothness_system["recent_positions"].append(current_x)
-        if (
-            len(self.smoothness_system["recent_positions"])
-            > self.smoothness_system["jitter_window"]
-        ):
-            self.smoothness_system["recent_positions"] = self.smoothness_system[
-                "recent_positions"
-            ][-self.smoothness_system["jitter_window"] :]
-
-        # Отслеживание смен направления движения
-        if len(self.smoothness_system["recent_movements"]) >= 2:
-            prev_movement = self.smoothness_system["recent_movements"][-2]
-            if prev_movement != 0 and movement != 0 and prev_movement != movement:
-                # Произошла смена направления
-                self.smoothness_system["movement_changes"].append(time.time())
-                # Очищаем старые записи (старше 1 секунды)
-                current_time = time.time()
-                self.smoothness_system["movement_changes"] = [
-                    t
-                    for t in self.smoothness_system["movement_changes"]
-                    if current_time - t < 1.0
-                ]
-
-    def _detect_jitter(self) -> bool:
-        """
-        Обнаруживает дрожание платформы (частые смены направления движения).
-        
-        Returns:
-            True, если обнаружено дрожание.
-        """
-        movements = self.smoothness_system["recent_movements"]
-        if len(movements) < self.smoothness_system["jitter_threshold"]:
-            return False
-
-        # Подсчитываем количество смен направления в последних движениях
-        direction_changes = 0
-        for i in range(1, len(movements)):
-            prev = movements[i - 1]
-            curr = movements[i]
-            # Смена направления: с -1 на 1, с 1 на -1, или с любого на противоположное
-            if prev != 0 and curr != 0 and prev != curr:
-                direction_changes += 1
-
-        # Если слишком много смен направления - это дрожание
-        threshold = self.smoothness_system["jitter_threshold"]
-        if direction_changes >= threshold:
-            return True
-
-        # Дополнительная проверка: частые смены направления за короткое время
-        movement_changes = self.smoothness_system["movement_changes"]
-        if len(movement_changes) >= threshold:
-            return True
-
-        # Проверка на микродвижения (очень маленькие изменения позиции)
-        positions = self.smoothness_system["recent_positions"]
-        if len(positions) >= 5:
-            recent_positions = positions[-5:]
-            position_variance = max(recent_positions) - min(recent_positions)
-            # Если позиция меняется очень мало, но часто - это дрожание
-            if (
-                position_variance < 10
-                and len([m for m in movements[-5:] if m != 0]) >= 3
-            ):
-                return True
-
-        return False
-
-    def _calculate_smooth_movement(
-        self, current_x: int, optimal_x: int, distance: float
-    ) -> int:
-        """
-        Вычисляет плавное движение с учетом штрафов за дрожание.
-        
-        Args:
-            current_x: Текущая позиция платформы.
-            optimal_x: Оптимальная позиция платформы.
-            distance: Расстояние до оптимальной позиции.
-            
-        Returns:
-            Направление движения (-1, 0, 1).
-        """
-        # КРИТИЧНО: Проверяем, находится ли мяч в зоне разделения с установленной позицией
-        ball_y = self.current_game_state.ball_position.y if self.current_game_state else 0
-        ball_vel_y = (
-            self.current_game_state.ball_velocity.y
-            if self.current_game_state and hasattr(self.current_game_state, "ball_velocity")
-            else 0
-        )
-        separation_zone_start = self.separation_zone_tracker.separation_zone_start
-        paddle_zone_start = self.separation_zone_tracker.paddle_zone_start
-        in_separation_zone = separation_zone_start <= ball_y < paddle_zone_start and ball_vel_y > 0
-        
-        # КРИТИЧНО: Если целевая позиция установлена, используем увеличенный допуск
-        # Когда мяч движется точно вниз по известной траектории, платформа должна оставаться на месте
-        if self.separation_zone_tracker.target_position_set:
-            # Увеличенный допуск для предотвращения дрожания в зоне разделения
-            effective_min_distance = 30  # Увеличенный допуск 30 пикселей для стабильности
-        else:
-            # Если есть штраф за дрожание, увеличиваем порог для движения
-            penalty = self.smoothness_system["smoothness_penalty"]
-            effective_min_distance = self.smoothness_system["min_movement_distance"] * (
-                1 + penalty
-            )
-
-        if distance < effective_min_distance:
-            # Не двигаемся, если расстояние слишком мало (с учетом штрафа или зоны разделения)
-            # КРИТИЧНО: Это предотвращает уход платформы с траектории мяча
-            return 0
-
-        # Определяем направление движения
-        if optimal_x > current_x:
-            return 1
-        elif optimal_x < current_x:
-            return -1
-        else:
-            return 0
-
-    def _reevaluate_after_bounce(self) -> None:
-        """Переоценивает ситуацию после отбития мяча."""
-        if not self.current_game_state:
-            return
-
-        target_brick = self.target_selector.find_best_target_brick(
-            self.current_game_state,
-            self.current_game_state.paddle_position.y,
-            self.current_game_state.ball_position.x,
-        )
-        if target_brick:
-            self.targeting_system.target_brick = target_brick
-            landing_x = self._predict_exact_landing_position()
-            new_offset = self.position_calculator.calculate_optimal_offset(
-                landing_x, target_brick, self.current_game_state
-            )
-            self.targeting_system.optimal_offset = new_offset
-            
-
-        # Сбрасываем историю зацикливания для нового цикла
-        self.loop_prevention_system["movement_history"] = []
-        self.loop_prevention_system["position_history"] = []
-        
-        # Сбрасываем историю плавности движения после отскока
-        self.smoothness_system["recent_movements"] = []
-        self.smoothness_system["movement_changes"] = []
-        self.smoothness_system["smoothness_penalty"] = 0.0
-        
-        # КРИТИЧНО: Сбрасываем отслеживание зоны разделения после отскока
-        self.separation_zone_tracker.ball_entered_separation_zone = False
-        self.separation_zone_tracker.target_position_set = False
-        self.separation_zone_tracker.target_position = None
-        self.separation_zone_tracker.paddle_moved_after_set = False
-        self.separation_zone_tracker.paddle_reached_target = False
-        self.separation_zone_tracker.last_movement_frame = 0
-        
-        # КРИТИЧНО: Проверяем, было ли отбитие в пустоту (мяч отскочил от потолка без попадания в кубики)
-        # Это определяется в PyGameBall.py при отскоке от потолка
-        # Здесь мы сбрасываем счетчик только если было успешное попадание в кубик
+    # Методы _detect_loop_pattern, _change_strategy_if_looping, _apply_alternative_strategy,
+    # _find_most_distant_brick, _update_loop_tracking, _update_smoothness_tracking,
+    # _detect_jitter, _calculate_smooth_movement теперь в ai_player_loop_prevention.py
 
     # ==========================
     # Запись результатов ударов
@@ -878,79 +552,15 @@ class AIPlayer(
     # ==========================
     # Предсказание траектории и позиционирование
     # ==========================
-    # Методы _predict_exact_landing_position, _handle_ceiling_bounce_positioning,
-    # _track_ball_position, _calculate_precise_position_for_few_bricks,
-    # _force_target_brick_from_coordinates, _calculate_position_for_max_destruction
+    # Методы _predict_exact_landing_position, _calculate_precise_position_for_few_bricks
     # теперь в ai_player_positioning.py
-
-    def _handle_ceiling_bounce_positioning(self) -> int:
-        """
-        Специальная логика для позиционирования при отскоке мяча от потолка.
-        Предотвращает симметричные отскоки и зацикливание.
-        """
-        if not self.current_game_state:
-            return self.screen_width // 2
-        game_state = self.current_game_state
-        ball_x = game_state.ball_position.x
-        ball_y = game_state.ball_position.y
-        vel_x = game_state.ball_velocity.x
-        vel_y = game_state.ball_velocity.y
-
-        if ball_y < 30 and vel_y > 0:
-            # Мяч только что отскочил от потолка
-            if abs(vel_x) < 2:
-                # Почти вертикальный отскок — смещаемся в сторону средней позиции кубиков
-                remaining_bricks = self.targeting_system.brick_coordinates
-                if remaining_bricks:
-                    avg_brick_x = sum(c["x"] for c in remaining_bricks) / len(
-                        remaining_bricks
-                    )
-                    target_x = (ball_x + avg_brick_x) / 2.0
-                else:
-                    # Нет кубиков — небольшое смещение от центра
-                    center_x = self.screen_width // 2
-                    target_x = center_x + (ball_x - center_x) * 0.3
-            else:
-                # Есть горизонтальная скорость — небольшое упреждение
-                target_x = ball_x + vel_x * 2.0
-
-            # Добавляем случайное смещение, чтобы избежать идеальной симметрии
-            target_x += random.choice([-15, -10, 0, 10, 15])
-
-            paddle_half_width = self.paddle_width / 2
-            min_x = paddle_half_width + 5
-            max_x = self.screen_width - paddle_half_width - 5
-            target_x = max(min_x, min(max_x, target_x))
-            return int(target_x)
-
-        # Стандартное слежение за мячом
-        return int(self._track_ball_position())
-
-    def _track_ball_position(self) -> float:
-        """Следим за текущей позицией мяча с небольшим упреждением."""
-        if not self.current_game_state:
-            return self.screen_width / 2.0
-        game_state = self.current_game_state
-        ball_x = game_state.ball_position.x
-        vel_x = game_state.ball_velocity.x
-
-        prediction_time = 3  # кадров вперёд
-        predicted_x = ball_x + vel_x * prediction_time
-
-        screen_width = self.screen_width
-        ball_radius = self.config.ball.radius
-        min_x = ball_radius
-        max_x = screen_width - ball_radius
-
-        return max(min_x, min(max_x, predicted_x))
+    # Методы _reevaluate_after_bounce, _handle_ceiling_bounce_positioning, _track_ball_position,
+    # calculate_adaptive_paddle_speed теперь в ai_player_ball_tracking.py
 
     # ==========================
     # Адаптивная скорость платформы
     # ==========================
-
-    def calculate_adaptive_paddle_speed(
-        self, current_x: int, optimal_x: int, ball_speed: int
-    ) -> int:
+    # Метод calculate_adaptive_paddle_speed теперь в ai_player_ball_tracking.py
         """
         Рассчитывает адаптивную скорость платформы на основе физики игры.
         
@@ -1062,6 +672,7 @@ class AIPlayer(
     # ==========================
     # Движение платформы
     # ==========================
+    # Метод calculate_adaptive_paddle_speed теперь в ai_player_ball_tracking.py
 
     def _execute_movement_strategy(self, current_x: int, paddle_speed: int) -> int:
         """
@@ -3662,106 +3273,8 @@ class AIPlayer(
             self._logger.error(f"Ошибка предсказания при движении платформы: {e}", exc_info=True)
             return self._fallback_movement(current_x)
 
-    def _fallback_movement(self, current_x: int) -> int:
-        """
-        Резервное движение платформы - улучшенное следование за мячом.
-
-        Args:
-            current_x: Текущая X-координата платформы.
-
-        Returns:
-            Смещение платформы (-1, 0, 1).
-        """
-        if not self.current_game_state:
-            return 0
-
-        game_state = self.current_game_state
-        ball_x = game_state.ball_position.x
-        ball_y = game_state.ball_position.y
-        vel_x = game_state.ball_velocity.x
-        vel_y = game_state.ball_velocity.y
-        paddle_y = game_state.paddle_position.y
-
-        # Если мяч падает — предсказываем точку встречи с платформой
-        if vel_y > 0:
-            time_to_paddle = (paddle_y - ball_y) / vel_y if vel_y != 0 else 0
-            if time_to_paddle > 0:
-                predicted_x = ball_x + vel_x * time_to_paddle
-
-                screen_width = self.screen_width
-                ball_radius = self.config.ball.radius
-
-                # Простое моделирование отскоков
-                while (
-                    predicted_x < ball_radius
-                    or predicted_x > screen_width - ball_radius
-                ):
-                    if predicted_x < ball_radius:
-                        predicted_x = 2 * ball_radius - predicted_x
-                        vel_x = abs(vel_x)
-                    elif predicted_x > screen_width - ball_radius:
-                        predicted_x = 2 * (screen_width - ball_radius) - predicted_x
-                        vel_x = -abs(vel_x)
-                target_x = predicted_x
-            else:
-                target_x = ball_x
-        else:
-            # Мяч движется вверх — следим с небольшим упреждением
-            prediction_factor = abs(vel_x) * 2
-            if vel_x > 0:
-                target_x = ball_x + prediction_factor
-            elif vel_x < 0:
-                target_x = ball_x - prediction_factor
-            else:
-                target_x = ball_x
-
-        distance = target_x - current_x
-        tolerance = 3
-
-        if abs(distance) <= tolerance:
-            return 0
-        return 1 if distance > 0 else -1
-
-    # ==========================
-    # Оценка уверенности и давление по времени
-    # ==========================
-
-    def _is_time_pressure(self) -> bool:
-        """Определяет, есть ли давление по времени/ситуации (мало времени или кубиков)."""
-        if not self.current_game_state:
-            return False
-
-        game_time = self.current_game_state.game_time
-        if game_time > 300:
-            return True
-
-        if len(self.current_game_state.remaining_bricks) <= 5:
-            return True
-
-        return False
-
-    def _calculate_decision_confidence(self, target_position: int) -> float:
-        """
-        Рассчитывает уверенность в принятом решении.
-
-        Args:
-            target_position: Целевая X-позиция платформы.
-
-        Returns:
-            Уровень уверенности (0.0-1.0).
-        """
-        if not self.current_game_state:
-            return 0.5
-
-        confidence = 0.7
-
-        bricks_count = len(self.current_game_state.remaining_bricks)
-        if bricks_count <= 5:
-            confidence += 0.1
-        elif bricks_count >= 20:
-            confidence -= 0.1
-
-        ball_speed = self.current_game_state.ball_speed
+    # Методы _fallback_movement, _is_time_pressure, _calculate_decision_confidence
+    # теперь в ai_player_fallback.py
         if ball_speed >= 8:
             confidence -= 0.1
         elif ball_speed <= 3:
