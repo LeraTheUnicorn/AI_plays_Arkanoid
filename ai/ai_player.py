@@ -691,6 +691,22 @@ class AIPlayer(
         Returns:
             Смещение платформы (-1, 0, 1).
         """
+        import time
+        start_time_monitor = time.time() if self.performance_monitor else None
+        
+        # Определяем переменные состояния мяча и зон
+        if not self.current_game_state:
+            return self._fallback_movement(current_x)
+        
+        ball_y = self.current_game_state.ball_position.y if self.current_game_state else 0
+        ball_vel_y = (
+            self.current_game_state.ball_velocity.y
+            if (self.current_game_state and hasattr(self.current_game_state, "ball_velocity"))
+            else 0
+        )
+        separation_zone_start = self.separation_zone_tracker.separation_zone_start
+        paddle_zone_start = self.separation_zone_tracker.paddle_zone_start
+        
         # КРИТИЧНО: УБРАНО ПРАВИЛО 1 - платформа ДОЛЖНА двигаться к точке падения мяча
         # даже когда мяч летит вверх, чтобы успеть к моменту падения
         # Продолжаем расчет оптимальной позиции независимо от направления мяча
@@ -1909,28 +1925,8 @@ class AIPlayer(
                 duration = time.time() - start_time_monitor
                 self.performance_monitor.record_metric("move_paddle_towards", duration)
             return movement
-        """
-        Двигает платформу к оптимальной позиции с предотвращением зацикливания.
-        Использует PaddleMovementStrategy для модульной логики движения.
 
-        Args:
-            current_x: Текущая X-координата платформы.
-            paddle_speed: Базовая скорость движения платформы.
-        """
-        start_time_monitor = time.time() if self.performance_monitor else None
-
-        Returns:
-            Смещение платформы (-1, 0, 1).
-        """
-        # Используем стратегию движения, если она инициализирована
-        if self.paddle_movement_strategy is not None:
-            return self._execute_movement_strategy(current_x, paddle_speed)
-        
-        # Fallback на старую логику, если стратегия не инициализирована
-        if not self.current_game_state or not self.is_active:
-            return self._fallback_movement(current_x)
-
-        try:
+        except (AttributeError, TypeError) as e:
             # Получаем состояние мяча
             ball_y = self.current_game_state.ball_position.y
             ball_vel_y = (

@@ -236,3 +236,5 @@ PygameArkanoid/ai/logs/session_*.json
 PygameArkanoid/ai/logs/analysis_*.json
 
 node_modules/
+
+.early.coverage
