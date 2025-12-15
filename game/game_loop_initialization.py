@@ -318,3 +318,6 @@ def finalize_game_setup(
     ball.vel_y = -ball.get_speed()
     # Логируем настройку игры (только в файл, не в консоль)
     logger.debug(f"[AI DEBUG] Игра настроена, game_started=True, ball.vel_x={ball.vel_x}, ball.vel_y={ball.vel_y}")
+
+
+# Удалена неиспользуемая функция setup_complete_game - инициализация выполняется напрямую в main()

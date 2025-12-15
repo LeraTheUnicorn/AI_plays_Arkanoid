@@ -1963,7 +1963,8 @@ def process_ball_physics_and_collisions(
     return False, None, None, None, score, lives_left, game_over, game_started, None, None, None
 
 
-def _process_game_logic_frame_unused(
+# Удалена неиспользуемая функция _process_game_logic_frame_unused - заменена на process_ball_physics_and_collisions
+# def _process_game_logic_frame_unused(
     ball: Ball,
     paddle: Paddle,
     bricks: list,
