@@ -103,25 +103,28 @@ class AIPlayerMatchProcessingMixin:
                         )
         elif all_bricks_destroyed and lives_lost <= 1:
             if time_ratio > 1.2:
-                if current_ball_speed < 25:
+                # ✅ ИСПРАВЛЕНО: Ограничиваем максимальную скорость мяча до 15 для стабильности игры
+                if current_ball_speed < 15:
                     self.training_parameters["ball_speed"] = min(
-                        25, current_ball_speed + 1
+                        15, current_ball_speed + 1
                     )
                 if current_paddle_mult < 3.0:
                     self.training_parameters["paddle_speed_multiplier"] = min(
                         3.0, current_paddle_mult + 0.1
                     )
             elif time_ratio < 0.8 and efficiency > 8.0:
-                if current_ball_speed < 25:
+                # ✅ ИСПРАВЛЕНО: Ограничиваем максимальную скорость мяча до 15 для стабильности игры
+                if current_ball_speed < 15:
                     self.training_parameters["ball_speed"] = min(
-                        25, current_ball_speed + 1
+                        15, current_ball_speed + 1
                     )
 
         if len(self.training_parameters["match_history"]) <= 2:
             if bricks_destroyed >= 45 and lives_lost <= 1:
-                if current_ball_speed < 25:
+                # ✅ ИСПРАВЛЕНО: Ограничиваем максимальную скорость мяча до 15 для стабильности игры
+                if current_ball_speed < 15:
                     self.training_parameters["ball_speed"] = min(
-                        25, current_ball_speed + 2
+                        15, current_ball_speed + 2
                     )
                 if current_paddle_mult < 3.0:
                     self.training_parameters["paddle_speed_multiplier"] = min(
@@ -132,18 +135,20 @@ class AIPlayerMatchProcessingMixin:
 
             if avg_efficiency > 0 and all_bricks_destroyed:
                 if time_ratio > 1.2:
-                    if current_ball_speed < 25:
+                    # ✅ ИСПРАВЛЕНО: Ограничиваем максимальную скорость мяча до 15 для стабильности игры
+                    if current_ball_speed < 15:
                         self.training_parameters["ball_speed"] = min(
-                            25, current_ball_speed + 1
+                            15, current_ball_speed + 1
                         )
                     if current_paddle_mult < 3.0:
                         self.training_parameters["paddle_speed_multiplier"] = min(
                             3.0, current_paddle_mult + 0.1
                         )
                 elif efficiency > avg_efficiency * 1.1:
-                    if current_ball_speed < 25:
+                    # ✅ ИСПРАВЛЕНО: Ограничиваем максимальную скорость мяча до 15 для стабильности игры
+                    if current_ball_speed < 15:
                         self.training_parameters["ball_speed"] = min(
-                            25, current_ball_speed + 1
+                            15, current_ball_speed + 1
                         )
                     if current_paddle_mult < 3.0:
                         self.training_parameters["paddle_speed_multiplier"] = min(

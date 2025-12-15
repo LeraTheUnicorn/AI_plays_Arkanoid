@@ -168,7 +168,7 @@ class PaddleMovementStrategy:
         # Проверка состояния
         if not self._validate_state():
             self._logger.debug("[MOVE_PADDLE_CALL] _validate_state вернул False, используем fallback")
-            return self._validate_movement(self._fallback_movement(current_x))
+            return self._validate_movement(self._fallback_movement(current_x, paddle_speed))
 
         try:
             self._logger.debug("[MOVE_PADDLE_CALL] Начинаем обработку движения платформы")
@@ -334,7 +334,7 @@ class PaddleMovementStrategy:
 
         except Exception as e:
             self._logger.error(f"Ошибка при движении платформы: {e}", exc_info=True)
-            return self._validate_movement(self._fallback_movement(current_x))
+            return self._validate_movement(self._fallback_movement(current_x, paddle_speed))
 
     def _validate_state(self) -> bool:
         """
@@ -500,8 +500,8 @@ class PaddleMovementStrategy:
         if current_target is None:
             return None
 
-        # ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ (Задача 3): Проверяем, что целевая позиция соответствует предсказанной позиции приземления
-        # Если целевая позиция отличается от предсказанной более чем на 50px, пересчитываем целевую позицию
+        # ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ V3 (Задача 3): Проверяем, что целевая позиция соответствует предсказанной позиции приземления
+        # Если целевая позиция отличается от предсказанной более чем на 50px, используем предсказанную позицию напрямую
         if self.current_game_state:
             intersection_point = self.trajectory_predictor.predict_paddle_intersection(
                 self.current_game_state,
@@ -513,22 +513,22 @@ class PaddleMovementStrategy:
             else:
                 predicted_landing_x = intersection_point.x
             
-            # Если целевая позиция отличается от предсказанной более чем на 50px - пересчитываем
+            # Если целевая позиция отличается от предсказанной более чем на 50px - используем предсказанную позицию напрямую
             if abs(current_target - predicted_landing_x) > 50:
                 self._logger.debug(
                     f"[FIXED TARGET] Целевая позиция ({current_target:.1f}px) не соответствует "
-                    f"предсказанной позиции приземления ({predicted_landing_x:.1f}px, разница: {abs(current_target - predicted_landing_x):.1f}px), пересчитываем"
+                    f"предсказанной позиции приземления ({predicted_landing_x:.1f}px, разница: {abs(current_target - predicted_landing_x):.1f}px), "
+                    f"используем предсказанную позицию напрямую"
                 )
-                # Пересчитываем целевую позицию
-                optimal_x = self.get_optimal_paddle_position()
-                if optimal_x is not None and abs(optimal_x - predicted_landing_x) < 50:
-                    # Новая позиция соответствует предсказанию - обновляем целевую позицию
-                    self.target_tracker.set_target_position(int(optimal_x), "correction", self._logger, current_x)
-                    current_target = int(optimal_x)
-                    self._logger.debug(
-                        f"[FIXED TARGET] Целевая позиция обновлена: {current_target:.1f}px "
-                        f"(соответствует предсказанию: {predicted_landing_x:.1f}px)"
-                    )
+                # ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ V3: Используем предсказанную позицию напрямую (с ограничением границами)
+                # НЕ вызываем get_optimal_paddle_position(), который может снова вернуть неправильную позицию
+                corrected_target = self._clamp_paddle_position(int(predicted_landing_x))
+                self.target_tracker.set_target_position(corrected_target, "direct_prediction", self._logger, current_x)
+                current_target = corrected_target
+                self._logger.debug(
+                    f"[FIXED TARGET] Целевая позиция обновлена: {current_target:.1f}px "
+                    f"(используем предсказанную позицию напрямую: {predicted_landing_x:.1f}px)"
+                )
 
         # Проверяем отскоки от стены и кирпичей
         if self.current_game_state:
@@ -919,7 +919,7 @@ class PaddleMovementStrategy:
         optimal_x = self.get_optimal_paddle_position()
 
         if optimal_x is None:
-            return self._fallback_movement(current_x)
+            return self._fallback_movement(current_x, paddle_speed)
 
         # ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ (Задача 2): Проверяем, что optimal_x не равен текущей позиции платформы
         # Если равен - это означает, что get_optimal_paddle_position() вернул текущую позицию вместо предсказанной
@@ -1156,7 +1156,7 @@ class PaddleMovementStrategy:
         movement = 1 if target_pos > current_x else (-1 if target_pos < current_x else 0)
         if movement == 0:
             self._logger.debug(f"[NEW TARGET] Не удалось определить направление, используем fallback")
-            return self._fallback_movement(current_x)
+            return self._fallback_movement(current_x, paddle_speed)
 
         self._update_loop_tracking(movement, int(current_x), int(target_pos))
         self._update_smoothness_tracking(movement, current_x)
@@ -1181,7 +1181,7 @@ class PaddleMovementStrategy:
         optimal_x = self.get_optimal_paddle_position()
 
         if optimal_x is None:
-            return self._fallback_movement(current_x)
+            return self._fallback_movement(current_x, paddle_speed)
 
         # КРИТИЧНО: Ограничиваем оптимальную позицию границами экрана
         optimal_x = self._clamp_paddle_position(int(optimal_x))
@@ -1192,7 +1192,7 @@ class PaddleMovementStrategy:
             if self.loop_prevention_system["strategy_change_cooldown"] == 0:
                 optimal_x = self._apply_alternative_strategy(optimal_x)
                 if optimal_x is None:
-                    return self._fallback_movement(current_x)
+                    return self._fallback_movement(current_x, paddle_speed)
                 # КРИТИЧНО: Ограничиваем альтернативную стратегию тоже
                 optimal_x = self._clamp_paddle_position(int(optimal_x))
 
@@ -1265,7 +1265,7 @@ class PaddleMovementStrategy:
                     f"[NORMAL MOVEMENT] position_optimizer вернул 0, но optimal_x != current_x, "
                     f"используем fallback"
                 )
-                movement = self._fallback_movement(current_x)
+                movement = self._fallback_movement(current_x, paddle_speed)
 
             self._update_loop_tracking(movement, current_x, optimal_x)
             self._update_smoothness_tracking(movement, current_x)
@@ -1277,12 +1277,13 @@ class PaddleMovementStrategy:
 
             return movement
 
-    def _fallback_movement(self, current_x: int) -> int:
+    def _fallback_movement(self, current_x: int, paddle_speed: int = 60) -> int:
         """
         Резервное движение платформы.
 
         Args:
             current_x: Текущая X-координата платформы
+            paddle_speed: Скорость движения платформы (по умолчанию 60)
 
         Returns:
             Смещение платформы (-1, 0, 1)

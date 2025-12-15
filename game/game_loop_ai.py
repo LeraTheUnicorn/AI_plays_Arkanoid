@@ -102,9 +102,12 @@ def update_ai_logic(
             optimal_ball_speed = ai_player.get_optimal_ball_speed()
             current_ball_speed = ball.get_speed()
             if current_ball_speed != optimal_ball_speed:
+                # ✅ ИСПРАВЛЕНО: Ограничиваем максимальную скорость до 15 для стабильности игры AI
                 # Устанавливаем оптимальную скорость (обходя ограничение для режима обучения)
                 if optimal_ball_speed > 10:
-                    ball.current_speed = optimal_ball_speed
+                    # Ограничиваем максимальную скорость до 15 для AI
+                    clamped_speed = min(optimal_ball_speed, 15)
+                    ball.current_speed = clamped_speed
                     # Обновляем скорости движения с сохранением направления
                     if ball.vel_x != 0:
                         ball.vel_x = int(

@@ -932,8 +932,11 @@ def handle_game_restart_training(
     new_paddle = Paddle()
     new_ball = Ball()
     optimal_ball_speed = ai_player.get_optimal_ball_speed()
+    # ✅ ИСПРАВЛЕНО: Ограничиваем максимальную скорость до 15 для стабильности игры AI
     if optimal_ball_speed > 10:
-        new_ball.current_speed = optimal_ball_speed
+        # Ограничиваем максимальную скорость до 15 для AI
+        clamped_speed = min(optimal_ball_speed, 15)
+        new_ball.current_speed = clamped_speed
     else:
         new_ball.set_speed(optimal_ball_speed, settings_manager)
     new_ball.reset(new_paddle.rect)

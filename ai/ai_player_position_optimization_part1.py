@@ -72,17 +72,24 @@ class AIPlayerPositionOptimizationPart1Mixin:
                     self._last_target_ball_x = None
                 self._last_target_ball_x = ball_x
                 
-                # Возвращаем вычисленную позицию, а не текущую позицию платформы
-                calculated_position = self._calculate_target_position(landing_x, ball_y, zones)
+                # ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ V3: В зоне разделения используем предсказанную позицию напрямую
+                # НЕ вызываем _calculate_target_position(), которая корректирует позицию для прицеливания в кирпичи
+                # В зоне разделения нужно просто отбить мяч, а не прицеливаться в кирпичи
+                # Просто ограничиваем границами экрана
+                paddle_half_width = self.paddle_width // 2
+                min_x = paddle_half_width
+                max_x = self.screen_width - paddle_half_width
+                optimal_position = max(min_x, min(max_x, int(landing_x)))
+                
                 self._logger.debug(
                     f"[OPTIMAL POSITION] Мяч в зоне разделения (y={ball_y:.1f}), "
-                    f"вычислена предсказанная позиция приземления: {landing_x:.1f}px, "
-                    f"целевая позиция: {calculated_position:.1f}px"
+                    f"предсказанная позиция приземления: {landing_x:.1f}px, "
+                    f"целевая позиция (без коррекции для прицеливания): {optimal_position:.1f}px"
                 )
                 if self.performance_monitor and start_time_monitor:
                     duration = time.time() - start_time_monitor
                     self.performance_monitor.record_metric("get_optimal_paddle_position", duration)
-                return calculated_position
+                return optimal_position
 
             # Если мяч в зоне кубиков - платформа НЕ должна двигаться
             if ball_y < separation_zone_start:
