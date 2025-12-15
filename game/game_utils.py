@@ -128,7 +128,8 @@ def create_ai_player(screen_width: int, screen_height: int, debug_mode: bool = T
     from ai.ai_player import AIPlayer
     
     # Настройки многопоточности для асинхронных расчетов траектории
-    USE_ASYNC_TRAJECTORY = os.getenv("AI_USE_ASYNC_TRAJECTORY", "false").lower() == "true"
+    # ✅ ИЗМЕНЕНО: Многопоточность включена по умолчанию для лучшей производительности
+    USE_ASYNC_TRAJECTORY = os.getenv("AI_USE_ASYNC_TRAJECTORY", "true").lower() == "true"
     ASYNC_MAX_WORKERS = int(os.getenv("AI_ASYNC_MAX_WORKERS", "2"))
     
     return AIPlayer(

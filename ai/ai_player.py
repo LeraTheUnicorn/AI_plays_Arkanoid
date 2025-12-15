@@ -112,7 +112,7 @@ class AIPlayer(
         position_optimizer: Optional[PositionOptimizer] = None,
         learning_system: Optional[LearningSystem] = None,
         performance_logger: Optional[PerformanceLogger] = None,
-        use_async_trajectory: bool = False,
+        use_async_trajectory: bool = True,  # ✅ ИЗМЕНЕНО: Многопоточность включена по умолчанию
         async_max_workers: int = 2,
         use_lazy_learning: bool = True,
         enable_performance_monitoring: bool = True,

@@ -1,9 +1,17 @@
 # Быстрый старт: Многопоточный режим
 
-## 🚀 Самый простой способ
+## ✅ Многопоточность включена по умолчанию!
+
+**Многопоточный режим теперь включен по умолчанию** для лучшей производительности. 
+Просто запустите игру обычным способом:
+```bash
+python game/PyGameBall.py
+```
+
+## 🚀 Дополнительные скрипты (опционально)
 
 ### Windows
-Просто запустите:
+Для явного указания настроек:
 ```bash
 run_with_multithreading.bat
 ```
@@ -39,16 +47,20 @@ AI_USE_ASYNC_TRAJECTORY=true AI_ASYNC_MAX_WORKERS=2 python game/PyGameBall.py
 
 ### Вариант 2: Изменить код напрямую
 
-Откройте `game/PyGameBall.py` и найдите строки:
+Многопоточность уже включена по умолчанию в `game/game_utils.py`:
 ```python
-USE_ASYNC_TRAJECTORY = os.getenv("AI_USE_ASYNC_TRAJECTORY", "false").lower() == "true"
+USE_ASYNC_TRAJECTORY = os.getenv("AI_USE_ASYNC_TRAJECTORY", "true").lower() == "true"
 ASYNC_MAX_WORKERS = int(os.getenv("AI_ASYNC_MAX_WORKERS", "2"))
 ```
 
-Измените на:
-```python
-USE_ASYNC_TRAJECTORY = True   # Включить многопоточность
-ASYNC_MAX_WORKERS = 2          # Количество потоков
+Для отключения многопоточности установите переменную окружения:
+```bash
+# Windows
+set AI_USE_ASYNC_TRAJECTORY=false
+python game/PyGameBall.py
+
+# Linux/Mac
+AI_USE_ASYNC_TRAJECTORY=false python game/PyGameBall.py
 ```
 
 ## 📊 Рекомендации по количеству потоков
@@ -65,9 +77,9 @@ ASYNC_MAX_WORKERS = 2          # Количество потоков
 2. В диспетчере задач видно использование нескольких ядер CPU
 3. Нет ошибок в логах
 
-## 🔧 Отключение
+## 🔧 Отключение многопоточности
 
-Чтобы отключить многопоточность:
+Чтобы отключить многопоточность (если возникают проблемы):
 - Удалите переменные окружения, или
 - Установите `USE_ASYNC_TRAJECTORY = False` в коде
 
