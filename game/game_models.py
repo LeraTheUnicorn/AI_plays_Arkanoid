@@ -121,10 +121,15 @@ class Ball:
 
     def reset(self, paddle_rect: pygame.Rect) -> None:
         """Сбрасывает мяч на платформу с текущей скоростью."""
+        from .game_config import RANDOM_BALL_START_DIRECTION
         ball_radius: int = BALL_SIZE // 2
         self.rect.centerx = paddle_rect.centerx
         self.rect.centery = paddle_rect.top - ball_radius - 5
-        self.vel_x = random.choice([-self.current_speed, self.current_speed])
+        # ✅ Рандомизация направления мяча (если включена)
+        if RANDOM_BALL_START_DIRECTION:
+            self.vel_x = random.choice([-self.current_speed, self.current_speed])
+        else:
+            self.vel_x = self.current_speed  # Направление вправо (по умолчанию)
         self.vel_y = -self.current_speed
 
     def set_speed(

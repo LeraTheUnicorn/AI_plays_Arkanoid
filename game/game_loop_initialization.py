@@ -7,6 +7,7 @@
 import os
 import sys
 import time
+import random
 import pygame
 from typing import Tuple, Optional, Any
 
@@ -18,6 +19,7 @@ try:
         FPS,
         BALL_SPEED_MAX,
         BALL_SPEED_DEFAULT,
+        RANDOM_BALL_START_DIRECTION,
     )
     from .game_models import Paddle, Ball
     from .game_utils import build_bricks, create_ai_player, resource_path
@@ -32,6 +34,7 @@ except ImportError:
         FPS,
         BALL_SPEED_MAX,
         BALL_SPEED_DEFAULT,
+        RANDOM_BALL_START_DIRECTION,
     )
     from game.game_models import Paddle, Ball
     from game.game_utils import build_bricks, create_ai_player, resource_path
@@ -239,8 +242,8 @@ def setup_ai_player_for_training(
             print(f"[ERROR] Ошибка при настройке скорости в режиме обучения: {e}")
             import traceback
             traceback.print_exc()
-        # Используем скорость по умолчанию
-        ball.set_speed(8, settings_manager)
+        # Используем скорость по умолчанию из констант
+        ball.set_speed(BALL_SPEED_DEFAULT, settings_manager)
 
 
 def start_background_music(sound_enabled: bool) -> None:
@@ -318,10 +321,15 @@ def finalize_game_setup(
         setup_ai_player_for_training(ai_player, ball, settings_manager, logger)
     
     # Игра начинается сразу
-    ball.vel_x = ball.get_speed()  # Направление вправо
+    # ✅ Рандомизация направления мяча при старте (если включена)
+    if RANDOM_BALL_START_DIRECTION:
+        # Рандомное направление: влево или вправо
+        ball.vel_x = random.choice([-ball.get_speed(), ball.get_speed()])
+    else:
+        ball.vel_x = ball.get_speed()  # Направление вправо (по умолчанию)
     ball.vel_y = -ball.get_speed()
     # Логируем настройку игры (только в файл, не в консоль)
-    logger.debug(f"[AI DEBUG] Игра настроена, game_started=True, ball.vel_x={ball.vel_x}, ball.vel_y={ball.vel_y}")
+    logger.debug(f"[AI DEBUG] Игра настроена, game_started=True, ball.vel_x={ball.vel_x}, ball.vel_y={ball.vel_y}, random_start={RANDOM_BALL_START_DIRECTION}")
 
 
 # Удалена неиспользуемая функция setup_complete_game - инициализация выполняется напрямую в main()

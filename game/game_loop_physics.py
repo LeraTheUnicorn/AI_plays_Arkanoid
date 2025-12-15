@@ -27,6 +27,7 @@ try:
         SEPARATION_ZONE_BOTTOM,
         SEPARATION_ZONE_TOP,
         BALL_SPEED_MAX,
+        RANDOM_BALL_START_DIRECTION,
     )
     from .game_models import Ball, Paddle
     from .game_utils import build_bricks, create_ai_player
@@ -44,6 +45,7 @@ except ImportError:
         SEPARATION_ZONE_BOTTOM,
         SEPARATION_ZONE_TOP,
         BALL_SPEED_MAX,
+        RANDOM_BALL_START_DIRECTION,
     )
     from game.game_models import Ball, Paddle
     from game.game_utils import build_bricks, create_ai_player
@@ -948,7 +950,11 @@ def handle_game_restart_training(
     new_lives_left = MAX_LIVES  # Восстанавливаем жизни для нового матча
     game_over = False
     game_started = True  # Автоматически запускаем
-    new_ball.vel_x = new_ball.get_speed()
+    # ✅ Рандомизация направления мяча при перезапуске (если включена)
+    if RANDOM_BALL_START_DIRECTION:
+        new_ball.vel_x = random.choice([-new_ball.get_speed(), new_ball.get_speed()])
+    else:
+        new_ball.vel_x = new_ball.get_speed()  # Направление вправо (по умолчанию)
     new_ball.vel_y = -new_ball.get_speed()
     new_game_start_time = time.time()
     

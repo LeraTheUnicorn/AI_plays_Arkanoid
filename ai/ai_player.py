@@ -285,9 +285,15 @@ class AIPlayer(
 
         # Параметры для обучения в режиме обучения
         # Параметры режима обучения
-        # Максимальная скорость мяча: 8 (с учетом времени движения платформы в зоне разделения)
+        # Начальная скорость мяча: 30 (из централизованных констант)
+        try:
+            from game.game_config import BALL_SPEED_DEFAULT
+            initial_ball_speed = BALL_SPEED_DEFAULT
+        except ImportError:
+            initial_ball_speed = 30  # Fallback значение
+        
         self.training_parameters: Dict[str, Any] = {
-            "ball_speed": 8,  # Текущая скорость мяча (начальная скорость для обучения, ограничена временем движения платформы)
+            "ball_speed": initial_ball_speed,  # Текущая скорость мяча (начальная скорость для обучения)
             "paddle_speed_multiplier": 2.0,  # Множитель скорости платформы (высокий для быстрой игры)
             "total_bricks_destroyed": 0,  # Всего кубиков сбито за матч
             "total_time": 0,  # Общее время матча

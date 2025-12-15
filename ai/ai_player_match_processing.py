@@ -38,6 +38,13 @@ class AIPlayerMatchProcessingMixin:
             self.training_parameters["match_history"] = self.training_parameters["match_history"][-10:]
 
         all_bricks_destroyed = bricks_destroyed >= 50
+        
+        # ✅ Обновляем лучшее время для матча с 50 блоками
+        if success and all_bricks_destroyed and time_taken > 0:
+            current_best = self.performance_metrics.get("best_time_50_bricks")
+            if current_best is None or time_taken < current_best:
+                self.performance_metrics["best_time_50_bricks"] = time_taken
+        
         time_penalty = 1.0 + (lives_lost * 0.2)
         # Исправление деления на ноль: если time_taken = 0, используем минимальное значение
         if time_taken > 0:
@@ -320,9 +327,31 @@ class AIPlayerMatchProcessingMixin:
             result_icon = "[OK]" if success else "[FAIL]"
             result_text = "ПОБЕДА" if success else "ПОРАЖЕНИЕ"
             
+            # Получаем время матча и скорость мяча
+            # Используем total_time из training_parameters, который обновляется в update_training_stats
+            time_taken = self.training_parameters.get("total_time", 0)
+            # Если total_time не установлен, пытаемся вычислить из start_time
+            if time_taken == 0 and self.current_game_stats.get("start_time"):
+                time_taken = time.time() - self.current_game_stats["start_time"]
+            # Если и это не сработало, берем из последнего матча
+            if time_taken == 0 and self.training_parameters.get("match_history"):
+                last_match = self.training_parameters["match_history"][-1]
+                time_taken = last_match.get("time", 0)
+            
+            ball_speed = self.training_parameters.get("ball_speed", 0)
+            
+            # Форматируем время
+            if time_taken >= 60:
+                minutes = int(time_taken // 60)
+                seconds = int(time_taken % 60)
+                time_str = f"{minutes}m {seconds}s"
+            else:
+                time_str = f"{int(time_taken)}s"
+            
             print("\n" + "=" * 60)
             print(f"{result_icon} {result_text} | Счет: {final_score}/50")
             print(f"   Игр: {self.performance_metrics['games_played']} | Побед: {self.performance_metrics['games_won']} | Винрейт: {win_rate:.1f}%")
+            print(f"   Время: {time_str} | Скорость мяча: {ball_speed}")
             print("=" * 60)
             
             if hasattr(self._logger, 'handlers') and self._logger.handlers:
