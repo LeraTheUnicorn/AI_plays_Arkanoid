@@ -18,6 +18,7 @@ try:
         SCREEN_WIDTH,
         SEPARATION_ZONE_BOTTOM,
         SEPARATION_ZONE_TOP,
+        BALL_SPEED_MAX,
     )
     from .game_models import Ball, Paddle
     from ai.ai_player import AIPlayer
@@ -31,6 +32,7 @@ except ImportError:
         SCREEN_WIDTH,
         SEPARATION_ZONE_BOTTOM,
         SEPARATION_ZONE_TOP,
+        BALL_SPEED_MAX,
     )
     from game.game_models import Ball, Paddle
     from ai.ai_player import AIPlayer
@@ -102,11 +104,11 @@ def update_ai_logic(
             optimal_ball_speed = ai_player.get_optimal_ball_speed()
             current_ball_speed = ball.get_speed()
             if current_ball_speed != optimal_ball_speed:
-                # ✅ ИСПРАВЛЕНО: Ограничиваем максимальную скорость до 15 для стабильности игры AI
+                # ✅ ИСПОЛЬЗУЕМ ЦЕНТРАЛИЗОВАННЫЕ КОНСТАНТЫ
                 # Устанавливаем оптимальную скорость (обходя ограничение для режима обучения)
-                if optimal_ball_speed > 10:
-                    # Ограничиваем максимальную скорость до 15 для AI
-                    clamped_speed = min(optimal_ball_speed, 15)
+                if optimal_ball_speed > BALL_SPEED_MAX // 3:  # Если больше трети максимума
+                    # Ограничиваем максимальной скоростью из констант
+                    clamped_speed = min(optimal_ball_speed, BALL_SPEED_MAX)
                     ball.current_speed = clamped_speed
                     # Обновляем скорости движения с сохранением направления
                     if ball.vel_x != 0:

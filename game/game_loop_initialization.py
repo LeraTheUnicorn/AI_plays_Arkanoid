@@ -16,6 +16,8 @@ try:
         SCREEN_HEIGHT,
         MAX_LIVES,
         FPS,
+        BALL_SPEED_MAX,
+        BALL_SPEED_DEFAULT,
     )
     from .game_models import Paddle, Ball
     from .game_utils import build_bricks, create_ai_player, resource_path
@@ -28,6 +30,8 @@ except ImportError:
         SCREEN_HEIGHT,
         MAX_LIVES,
         FPS,
+        BALL_SPEED_MAX,
+        BALL_SPEED_DEFAULT,
     )
     from game.game_models import Paddle, Ball
     from game.game_utils import build_bricks, create_ai_player, resource_path
@@ -79,7 +83,7 @@ def load_background_music() -> None:
     Загружает фоновую музыку для игры.
     """
     try:
-        music_path = resource_path("audio/FVCK_AI.mp3")
+        music_path = resource_path("FVCK_AI.mp3")
         # Нормализуем путь для корректной работы на Windows
         music_path = os.path.normpath(music_path)
         
@@ -94,7 +98,6 @@ def load_background_music() -> None:
                 alt_path = os.path.join(
                     os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
                     "resources",
-                    "audio",
                     "FVCK_AI.mp3"
                 )
                 alt_path = os.path.normpath(alt_path)
@@ -216,7 +219,8 @@ def setup_ai_player_for_training(
     # В режиме обучения используем оптимальную скорость из обучения
     try:
         optimal_speed = ai_player.get_optimal_ball_speed()
-        if optimal_speed > 10:
+        # ✅ ИСПОЛЬЗУЕМ ЦЕНТРАЛИЗОВАННЫЕ КОНСТАНТЫ вместо магического числа 10
+        if optimal_speed > BALL_SPEED_MAX // 3:  # Если больше трети максимума
             ball.current_speed = optimal_speed
             # Устанавливаем начальные скорости движения
             ball.vel_x = optimal_speed

@@ -72,10 +72,11 @@ class SettingsConstants:
     Используется для централизованного управления параметрами игры.
     """
     
-    # Скорость мяча
-    DEFAULT_BALL_SPEED: int = 8  # Средняя скорость по умолчанию
-    MIN_BALL_SPEED: int = 1       # Минимальная скорость мяча
-    MAX_BALL_SPEED: int = 10  # Макс. скорость мяча
+    # Скорость мяча - используем централизованные константы из game_config
+    from .game_config import BALL_SPEED_DEFAULT, BALL_SPEED_MIN, BALL_SPEED_MAX
+    DEFAULT_BALL_SPEED: int = BALL_SPEED_DEFAULT
+    MIN_BALL_SPEED: int = BALL_SPEED_MIN
+    MAX_BALL_SPEED: int = BALL_SPEED_MAX
     
     # Ограничения производительности
     FRAME_TIME_MS: float = 16.67      # Время на кадр при 60 FPS
@@ -327,27 +328,26 @@ def get_settings_file_path() -> str:
         
         # Безопасное объединение путей с защитой от path traversal
         resources_dir = safe_join_path(game_dir, "resources")
-        data_dir = safe_join_path(resources_dir, "data")
         
-        # Создаем каталоги, если они не существуют
-        if not os.path.exists(data_dir):
+        # Создаем каталог, если он не существует
+        if not os.path.exists(resources_dir):
             try:
-                os.makedirs(data_dir, exist_ok=True)
+                os.makedirs(resources_dir, exist_ok=True)
             except (OSError, PermissionError) as e:
-                logger.warning(f"Не удалось создать каталог {data_dir}: {e}")
-                # Если не удается создать каталог, используем fallback - src/resources/data
+                logger.warning(f"Не удалось создать каталог {resources_dir}: {e}")
+                # Если не удается создать каталог, используем fallback - src/resources
                 current_dir = os.path.dirname(os.path.abspath(__file__))  # src/game/
                 src_dir = os.path.dirname(current_dir)  # src/
                 fallback_dir = os.path.join(src_dir, "resources")  # src/resources/
-                data_dir = safe_join_path(fallback_dir, "data")
-                if not os.path.exists(data_dir):
+                resources_dir = safe_join_path(fallback_dir, "")
+                if not os.path.exists(resources_dir):
                     try:
-                        os.makedirs(data_dir, exist_ok=True)
+                        os.makedirs(resources_dir, exist_ok=True)
                     except (OSError, PermissionError) as e2:
-                        logger.error(f"Не удалось создать резервный каталог {data_dir}: {e2}")
+                        logger.error(f"Не удалось создать резервный каталог {resources_dir}: {e2}")
                         raise
         
-        settings_path = os.path.join(data_dir, "settings.json")
+        settings_path = os.path.join(resources_dir, "settings.json")
         
         # Кэшируем путь
         _settings_file_path_cache = settings_path

@@ -35,8 +35,14 @@ class AIPlayerDebugVisualizationMixin:
             
             # Добавляем лучшее время для матча с 50 блоками
             best_time = self.performance_metrics.get("best_time_50_bricks")
-            if best_time is not None:
-                info_lines.append(f"Best: {best_time:.1f}s (50 blocks)")
+            if best_time is not None and best_time > 0:
+                # Форматируем время: если больше 60 секунд, показываем минуты и секунды
+                if best_time >= 60:
+                    minutes = int(best_time // 60)
+                    seconds = best_time % 60
+                    info_lines.append(f"Best: {minutes}m {seconds:.1f}s (50 blocks)")
+                else:
+                    info_lines.append(f"Best: {best_time:.1f}s (50 blocks)")
             else:
                 info_lines.append(f"Best: -- (50 blocks)")
             

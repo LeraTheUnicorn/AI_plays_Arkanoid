@@ -26,6 +26,7 @@ try:
         SCREEN_WIDTH,
         SEPARATION_ZONE_BOTTOM,
         SEPARATION_ZONE_TOP,
+        BALL_SPEED_MAX,
     )
     from .game_models import Ball, Paddle
     from .game_utils import build_bricks, create_ai_player
@@ -42,6 +43,7 @@ except ImportError:
         SCREEN_WIDTH,
         SEPARATION_ZONE_BOTTOM,
         SEPARATION_ZONE_TOP,
+        BALL_SPEED_MAX,
     )
     from game.game_models import Ball, Paddle
     from game.game_utils import build_bricks, create_ai_player
@@ -932,10 +934,10 @@ def handle_game_restart_training(
     new_paddle = Paddle()
     new_ball = Ball()
     optimal_ball_speed = ai_player.get_optimal_ball_speed()
-    # ✅ ИСПРАВЛЕНО: Ограничиваем максимальную скорость до 15 для стабильности игры AI
-    if optimal_ball_speed > 10:
-        # Ограничиваем максимальную скорость до 15 для AI
-        clamped_speed = min(optimal_ball_speed, 15)
+    # ✅ ИСПОЛЬЗУЕМ ЦЕНТРАЛИЗОВАННЫЕ КОНСТАНТЫ вместо магических чисел
+    if optimal_ball_speed > BALL_SPEED_MAX // 3:  # Если больше трети максимума
+        # Ограничиваем максимальной скоростью из констант
+        clamped_speed = min(optimal_ball_speed, BALL_SPEED_MAX)
         new_ball.current_speed = clamped_speed
     else:
         new_ball.set_speed(optimal_ball_speed, settings_manager)

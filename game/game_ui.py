@@ -428,7 +428,8 @@ def show_settings_window(
     slider_width = 400
     slider_height = 20
     knob_radius = 15
-    max_speed = 10
+    from .game_config import BALL_SPEED_MAX
+    max_speed = BALL_SPEED_MAX
     current_speed = ball.get_speed()
 
     if current_speed > max_speed:

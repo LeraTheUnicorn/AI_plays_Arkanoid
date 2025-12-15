@@ -14,6 +14,7 @@ import pygame
 from .game_config import (
     BALL_SIZE,
     BALL_SPEED_DEFAULT,
+    BALL_SPEED_MAX,
     PADDLE_HEIGHT,
     PADDLE_SPEED,
     PADDLE_WIDTH,
@@ -132,7 +133,8 @@ class Ball:
         settings_manager: Optional[SettingsManager] = None,
     ) -> None:
         """Устанавливает скорость мяча и обновляет настройки."""
-        max_speed: int = 10
+        from .game_config import BALL_SPEED_MAX
+        max_speed: int = BALL_SPEED_MAX
         if 1 <= speed <= max_speed:
             old_speed: int = self.current_speed
             self.current_speed = speed
@@ -149,8 +151,9 @@ class Ball:
     def increase_speed(
         self, settings_manager: Optional[SettingsManager] = None
     ) -> None:
-        """Увеличивает скорость на 1 (максимум 10)."""
-        max_speed: int = 10
+        """Увеличивает скорость на 1."""
+        from .game_config import BALL_SPEED_MAX
+        max_speed: int = BALL_SPEED_MAX
         if self.current_speed < max_speed:
             self.set_speed(self.current_speed + 1, settings_manager)
 
