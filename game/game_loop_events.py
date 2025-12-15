@@ -125,46 +125,6 @@ def process_keyboard_events(
                     if not getattr(__import__('sys'), 'frozen', False):
                         print(f"[CHEAT] Активирована немедленная победа (тройное нажатие '1')")
                         print(f"[CHEAT] training_mode={training_mode}, lives_left={lives_left}")
-                    
-                    # В режиме обучения не показываем заставку победы
-                    if not training_mode and lives_left > 0:
-                        if not getattr(__import__('sys'), 'frozen', False):
-                            print("[CHEAT] Условия выполнены, вызываем trigger_instant_victory...")
-                        game_over = True
-                        game_time_seconds = int(time.time() - game_start_time)
-                        
-                        # Используем отдельный метод для показа заставки и результатов
-                        try:
-                            sound_enabled, restart_game, exit_game = trigger_instant_victory(
-                                screen,
-                                font,
-                                big_font,
-                                score,
-                                player_name,
-                                game_time_seconds,
-                                highscore_manager,
-                                settings_manager,
-                                ball,
-                            )
-                            if not getattr(__import__('sys'), 'frozen', False):
-                                print(f"[CHEAT] trigger_instant_victory завершена: restart_game={restart_game}, exit_game={exit_game}")
-                        except Exception as e:
-                            if not getattr(__import__('sys'), 'frozen', False):
-                                print(f"[CHEAT] ОШИБКА в trigger_instant_victory: {e}")
-                                import traceback
-                                traceback.print_exc()
-                            # Продолжаем выполнение даже при ошибке
-                            restart_game = False
-                            exit_game = False
-                        
-                        # Обработка выхода или перезапуска
-                        if exit_game:
-                            pygame.quit()
-                            return False, sound_enabled, key_1_press_count, key_1_last_press_time, bricks, game_over, True
-                        
-                        if restart_game:
-                            # Перезапускаем игру - возвращаем флаг через game_over=False
-                            game_over = False
                             # Перезапуск будет обработан в main() через process_restart_key
     
     return running, sound_enabled, key_1_press_count, key_1_last_press_time, bricks, game_over, exit_game

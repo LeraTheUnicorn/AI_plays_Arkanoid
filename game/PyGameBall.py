@@ -45,7 +45,6 @@ try:
         trigger_instant_victory,
         show_victory_splash,
         show_game_results,
-        show_settings_window,
     )
 except ImportError:
     from game.game_ui import (
@@ -53,7 +52,6 @@ except ImportError:
         trigger_instant_victory,
         show_victory_splash,
         show_game_results,
-        show_settings_window,
     )
 
 # Примечание: функции из game_main_helpers больше не используются,
@@ -110,11 +108,8 @@ try:
         handle_ball_loss,
         handle_game_restart_training,
         handle_paddle_side_collision,
-        handle_game_restart_manual,
-        handle_victory_manual,
         handle_all_lives_lost_after_ball_loss,
         apply_restart_result,
-        handle_game_over_manual,
         position_ball_on_paddle,
         handle_victory_check,
         process_ball_physics_and_collisions,
@@ -129,11 +124,8 @@ except ImportError:
         handle_ball_loss,
         handle_game_restart_training,
         handle_paddle_side_collision,
-        handle_game_restart_manual,
-        handle_victory_manual,
         handle_all_lives_lost_after_ball_loss,
         apply_restart_result,
-        handle_game_over_manual,
         position_ball_on_paddle,
         handle_victory_check,
         process_ball_physics_and_collisions,
@@ -306,7 +298,6 @@ except ImportError:
     )
 
 
-# show_settings_window теперь в game_ui.py
 
 def main() -> None:
     # Инициализация pygame и создание основных объектов
