@@ -59,6 +59,7 @@ from .ai_player_movement_helpers import AIPlayerMovementHelpersMixin
 from .ai_player_movement_core_part1 import AIPlayerMovementCorePart1Mixin
 from .ai_player_movement_core_part2 import AIPlayerMovementCorePart2Mixin
 from .ai_player_movement_core_part3 import AIPlayerMovementCorePart3Mixin
+from .ai_player_match_processing import AIPlayerMatchProcessingMixin
 
 
 class AIPlayer(
@@ -83,6 +84,7 @@ class AIPlayer(
     AIPlayerPositioningMixin,
     AIPlayerMovementMixin,
     AIPlayerLearningMixin,
+    AIPlayerMatchProcessingMixin,
 ):
     """
     Основной класс AIPlayer для управления авторежимом.

@@ -71,7 +71,7 @@
 
 ---
 
-## Этап 3: Модуль 21 - Разбиение ai_player_learning.py ❌ НЕ НАЧАТО
+## Этап 3: Модуль 21 - Разбиение ai_player_learning.py ✅ ЗАВЕРШЕНО
 
 ### Задача: Разбить `ai_player_learning.py` (529 строк → 2 модуля по ≤400 строк)
 
@@ -87,41 +87,44 @@
 - [x] Проверить линтер
 - [x] Выполнить коммит
 
-**Модуль 21.2: `ai/ai_player_learning_core_part2.py`** (~400 строк)
-- [ ] Определить границы второй половины
-- [ ] Создать файл `ai/ai_player_learning_core_part2.py`
-- [ ] Создать миксин `AIPlayerLearningCorePart2Mixin`
-- [ ] Перенести вторую половину `learn_from_result`, `on_game_end`, `_reset_game_state_trackers`
-- [ ] Обновить `ai_player_learning.py` - использовать миксин
-- [ ] Удалить перенесенный код из `ai_player_learning.py`
-- [ ] Проверить синтаксис
-- [ ] Проверить линтер
-- [ ] Выполнить коммит
+**Модуль 21.2: `ai/ai_player_learning_core_part2.py`** (~400 строк) ✅ **ВЫПОЛНЕНО**
+- [x] Определить границы второй половины (методы on_game_end, _reset_game_state_trackers, _reset_current_game_stats)
+- [x] Создать файл `ai/ai_player_learning_core_part2.py` (создан, 95 строк)
+- [x] Создать миксин `AIPlayerLearningCorePart2Mixin`
+- [x] Перенести методы `on_game_end`, `_reset_game_state_trackers`, `_reset_current_game_stats`
+- [x] Обновить `ai_player_learning.py` - использовать миксин через наследование
+- [x] Удалить перенесенные методы из `ai_player_learning.py` (заменены комментарием)
+- [x] Проверить синтаксис (успешно)
+- [x] Проверить линтер
+- [x] Выполнить коммит
 
 ---
 
-## Этап 4: Модуль 22-25 - Дополнительные модули ❌ НЕ НАЧАТО
+## Этап 4: Модуль 22-25 - Дополнительные модули 🔄 В ПРОЦЕССЕ
 
 ### Задача: Создать 3 дополнительных модуля
 
-**Модуль 22: `ai/ai_player_match_processing.py`** (~400 строк)
-- [ ] Найти методы в `ai_player.py` или `ai_player_learning.py`:
-  - `_process_training_match`
-  - `_learn_from_match_results`
-  - `_get_average_efficiency`
-  - `get_optimal_ball_speed`
-  - `get_optimal_paddle_speed_multiplier`
-  - `get_adjusted_paddle_speed`
-  - `update_training_stats`
-  - `_print_training_parameters`
-  - `_print_console_summary`
-- [ ] Создать файл `ai/ai_player_match_processing.py`
-- [ ] Создать миксин `AIPlayerMatchProcessingMixin`
-- [ ] Перенести методы
-- [ ] Обновить основной файл
-- [ ] Проверить синтаксис
-- [ ] Проверить линтер
-- [ ] Выполнить коммит
+**Модуль 22: `ai/ai_player_match_processing.py`** (~400 строк) ✅ **ВЫПОЛНЕНО**
+- [x] Найти методы в `ai_player_learning.py`:
+  - `_process_training_match` (найден в строке 98)
+  - `_get_average_efficiency` (найден в строке 82)
+  - `get_optimal_ball_speed` (найден в строке 60)
+  - `get_optimal_paddle_speed_multiplier` (найден в строке 64)
+  - `get_adjusted_paddle_speed` (найден в строке 68)
+  - `update_training_stats` (найден в строке 74)
+  - `_print_ml_system_metrics` (найден в строке 218)
+  - `_save_session_metrics` (найден в строке 270)
+  - `_print_training_parameters` (найден в строке 287)
+  - `_print_console_summary` (найден в строке 332)
+- [x] Создать файл `ai/ai_player_match_processing.py` (создан, 326 строк)
+- [x] Создать миксин `AIPlayerMatchProcessingMixin`
+- [x] Перенести методы
+- [x] Обновить `ai_player_learning.py` - использовать миксин через наследование
+- [x] Обновить `ai_player.py` - добавить миксин в класс
+- [x] Удалить перенесенные методы из `ai_player_learning.py` (заменены комментарием)
+- [x] Проверить синтаксис (успешно)
+- [x] Проверить линтер
+- [x] Выполнить коммит
 
 **Модуль 23: `ai/ai_player_debug_visualization.py`** (~200 строк)
 - [ ] Найти методы:
@@ -153,9 +156,9 @@
 
 ## Текущий прогресс
 
-**Последнее действие:** Завершен Этап 1 - Модули 8-9 (Выбор целей)
+**Последнее действие:** Завершены Этапы 1, 3 и частично Этап 4 (Модули 8-9, 21-22)
 
-**Следующий шаг:** Начать Этап 2 - Модуль 18-19 (Дополнительные части движения)
+**Следующий шаг:** Продолжить Этап 4 - Модули 23-24 (debug_visualization, reset)
 
 ---
 
@@ -163,7 +166,10 @@
 
 - ✅ Коммит: Создан лог действий REFACTORING_LOG_PART2.md
 - ✅ Коммит: Рефакторинг - создан модуль ai_player_target_selection_part1.py (b49daf0)
-- ✅ Коммит: Рефакторинг - создан модуль ai_player_target_selection_part2.py
+- ✅ Коммит: Рефакторинг - создан модуль ai_player_target_selection_part2.py (4f5ea02)
+- ✅ Коммит: Рефакторинг - создан модуль ai_player_learning_core_part1.py (0e75984)
+- ✅ Коммит: Рефакторинг - создан модуль ai_player_learning_core_part2.py
+- ✅ Коммит: Рефакторинг - создан модуль ai_player_match_processing.py
 
 ---
 
