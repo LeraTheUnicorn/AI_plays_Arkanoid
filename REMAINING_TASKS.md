@@ -99,25 +99,23 @@
    - ✅ Оптимизирован код обработки потери мяча и жизней
    - ✅ Вынесена логика обработки победы в отдельную функцию
 
-#### 3. Дробление других больших файлов ❌ **НЕ ВЫПОЛНЕНО** (требуется проверка размеров)
+#### 3. Дробление других больших файлов ❌ **НЕ ВЫПОЛНЕНО**
 
-**`ai/strategy/paddle_movement.py`** (требуется проверка размера → 3 модуля):
+**`ai/strategy/paddle_movement.py`** (1486 строк → 3 модуля):
 1. `ai/strategy/paddle_movement_core.py` (~500 строк) - основная логика движения
 2. `ai/strategy/paddle_movement_zones.py` (~500 строк) - обработка зон
 3. `ai/strategy/paddle_movement_optimization.py` (~485 строк) - оптимизация и сглаживание
 
-**`ai/core/decision_maker.py`** (требуется проверка размера → 3 модуля):
+**`ai/core/decision_maker.py`** (1349 строк → 3 модуля):
 1. `ai/core/decision_maker_core.py` (~450 строк) - основная логика принятия решений
 2. `ai/core/decision_maker_strategies.py` (~450 строк) - стратегии принятия решений
-3. `ai/core/decision_maker_analysis.py` (~448 строк) - анализ ситуации
+3. `ai/core/decision_maker_analysis.py` (~449 строк) - анализ ситуации
 
-**`ai/core/movement_engine.py`** (требуется проверка размера → 4 модуля):
+**`ai/core/movement_engine.py`** (1617 строк → 4 модуля):
 1. `ai/core/movement_engine_core.py` (~400 строк) - основная логика движения
 2. `ai/core/movement_engine_optimization.py` (~400 строк) - оптимизация движения
 3. `ai/core/movement_engine_smoothing.py` (~400 строк) - сглаживание движения
-4. `ai/core/movement_engine_validation.py` (~416 строк) - валидация и проверки
-
-**Примечание:** Требуется проверить текущие размеры файлов перед началом дробления
+4. `ai/core/movement_engine_validation.py` (~417 строк) - валидация и проверки
 
 ---
 
