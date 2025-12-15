@@ -72,6 +72,7 @@ from .game_loop_ai import (
     update_ai_logic,
     update_ai_paddle_movement,
     calculate_paddle_speed_with_bricks,
+    initialize_ai_before_game_loop,
 )
 
 os.environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "1"  # Скрыть сообщение поддержки pygame
@@ -273,13 +274,17 @@ def main() -> None:
     # Счетчик кадров для обновления скорости в режиме обучения
     frame_counter = 0
 
-    # КРИТИЧНО: Обновляем состояние игры для AI перед входом в основной цикл
-    assert ai_player is not None, "ai_player должен быть создан в режиме обучения"
-    ai_player.update_game_state(
-        ball, paddle, bricks, score, int(game_start_time)
-    )
-    # Логируем обновление состояния (только в файл, не в консоль)
-    logger.debug(f"[AI DEBUG] Состояние игры обновлено для AI перед входом в цикл")
+    # Инициализируем AI перед входом в основной цикл используя модуль game_loop_ai
+    if training_mode and ai_player is not None:
+        initialize_ai_before_game_loop(
+            ai_player,
+            ball,
+            paddle,
+            bricks,
+            score,
+            game_start_time,
+            logger,
+        )
     
     # КРИТИЧНО: Логируем вход в основной цикл (только в файл, не в консоль)
     logger.debug(f"[AI DEBUG] Вход в основной цикл игры, running={running}, game_started={game_started}")

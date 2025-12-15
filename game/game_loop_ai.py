@@ -267,3 +267,32 @@ def calculate_paddle_speed_with_bricks(
         base_speed = 60
     
     return base_speed
+
+
+def initialize_ai_before_game_loop(
+    ai_player: AIPlayer,
+    ball: Ball,
+    paddle: Paddle,
+    bricks: list,
+    score: int,
+    game_start_time: float,
+    logger: Any,
+) -> None:
+    """
+    Инициализирует состояние AI перед входом в основной цикл игры.
+    
+    Args:
+        ai_player: Объект AI игрока
+        ball: Объект мяча
+        paddle: Объект платформы
+        bricks: Список кирпичей
+        score: Текущий счет
+        game_start_time: Время начала игры
+        logger: Логгер
+    """
+    # КРИТИЧНО: Обновляем состояние игры для AI перед входом в основной цикл
+    ai_player.update_game_state(
+        ball, paddle, bricks, score, int(game_start_time)
+    )
+    # Логируем обновление состояния (только в файл, не в консоль)
+    logger.debug(f"[AI DEBUG] Состояние игры обновлено для AI перед входом в цикл")
