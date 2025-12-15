@@ -145,6 +145,9 @@ class TrajectoryPredictor:
         Предсказывает точку пересечения мяча с платформой (улучшенная версия) с кэшированием
         и учетом близости к границам.
         
+        ✅ АДАПТИВНАЯ ОПТИМИЗАЦИЯ: Использует упрощенный расчет для высоких скоростей
+        при безопасных условиях, полную симуляцию для низких скоростей и точного прицеливания.
+        
         ВАЖНО: Обрабатывает случай, когда мяч движется вверх - сначала находит точку отскока
         от верхней границы, затем рекурсивно вызывает расчет для мяча, движущегося вниз.
 
@@ -155,50 +158,114 @@ class TrajectoryPredictor:
         Returns:
             Точка пересечения или None если пересечения не будет
         """
-        # КРИТИЧНО: Если мяч движется ВВЕРХ (ball_vel_y < 0), сначала нужно найти точку отскока от верха
-        if game_state.ball_velocity.y < 0:
-            # Рассчитываем время до достижения верхней границы (y=0)
-            ball_y = game_state.ball_position.y
-            ball_vel_y = game_state.ball_velocity.y
-            
-            # Мяч никогда не достигнет платформы, если движется вверх и находится ниже верхней границы
-            # или если верхняя граница находится ниже текущей позиции мяча
-            if ball_y > 0:
-                # Рассчитываем время до достижения верхней границы
-                time_to_top = abs(ball_y / ball_vel_y)  # ball_vel_y отрицательный
-                
-                # Позиция мяча в момент удара о верхнюю границу
-                top_impact_x = game_state.ball_position.x + game_state.ball_velocity.x * time_to_top
-                
-                # После отскока от верха мяч изменит вертикальную скорость на противоположную
-                new_ball_vel_y = -ball_vel_y  # Теперь мяч движется вниз
-                
-                # Новая начальная позиция для расчета (в верхней точке)
-                new_ball_x = top_impact_x
-                new_ball_y = 0  # Верхняя граница
-                
-                # Создаем новое состояние игры после отскока от верха
-                new_game_state = GameState(
-                    ball_position=Point(new_ball_x, new_ball_y),
-                    ball_velocity=Point(game_state.ball_velocity.x, new_ball_vel_y),
-                    paddle_position=game_state.paddle_position,
-                    paddle_width=game_state.paddle_width,
-                    remaining_bricks=game_state.remaining_bricks,
-                    game_score=game_state.game_score,
-                    game_time=game_state.game_time,
-                    ball_speed=game_state.ball_speed,
-                )
-                
-                # Рекурсивно вызываем для мяча, движущегося ВНИЗ
-                return self.predict_paddle_intersection(new_game_state, paddle_y)
-            else:
-                # Мяч уже на верхней границе или выше - он не достигнет платформы
-                return None
+        # ✅ АДАПТИВНОЕ УСЛОВНОЕ УПРОЩЕНИЕ: Определяем, можно ли использовать упрощенный расчет
+        ball_speed = abs(game_state.ball_velocity.y) if hasattr(game_state, 'ball_velocity') else 0
+        bricks_count = len(game_state.remaining_bricks) if game_state.remaining_bricks else 50
+        ball_y = game_state.ball_position.y if hasattr(game_state, 'ball_position') else 0
         
-        # Если мяч не движется вниз, он не достигнет платформы
+        # Упрощенный расчет ТОЛЬКО при безопасных условиях:
+        # 1. Высокая скорость (>= 25) - меньше времени для отскоков от блоков
+        # 2. Много блоков (>= 10) - меньше важность точности прицеливания
+        # 3. Мяч далеко (y < 300) - есть время на коррекцию
+        use_simple = (
+            ball_speed >= 25 and
+            bricks_count >= 10 and
+            ball_y < 300
+        )
+        
+        if use_simple:
+            # Упрощенный расчет для высоких скоростей
+            return self._simple_intersection_calculation(game_state, paddle_y)
+        else:
+            # Полная симуляция для:
+            # - Низких скоростей (нужна точность)
+            # - Малого количества блоков (нужно точное прицеливание)
+            # - Близости к платформе (нужна точность)
+            return self._full_trajectory_simulation(game_state, paddle_y)
+    
+    def _simple_intersection_calculation(
+        self, game_state: GameState, paddle_y: float
+    ) -> Optional[Point]:
+        """
+        ✅ УПРОЩЕННЫЙ РАСЧЕТ: Быстрый расчет без проверки всех блоков.
+        Учитывает только отскоки от стен, без симуляции отскоков от блоков.
+        Используется для высоких скоростей при безопасных условиях.
+        
+        Args:
+            game_state: Текущее состояние игры
+            paddle_y: Y-координата платформы
+            
+        Returns:
+            Точка пересечения или None если пересечения не будет
+        """
+        # Проверяем, что мяч движется вниз
         if game_state.ball_velocity.y <= 0:
             return None
         
+        ball_x = game_state.ball_position.x
+        ball_y = game_state.ball_position.y
+        vel_x = game_state.ball_velocity.x
+        vel_y = game_state.ball_velocity.y
+        
+        if abs(vel_y) < 0.1:
+            return None
+        
+        # Рассчитываем время до платформы
+        time_to_paddle = (paddle_y - ball_y) / vel_y
+        if time_to_paddle <= 0:
+            return None
+        
+        # Упрощенный расчет только с отскоками от стен (без проверки блоков)
+        ball_radius = 8
+        min_x = ball_radius
+        max_x = self.screen_width - ball_radius
+        
+        # Простой расчет отскоков (без итераций)
+        current_x = ball_x
+        current_vel_x = vel_x
+        remaining_time = time_to_paddle
+        
+        while remaining_time > 0 and abs(current_vel_x) > 0.001:
+            new_x = current_x + current_vel_x * remaining_time
+            
+            if new_x < min_x:
+                time_to_wall = (min_x - current_x) / current_vel_x if current_vel_x < 0 else 0
+                if time_to_wall > 0 and time_to_wall < remaining_time:
+                    current_x = min_x
+                    remaining_time -= time_to_wall
+                    current_vel_x = -current_vel_x
+                else:
+                    current_x = new_x
+                    break
+            elif new_x > max_x:
+                time_to_wall = (max_x - current_x) / current_vel_x if current_vel_x > 0 else 0
+                if time_to_wall > 0 and time_to_wall < remaining_time:
+                    current_x = max_x
+                    remaining_time -= time_to_wall
+                    current_vel_x = -current_vel_x
+                else:
+                    current_x = new_x
+                    break
+            else:
+                current_x = new_x
+                break
+        
+        return Point(int(current_x), int(paddle_y))
+    
+    def _full_trajectory_simulation(
+        self, game_state: GameState, paddle_y: float
+    ) -> Optional[Point]:
+        """
+        ✅ ПОЛНАЯ СИМУЛЯЦИЯ: Полный расчет с учетом всех отскоков от блоков и стен.
+        Используется для низких скоростей и точного прицеливания.
+        
+        Args:
+            game_state: Текущее состояние игры
+            paddle_y: Y-координата платформы
+            
+        Returns:
+            Точка пересечения или None если пересечения не будет
+        """
         # Создаем ключ кэша
         cache_key = self._create_intersection_cache_key(game_state, paddle_y)
         

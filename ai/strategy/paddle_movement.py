@@ -83,6 +83,33 @@ class PaddleMovementStrategy:
         self._last_ball_position = None
         self._last_ball_velocity = None
 
+    def _get_adaptive_early_zone_start(self, ball_speed: float, separation_zone_start: int) -> int:
+        """
+        ✅ АДАПТИВНОЕ РАННЕЕ ПРЕДСКАЗАНИЕ: Возвращает начало ранней зоны в зависимости от скорости мяча.
+        
+        Разные пороги для разных скоростей:
+        - Высокие скорости (>= 25): -200px (больше времени на движение)
+        - Средние скорости (15-24): -100px (умеренное раннее предсказание)
+        - Низкие скорости (< 15): -50px (меньше риск неточного предсказания)
+        
+        Args:
+            ball_speed: Скорость мяча (абсолютное значение)
+            separation_zone_start: Начало зоны разделения
+            
+        Returns:
+            Начало ранней зоны
+        """
+        if ball_speed >= 25:
+            # Высокие скорости: больше времени на движение
+            return separation_zone_start - 200
+        elif ball_speed >= 15:
+            # Средние скорости: умеренное раннее предсказание
+            return separation_zone_start - 100
+        else:
+            # Низкие скорости: минимальное раннее предсказание
+            # (меньше риск неточного предсказания на большом расстоянии)
+            return separation_zone_start - 50
+
     def _detect_brick_bounce(self) -> bool:
         """
         ✅ НОВАЯ ФУНКЦИЯ: Обнаруживает отскок от блока с высокой чувствительностью.
@@ -791,10 +818,11 @@ class PaddleMovementStrategy:
         paddle_zone_start = zones["paddle_zone_start"]
         in_separation_zone = separation_zone_start <= ball_y < paddle_zone_start and ball_vel_y > 0
 
-        # КРИТИЧНО: Устанавливаем цель раньше, когда мяч еще далеко
-        # Это дает больше времени на движение к цели
-        # УВЕЛИЧЕНО с 100px до 200px для более ранней реакции
-        early_zone_start = separation_zone_start - 200  # На 200px раньше зоны разделения
+        # ✅ АДАПТИВНОЕ РАННЕЕ ПРЕДСКАЗАНИЕ: Разные пороги для разных скоростей
+        # Это дает больше времени на движение для высоких скоростей,
+        # но снижает риск неточного предсказания для низких скоростей
+        ball_speed = abs(ball_vel_y) if ball_vel_y > 0 else 0
+        early_zone_start = self._get_adaptive_early_zone_start(ball_speed, separation_zone_start)
         in_early_zone = early_zone_start <= ball_y < separation_zone_start and ball_vel_y > 0
         in_target_zone = in_separation_zone or in_early_zone
 
