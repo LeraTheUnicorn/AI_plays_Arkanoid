@@ -3,106 +3,179 @@
 
 
 import os
+import sys
+
+# Исправление для запуска файла напрямую: добавляем корневую директорию проекта в sys.path
+# Это должно быть ПЕРЕД всеми относительными импортами
+if __name__ == "__main__":
+    # Получаем путь к директории, содержащей этот файл
+    current_file = os.path.abspath(__file__)
+    current_dir = os.path.dirname(current_file)
+    # Поднимаемся на один уровень вверх: game -> project_root
+    project_root = os.path.dirname(current_dir)
+    if project_root not in sys.path:
+        sys.path.insert(0, project_root)
+
 import warnings
 from contextlib import contextmanager
 from typing import Generator
 
-# Импортируем утилиты из модуля
-from .game_utils import (
-    suppress_pkg_resources_warnings,
-    resource_path,
-    is_valid_player_name_char,
-    build_bricks,
-    create_ai_player,
-)
+# Импортируем утилиты из модуля (с поддержкой как относительных, так и абсолютных импортов)
+try:
+    from .game_utils import (
+        suppress_pkg_resources_warnings,
+        resource_path,
+        is_valid_player_name_char,
+        build_bricks,
+        create_ai_player,
+    )
+except ImportError:
+    from game.game_utils import (
+        suppress_pkg_resources_warnings,
+        resource_path,
+        is_valid_player_name_char,
+        build_bricks,
+        create_ai_player,
+    )
 
 # Импортируем UI функции из модуля
-from .game_ui import (
-    show_highscores,
-    trigger_instant_victory,
-    show_victory_splash,
-    show_game_results,
-    show_settings_window,
-)
+try:
+    from .game_ui import (
+        show_highscores,
+        trigger_instant_victory,
+        show_victory_splash,
+        show_game_results,
+        show_settings_window,
+    )
+except ImportError:
+    from game.game_ui import (
+        show_highscores,
+        trigger_instant_victory,
+        show_victory_splash,
+        show_game_results,
+        show_settings_window,
+    )
 
 # Примечание: функции из game_main_helpers больше не используются,
 # так как они заменены на модули game_loop_*
 
 # Импортируем функции инициализации игры
-from .game_loop_initialization import (
-    initialize_pygame,
-    initialize_managers,
-    load_background_music,
-    initialize_game_objects,
-    initialize_game_variables,
-    create_ai_player_system,
-    setup_ai_player_for_training,
-    start_background_music,
-    save_training_data_on_exit,
-    finalize_game_setup,
-)
+try:
+    from .game_loop_initialization import (
+        initialize_pygame,
+        initialize_managers,
+        load_background_music,
+        initialize_game_objects,
+        initialize_game_variables,
+        create_ai_player_system,
+        setup_ai_player_for_training,
+        start_background_music,
+        save_training_data_on_exit,
+        finalize_game_setup,
+    )
+except ImportError:
+    from game.game_loop_initialization import (
+        initialize_pygame,
+        initialize_managers,
+        load_background_music,
+        initialize_game_objects,
+        initialize_game_variables,
+        create_ai_player_system,
+        setup_ai_player_for_training,
+        start_background_music,
+        save_training_data_on_exit,
+        finalize_game_setup,
+    )
 
 # Импортируем функции обработки событий
-from .game_loop_events import (
-    process_keyboard_events,
-    process_restart_key,
-    apply_game_restart,
-)
+try:
+    from .game_loop_events import (
+        process_keyboard_events,
+        process_restart_key,
+    )
+except ImportError:
+    from game.game_loop_events import (
+        process_keyboard_events,
+        process_restart_key,
+    )
 
 # Импортируем функции физики и столкновений
-from .game_loop_physics import (
-    update_ball_physics,
-    check_paddle_collisions,
-    handle_paddle_top_bounce,
-    handle_ball_stuck,
-    check_brick_collisions,
-    handle_ball_loss,
-    handle_game_restart_training,
-    handle_paddle_side_collision,
-    handle_ball_out_of_bounds,
-    handle_game_restart_manual,
-    handle_victory_manual,
-    handle_all_lives_lost_after_ball_loss,
-    apply_restart_result,
-    handle_game_over_manual,
-    position_ball_on_paddle,
-    handle_victory_check,
-    process_ball_physics_and_collisions,
-)
+try:
+    from .game_loop_physics import (
+        update_ball_physics,
+        check_paddle_collisions,
+        handle_paddle_top_bounce,
+        handle_ball_stuck,
+        check_brick_collisions,
+        handle_ball_loss,
+        handle_game_restart_training,
+        handle_paddle_side_collision,
+        handle_game_restart_manual,
+        handle_victory_manual,
+        handle_all_lives_lost_after_ball_loss,
+        apply_restart_result,
+        handle_game_over_manual,
+        position_ball_on_paddle,
+        handle_victory_check,
+        process_ball_physics_and_collisions,
+    )
+except ImportError:
+    from game.game_loop_physics import (
+        update_ball_physics,
+        check_paddle_collisions,
+        handle_paddle_top_bounce,
+        handle_ball_stuck,
+        check_brick_collisions,
+        handle_ball_loss,
+        handle_game_restart_training,
+        handle_paddle_side_collision,
+        handle_game_restart_manual,
+        handle_victory_manual,
+        handle_all_lives_lost_after_ball_loss,
+        apply_restart_result,
+        handle_game_over_manual,
+        position_ball_on_paddle,
+        handle_victory_check,
+        process_ball_physics_and_collisions,
+    )
 
 # Импортируем функции отрисовки
-from .game_loop_rendering import (
-    render_game_frame,
-)
+try:
+    from .game_loop_rendering import (
+        render_game_frame,
+    )
+except ImportError:
+    from game.game_loop_rendering import (
+        render_game_frame,
+    )
 
 # Импортируем функции логики AI
-from .game_loop_ai import (
-    update_ai_logic,
-    update_ai_paddle_movement,
-    calculate_paddle_speed_with_bricks,
-    initialize_ai_before_game_loop,
-    apply_paddle_movement,
-    process_paddle_control,
-)
+try:
+    from .game_loop_ai import (
+        update_ai_logic,
+        update_ai_paddle_movement,
+        calculate_paddle_speed_with_bricks,
+        initialize_ai_before_game_loop,
+        apply_paddle_movement,
+        process_paddle_control,
+    )
+except ImportError:
+    from game.game_loop_ai import (
+        update_ai_logic,
+        update_ai_paddle_movement,
+        calculate_paddle_speed_with_bricks,
+        initialize_ai_before_game_loop,
+        apply_paddle_movement,
+        process_paddle_control,
+    )
 
 os.environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "1"  # Скрыть сообщение поддержки pygame
 
 import random
 import time
 import numpy as np
-import sys
 from dataclasses import dataclass, field
 from typing import List, Tuple, Optional, Any
-
-# Исправление для запуска файла напрямую: добавляем корневую директорию проекта в sys.path
-if __name__ == "__main__":
-    # Получаем путь к директории, содержащей этот файл
-    current_file = os.path.abspath(__file__)
-    current_dir = os.path.dirname(current_file)
-    # Поднимаемся на два уровня вверх: src/game -> src -> project_root
-    project_root = os.path.dirname(os.path.dirname(current_dir))
-    if project_root not in sys.path:
-        sys.path.insert(0, project_root)
 
 # КРИТИЧНО: Настраиваем логирование ПЕРЕД импортом всех модулей
 # Это гарантирует, что ВСЕ модули используют централизованную конфигурацию
@@ -217,12 +290,20 @@ except ImportError:
 # build_bricks импортируется из game_utils
 
 # Импортируем функции отрисовки из модуля
-from .game_rendering import (
-    draw_bricks,
-    draw_hud,
-    render_colored_hint,
-    draw_start_hint,
-)
+try:
+    from .game_rendering import (
+        draw_bricks,
+        draw_hud,
+        render_colored_hint,
+        draw_start_hint,
+    )
+except ImportError:
+    from game.game_rendering import (
+        draw_bricks,
+        draw_hud,
+        render_colored_hint,
+        draw_start_hint,
+    )
 
 
 # show_settings_window теперь в game_ui.py
@@ -347,13 +428,12 @@ def main() -> None:
             position_ball_on_paddle(ball, paddle, game_started)
 
             # Обработка перезапуска после окончания игры используя модуль game_loop_events
-            restart_result = process_restart_key(
+            should_restart, new_paddle, new_ball, new_bricks, new_score, new_lives_left, new_game_over, new_game_started, new_ai_player, new_game_start_time = process_restart_key(
                 keys,
                 game_over,
                 settings_manager,
                 logger
             )
-            should_restart, new_paddle, new_ball, new_bricks, new_score, new_lives_left, new_game_over, new_game_started, new_ai_player, new_game_start_time = apply_game_restart(restart_result)
             if should_restart:
                 paddle, ball, bricks, score, lives_left, game_over, game_started, game_start_time, ai_player = apply_restart_result(
                     new_paddle, new_ball, new_bricks, new_score, new_lives_left, new_game_over, new_game_started, new_game_start_time, new_ai_player,

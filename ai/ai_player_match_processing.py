@@ -39,7 +39,12 @@ class AIPlayerMatchProcessingMixin:
 
         all_bricks_destroyed = bricks_destroyed >= 50
         time_penalty = 1.0 + (lives_lost * 0.2)
-        efficiency = bricks_destroyed / (time_taken * time_penalty)
+        # Исправление деления на ноль: если time_taken = 0, используем минимальное значение
+        if time_taken > 0:
+            efficiency = bricks_destroyed / (time_taken * time_penalty)
+        else:
+            # Если игра закончилась мгновенно (не должно происходить, но на всякий случай)
+            efficiency = float(bricks_destroyed) if bricks_destroyed > 0 else 0.0
 
         current_ball_speed = self.training_parameters["ball_speed"]
         current_paddle_mult = self.training_parameters["paddle_speed_multiplier"]

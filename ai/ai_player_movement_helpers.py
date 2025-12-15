@@ -11,6 +11,24 @@ from typing import Optional
 class AIPlayerMovementHelpersMixin:
     """Миксин для вспомогательных методов движения AIPlayer."""
 
+    def move_paddle_towards(self, current_x: int, paddle_speed: int) -> int:
+        """
+        Двигает платформу к оптимальной позиции.
+        
+        Args:
+            current_x: Текущая X-координата платформы.
+            paddle_speed: Базовая скорость движения платформы.
+            
+        Returns:
+            Смещение платформы (-1, 0, 1).
+        """
+        # Проверяем условия для движения
+        if not self._validate_movement_conditions(current_x, paddle_speed):
+            return self._fallback_movement(current_x)
+        
+        # Выполняем стратегию движения
+        return self._execute_movement_strategy(current_x, paddle_speed)
+
     def _execute_movement_strategy(self, current_x: int, paddle_speed: int) -> int:
         """
         Выполняет стратегию движения платформы.
@@ -22,6 +40,11 @@ class AIPlayerMovementHelpersMixin:
         Returns:
             Смещение платформы (-1, 0, 1).
         """
+        # Проверяем, что стратегия инициализирована
+        if self.paddle_movement_strategy is None:
+            self._logger.warning("[AI_PLAYER_MOVE] paddle_movement_strategy не инициализирован, используем fallback")
+            return self._fallback_movement(current_x)
+        
         # ТЕСТ: Логируем вызов стратегии
         self._logger.debug(f"[AI_PLAYER_MOVE] Вызываем paddle_movement_strategy.move_paddle_towards: current_x={current_x}, paddle_speed={paddle_speed}")
         # Обновляем current_game_state в стратегии

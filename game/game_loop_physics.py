@@ -1884,26 +1884,6 @@ def process_ball_physics_and_collisions(
     if new_paddle is not None:
         return False, new_paddle, new_ball, new_bricks, new_score, new_lives_left, new_game_over, new_game_started, new_game_start_time, new_ai_player, new_training_rounds
 
-    # Обрабатываем потерю мяча за границей экрана используя модуль game_loop_physics
-    should_continue, lives_left, game_over, new_paddle, new_ball, new_bricks, new_score, new_ai_player, new_game_start_time, game_started = handle_ball_out_of_bounds(
-        ball,
-        paddle,
-        lives_left,
-        game_over,
-        bricks,
-        score,
-        game_start_time,
-        frame_counter,
-        training_mode,
-        ai_player,
-        logger,
-        settings_manager,
-    )
-    if new_paddle is not None:
-        return False, new_paddle, new_ball, new_bricks, new_score, lives_left, game_over, game_started, new_game_start_time, new_ai_player, None
-    if not should_continue:
-        return False, None, None, None, None, lives_left, game_over, game_started, None, None, None
-    
     # В обычном режиме обрабатываем окончание игры используя модуль game_loop_physics
     if game_over and not training_mode:
         should_exit, new_paddle, new_ball, new_bricks, new_score, new_lives_left, new_game_over, new_game_started, new_game_start_time, new_ai_player = handle_game_over_manual(
