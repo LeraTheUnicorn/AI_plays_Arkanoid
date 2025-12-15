@@ -1510,3 +1510,21 @@ def handle_game_over_manual(
         return False, new_paddle, new_ball, new_bricks, new_score, new_lives_left, new_game_over, new_game_started, new_game_start_time, new_ai_player
     
     return False, None, None, None, None, None, game_over, None, None, None
+
+
+def position_ball_on_paddle(
+    ball: Ball,
+    paddle: Paddle,
+    game_started: bool,
+) -> None:
+    """
+    Позиционирует мяч на платформе, если игра не запущена.
+    
+    Args:
+        ball: Объект мяча
+        paddle: Объект платформы
+        game_started: Флаг запуска игры
+    """
+    if not game_started:
+        ball.rect.center = paddle.rect.midtop
+        ball.rect.y -= BALL_SIZE

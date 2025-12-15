@@ -65,6 +65,7 @@ from .game_loop_physics import (
     handle_all_lives_lost_after_ball_loss,
     apply_restart_result,
     handle_game_over_manual,
+    position_ball_on_paddle,
 )
 
 # Импортируем функции отрисовки
@@ -338,10 +339,8 @@ def main() -> None:
             if frame_counter <= 3:
                 logger.debug(f"[AI DEBUG] После обработки событий, game_started={game_started}, game_over={game_over}, training_mode={training_mode}")
 
-            # В режиме обучения игра уже запущена, мяч всегда на платформе до старта
-            if not game_started:
-                ball.rect.center = paddle.rect.midtop
-                ball.rect.y -= BALL_SIZE
+            # Позиционируем мяч на платформе используя модуль game_loop_physics
+            position_ball_on_paddle(ball, paddle, game_started)
 
             # Обработка перезапуска после окончания игры используя модуль game_loop_events
             restart_result = process_restart_key(
