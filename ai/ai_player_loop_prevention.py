@@ -46,20 +46,38 @@ class AIPlayerLoopPreventionMixin:
             if len(set(recent_positions[-8:])) <= 2:
                 return True
 
-        # Вертикальные траектории мяча
-        if len(trajectory_history) >= 5 and self.current_game_state:
-            recent_trajectories = trajectory_history[-5:]
+        # ✅ ИСПРАВЛЕНО: Улучшена детекция вертикальных траекторий мяча
+        # Уменьшен порог с 5 до 3 траекторий для более раннего обнаружения зацикливания
+        if len(trajectory_history) >= 3 and self.current_game_state:
+            recent_trajectories = trajectory_history[-3:]
             vertical_count = 0
+            ball_vel_x = (
+                self.current_game_state.ball_velocity.x
+                if hasattr(self.current_game_state, "ball_velocity")
+                else None
+            )
             for traj in recent_trajectories:
                 prev_ball_x = traj.get("ball_x")
                 if prev_ball_x is None:
                     continue
                 current_ball_x = self.current_game_state.ball_position.x
-                if abs(current_ball_x - prev_ball_x) < 3:
+                # Проверяем не только X координату, но и скорость по X
+                # Если vel_x близок к 0, это вертикальный отскок
+                is_vertical = abs(current_ball_x - prev_ball_x) < 3
+                if ball_vel_x is not None:
+                    # Дополнительная проверка: vel_x должен быть близок к 0 для вертикального отскока
+                    is_vertical = is_vertical and abs(ball_vel_x) < 5
+                if is_vertical:
                     vertical_count += 1
-            # 4 из 5 почти вертикальные — считаем зацикливанием
-            if vertical_count >= 4:
+            # 2 из 3 почти вертикальные — считаем зацикливанием (раньше было 4 из 5)
+            if vertical_count >= 2:
                 return True
+        
+        # ✅ ИСПРАВЛЕНО: Добавлена проверка счетчика отскоков от потолка
+        # Если было 2+ отскока от потолка без попадания в кубики - это зацикливание
+        ceiling_bounces = self.empty_bounce_tracker.get("ceiling_bounces", 0) or 0
+        if ceiling_bounces >= 2:
+            return True
 
         return False
     
@@ -81,12 +99,24 @@ class AIPlayerLoopPreventionMixin:
         )
         new_strategy = strategies[self.loop_prevention_system["current_strategy_index"]]
 
+        # ✅ ИСПРАВЛЕНО: Добавлено логирование при срабатывании защиты от зацикливания
+        ceiling_bounces = self.empty_bounce_tracker.get("ceiling_bounces", 0) or 0
+        if hasattr(self, '_logger'):
+            self._logger.warning(
+                f"[LOOP PREVENTION] Обнаружено зацикливание! Меняем стратегию на: {new_strategy}, "
+                f"ceiling_bounces={ceiling_bounces}"
+            )
+
         # Кулдаун и сброс истории
         self.loop_prevention_system["strategy_change_cooldown"] = 10
         
         self.loop_prevention_system["movement_history"] = []
         self.loop_prevention_system["position_history"] = []
         self.loop_prevention_system["trajectory_history"] = []
+        
+        # ✅ ИСПРАВЛЕНО: Сбрасываем счетчик отскоков от потолка при смене стратегии
+        self.empty_bounce_tracker["ceiling_bounces"] = 0
+        self.empty_bounce_tracker["consecutive_empty_bounces"] = 0
 
     def _apply_alternative_strategy(self, optimal_position: int) -> int:
         """
@@ -283,19 +313,26 @@ class AIPlayerLoopPreventionMixin:
         paddle_zone_start = self.separation_zone_tracker.paddle_zone_start
         in_separation_zone = separation_zone_start <= ball_y < paddle_zone_start and ball_vel_y > 0
         
-        # КРИТИЧНО: Если целевая позиция установлена, используем увеличенный допуск
-        # Когда мяч движется точно вниз по известной траектории, платформа должна оставаться на месте
+        # КРИТИЧНО: Если целевая позиция установлена, используем уменьшенный допуск для точности
+        # Когда мяч движется точно вниз по известной траектории, платформа должна точно позиционироваться
         if self.separation_zone_tracker.target_position_set:
-            # Увеличенный допуск для предотвращения дрожания в зоне разделения
-            effective_min_distance = 30  # Увеличенный допуск 30 пикселей для стабильности
+            # ✅ ИСПРАВЛЕНО: Уменьшен допуск с 30px до 18px для более точного позиционирования
+            # Это предотвращает потерю мяча из-за слишком ранней остановки платформы
+            effective_min_distance = 18  # Уменьшенный допуск 18 пикселей для точности
         else:
             # Если есть штраф за дрожание, увеличиваем порог для движения
             penalty = self.smoothness_system["smoothness_penalty"]
             effective_min_distance = self.smoothness_system["min_movement_distance"] * (
                 1 + penalty
             )
-
-        if distance < effective_min_distance:
+        
+        # ✅ ИСПРАВЛЕНО: Добавлен приоритет движения к мячу, когда мяч близко к платформе
+        # Если мяч очень близко к платформе (y > 500), игнорируем допуск и двигаемся к мячу
+        ball_is_close = ball_y > 500  # Мяч близко к платформе
+        if ball_is_close and distance > 5:  # Если есть хоть какое-то расстояние, двигаемся
+            # Приоритет движения к мячу - игнорируем допуск для предотвращения потери мяча
+            pass  # Продолжаем движение ниже
+        elif distance < effective_min_distance:
             # Не двигаемся, если расстояние слишком мало (с учетом штрафа или зоны разделения)
             # КРИТИЧНО: Это предотвращает уход платформы с траектории мяча
             return 0

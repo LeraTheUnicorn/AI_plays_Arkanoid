@@ -68,6 +68,22 @@ class AIPlayerBallTrackingMixin:
         vel_y = game_state.ball_velocity.y
 
         if ball_y < 30 and vel_y > 0:
+            # ✅ ИСПРАВЛЕНО: Проверяем зацикливание при отскоках от потолка
+            ceiling_bounces = self.empty_bounce_tracker.get("ceiling_bounces", 0) or 0
+            if ceiling_bounces >= 2:
+                # Обнаружено зацикливание - используем альтернативную стратегию
+                if hasattr(self, '_logger'):
+                    self._logger.warning(
+                        f"[CEILING BOUNCE] Обнаружено зацикливание при отскоках от потолка "
+                        f"(ceiling_bounces={ceiling_bounces}), используем альтернативную стратегию"
+                    )
+                # Принудительно меняем стратегию
+                self._change_strategy_if_looping()
+                # Используем альтернативную стратегию для выхода из зацикливания
+                optimal_x = int(self._track_ball_position())
+                optimal_x = self._apply_alternative_strategy(optimal_x)
+                return optimal_x
+            
             # Мяч только что отскочил от потолка
             if abs(vel_x) < 2:
                 # Почти вертикальный отскок — смещаемся в сторону средней позиции кубиков

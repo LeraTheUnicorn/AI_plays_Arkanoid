@@ -49,8 +49,15 @@ class AIPlayerMovementCorePart3Mixin:
         optimal_x = self.get_optimal_paddle_position()
         # get_optimal_paddle_position() всегда возвращает int, не None
         
+        # ✅ ИСПРАВЛЕНО: Проверяем зацикливание всегда, не только когда целевая позиция не установлена
+        # Особенно важно проверять при отскоках от потолка (ceiling_bounces >= 2)
+        ceiling_bounces = self.empty_bounce_tracker.get("ceiling_bounces", 0) or 0
+        if ceiling_bounces >= 2:
+            # Принудительно меняем стратегию при зацикливании отскоков от потолка
+            self._change_strategy_if_looping()
+        
         # Проверяем зацикливание и при необходимости меняем стратегию
-        # НО ТОЛЬКО если целевая позиция НЕ установлена
+        # НО ТОЛЬКО если целевая позиция НЕ установлена (для обычных случаев)
         if not self.separation_zone_tracker.target_position_set:
             self._change_strategy_if_looping()
             if self.loop_prevention_system["strategy_change_cooldown"] == 0:

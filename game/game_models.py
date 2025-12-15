@@ -128,8 +128,21 @@ class Ball:
         self.rect.centery = paddle_rect.top - ball_radius - 5
         # ✅ Рандомизация направления мяча (если включена)
         if RANDOM_BALL_START_DIRECTION:
-            # Генерируем случайный угол в градусах от -50 до +50
-            angle_degrees = random.uniform(-50, 50)
+            # ✅ ИСПРАВЛЕНО: Используем секторы 30-60° влево или вправо, исключая почти вертикальные углы
+            # Сектор 1: от -60° до -30° (влево)
+            # Сектор 2: от +30° до +60° (вправо)
+            # Исключен: от -30° до +30° (почти вертикально)
+            
+            # Выбираем случайно левый или правый сектор
+            use_left_sector = random.choice([True, False])
+            
+            if use_left_sector:
+                # Левый сектор: от -60° до -30°
+                angle_degrees = random.uniform(-60, -30)
+            else:
+                # Правый сектор: от +30° до +60°
+                angle_degrees = random.uniform(30, 60)
+            
             angle_radians = math.radians(angle_degrees)
             speed = self.current_speed
             # Вычисляем компоненты скорости
