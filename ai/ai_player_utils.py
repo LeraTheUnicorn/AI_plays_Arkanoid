@@ -37,6 +37,8 @@ class AIPlayerUtilsMixin:
                 logger=self._logger,
                 log_paddle_movement_func=self._log_paddle_movement,
                 should_log_debug_func=self._should_log_debug,
+                trajectory_predictor=self.trajectory_predictor,  # ✅ ДОБАВЛЕНО: Передаем trajectory_predictor
+                predict_exact_landing_position_func=self._predict_exact_landing_position,  # ✅ ДОБАВЛЕНО: Передаем функцию предсказания
                 current_game_state=self.current_game_state,
             )
         

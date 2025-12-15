@@ -46,18 +46,62 @@ class AIPlayerPositionOptimizationPart1Mixin:
 
             # Рассчитываем зоны
             zones = self.zone_handler.calculate_zones()
+            separation_zone_start = zones["separation_zone_start"]
+            paddle_zone_start = zones["paddle_zone_start"]
+
+            # ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ (Задача 1): Если мяч в зоне разделения, вычисляем предсказанную позицию приземления
+            # Это исправляет проблему, когда get_optimal_paddle_position() возвращает текущую позицию платформы
+            # вместо предсказанной позиции приземления
+            in_separation_zone = separation_zone_start <= ball_y < paddle_zone_start and ball_vel_y > 0
+
+            if in_separation_zone:
+                # КРИТИЧНО: Вычисляем предсказанную позицию приземления, а не возвращаем текущую позицию
+                intersection_point = self.trajectory_predictor.predict_paddle_intersection(
+                    self.current_game_state,
+                    self.current_game_state.paddle_position.y
+                )
+                
+                if intersection_point is None:
+                    # Если предсказание невозможно, используем fallback
+                    landing_x = self._predict_exact_landing_position()
+                else:
+                    landing_x = intersection_point.x
+                
+                # Обновляем отслеживание позиции мяча при расчете цели
+                if not hasattr(self, '_last_target_ball_x'):
+                    self._last_target_ball_x = None
+                self._last_target_ball_x = ball_x
+                
+                # Возвращаем вычисленную позицию, а не текущую позицию платформы
+                calculated_position = self._calculate_target_position(landing_x, ball_y, zones)
+                self._logger.debug(
+                    f"[OPTIMAL POSITION] Мяч в зоне разделения (y={ball_y:.1f}), "
+                    f"вычислена предсказанная позиция приземления: {landing_x:.1f}px, "
+                    f"целевая позиция: {calculated_position:.1f}px"
+                )
+                if self.performance_monitor and start_time_monitor:
+                    duration = time.time() - start_time_monitor
+                    self.performance_monitor.record_metric("get_optimal_paddle_position", duration)
+                return calculated_position
 
             # Если мяч в зоне кубиков - платформа НЕ должна двигаться
-            if ball_y < zones["separation_zone_start"]:
-                return self.zone_handler.handle_bricks_zone(ball_y, self.current_game_state)
+            if ball_y < separation_zone_start:
+                result = self.zone_handler.handle_bricks_zone(ball_y, self.current_game_state)
+                if self.performance_monitor and start_time_monitor:
+                    duration = time.time() - start_time_monitor
+                    self.performance_monitor.record_metric("get_optimal_paddle_position", duration)
+                return result
             
-            # Обрабатываем зону разделения
+            # Обрабатываем зону разделения (для других случаев, когда мяч не в зоне разделения)
             separation_result = self.zone_handler.handle_separation_zone(ball_y, ball_vel_y, zones, self.current_game_state)
             if separation_result is not None:
+                if self.performance_monitor and start_time_monitor:
+                    duration = time.time() - start_time_monitor
+                    self.performance_monitor.record_metric("get_optimal_paddle_position", duration)
                 return separation_result
 
             # Мяч ниже кубиков и движется вниз/в разделительной зоне — считаем прицельную позицию
-            if ball_y < zones["paddle_zone_start"]:
+            if ball_y < paddle_zone_start:
                 # КРИТИЧНО: Используем predict_paddle_intersection для правильной обработки отскоков
                 # Это учитывает отскоки от верхней границы и блоков
                 intersection_point = self.trajectory_predictor.predict_paddle_intersection(

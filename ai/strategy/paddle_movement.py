@@ -35,6 +35,8 @@ class PaddleMovementStrategy:
         logger: Any,
         log_paddle_movement_func: Any,
         should_log_debug_func: Any,
+        trajectory_predictor: Any = None,  # ✅ ДОБАВЛЕНО: Для доступа к предсказанию траектории
+        predict_exact_landing_position_func: Any = None,  # ✅ ДОБАВЛЕНО: Функция для предсказания позиции приземления
         current_game_state: Optional[GameState] = None,
     ):
         """
@@ -73,6 +75,8 @@ class PaddleMovementStrategy:
         self._logger = logger
         self._log_paddle_movement = log_paddle_movement_func
         self._should_log_debug = should_log_debug_func
+        self.trajectory_predictor = trajectory_predictor  # ✅ ДОБАВЛЕНО: Для доступа к предсказанию траектории
+        self._predict_exact_landing_position = predict_exact_landing_position_func  # ✅ ДОБАВЛЕНО: Функция для предсказания позиции приземления
         self.current_game_state = current_game_state
         
         # КРИТИЧНО: Отслеживание предыдущей позиции и скорости мяча для обнаружения отскоков от блоков
@@ -496,6 +500,36 @@ class PaddleMovementStrategy:
         if current_target is None:
             return None
 
+        # ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ (Задача 3): Проверяем, что целевая позиция соответствует предсказанной позиции приземления
+        # Если целевая позиция отличается от предсказанной более чем на 50px, пересчитываем целевую позицию
+        if self.current_game_state:
+            intersection_point = self.trajectory_predictor.predict_paddle_intersection(
+                self.current_game_state,
+                self.current_game_state.paddle_position.y
+            )
+            
+            if intersection_point is None:
+                predicted_landing_x = self._predict_exact_landing_position()
+            else:
+                predicted_landing_x = intersection_point.x
+            
+            # Если целевая позиция отличается от предсказанной более чем на 50px - пересчитываем
+            if abs(current_target - predicted_landing_x) > 50:
+                self._logger.debug(
+                    f"[FIXED TARGET] Целевая позиция ({current_target:.1f}px) не соответствует "
+                    f"предсказанной позиции приземления ({predicted_landing_x:.1f}px, разница: {abs(current_target - predicted_landing_x):.1f}px), пересчитываем"
+                )
+                # Пересчитываем целевую позицию
+                optimal_x = self.get_optimal_paddle_position()
+                if optimal_x is not None and abs(optimal_x - predicted_landing_x) < 50:
+                    # Новая позиция соответствует предсказанию - обновляем целевую позицию
+                    self.target_tracker.set_target_position(int(optimal_x), "correction", self._logger, current_x)
+                    current_target = int(optimal_x)
+                    self._logger.debug(
+                        f"[FIXED TARGET] Целевая позиция обновлена: {current_target:.1f}px "
+                        f"(соответствует предсказанию: {predicted_landing_x:.1f}px)"
+                    )
+
         # Проверяем отскоки от стены и кирпичей
         if self.current_game_state:
             current_vel_x = (
@@ -687,22 +721,32 @@ class PaddleMovementStrategy:
                 )
                 return movement
         elif distance_to_target <= tolerance:
-            # ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Останавливаемся ТОЛЬКО если мяч очень близко И мы достигли цели
-            if should_continue_moving and time_to_paddle > 0:
-                # Мяч еще не достиг платформы - продолжаем движение даже при малом расстоянии
-                movement = 1 if target_pos > current_x else (-1 if target_pos < current_x else 0)
-                if movement != 0:
-                    self._logger.debug(
-                        f"[FIXED TARGET] Мяч еще не достиг платформы (time_to_paddle={time_to_paddle:.1f} frames), "
-                        f"продолжаем движение: {movement}, distance={distance_to_target:.1f}px"
-                    )
-                    return movement
-            # Достигли цели И мяч близко - останавливаемся
-            self._logger.debug(
-                f"[FIXED TARGET] Достигли цели! distance={distance_to_target:.1f}px <= tolerance={tolerance}, "
-                f"time_to_paddle={time_to_paddle:.1f} frames, возвращаем 0 (стоп)"
-            )
-            return 0
+            # ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ (Задача 4): Останавливаемся ТОЛЬКО если мяч достиг платформы ИЛИ очень близко
+            if ball_y >= paddle_y:
+                # Мяч достиг платформы - останавливаемся
+                self._logger.debug(
+                    f"[FIXED TARGET] Мяч достиг платформы (ball_y={ball_y:.1f} >= paddle_y={paddle_y:.1f}), "
+                    f"возвращаем 0 (стоп)"
+                )
+                return 0
+            
+            if time_to_paddle < 1 and distance_to_target <= tolerance:
+                # Мяч очень близко И платформа близко к цели - останавливаемся
+                self._logger.debug(
+                    f"[FIXED TARGET] Мяч очень близко (time_to_paddle={time_to_paddle:.1f} < 1) И "
+                    f"платформа близко к цели (distance={distance_to_target:.1f}px <= tolerance={tolerance}), "
+                    f"возвращаем 0 (стоп)"
+                )
+                return 0
+            
+            # Мяч еще не достиг платформы - продолжаем движение
+            movement = 1 if target_pos > current_x else (-1 if target_pos < current_x else 0)
+            if movement != 0:
+                self._logger.debug(
+                    f"[FIXED TARGET] Мяч еще не достиг платформы (time_to_paddle={time_to_paddle:.1f} frames), "
+                    f"продолжаем движение: {movement}, distance={distance_to_target:.1f}px"
+                )
+                return movement
         else:
             # В буферной зоне - проверяем, нужно ли продолжать движение
             if should_continue_moving and time_to_paddle > 0:
@@ -877,6 +921,28 @@ class PaddleMovementStrategy:
         if optimal_x is None:
             return self._fallback_movement(current_x)
 
+        # ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ (Задача 2): Проверяем, что optimal_x не равен текущей позиции платформы
+        # Если равен - это означает, что get_optimal_paddle_position() вернул текущую позицию вместо предсказанной
+        if abs(optimal_x - current_x) < 1.0:
+            # optimal_x совпадает с current_x - вычисляем предсказанную позицию приземления напрямую
+            if self.current_game_state:
+                intersection_point = self.trajectory_predictor.predict_paddle_intersection(
+                    self.current_game_state,
+                    self.current_game_state.paddle_position.y
+                )
+                
+                if intersection_point is None:
+                    landing_x = self._predict_exact_landing_position()
+                else:
+                    landing_x = intersection_point.x
+                
+                # Используем предсказанную позицию приземления вместо текущей позиции платформы
+                optimal_x = int(landing_x)
+                self._logger.debug(
+                    f"[NEW TARGET] get_optimal_paddle_position вернул текущую позицию ({current_x}), "
+                    f"вычисляем предсказанную позицию приземления: {optimal_x}"
+                )
+
         # КРИТИЧНО: Вычисляем time_to_paddle для проверки отскока от стен
         distance_to_paddle_y = paddle_y - ball_y if ball_y < paddle_y else 0
         time_to_paddle = distance_to_paddle_y / ball_vel_y if ball_vel_y > 0 and distance_to_paddle_y > 0 else float('inf')
@@ -931,7 +997,21 @@ class PaddleMovementStrategy:
         distance_to_target = abs(current_x - optimal_x)
         MAX_TARGET_DISTANCE = 250  # ✅ ИСПРАВЛЕНО: Увеличено до 250px для большей гибкости
 
-        # ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Проверяем достижимость только если мяч действительно летит к платформе
+        # ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ (Задача 6): Проверяем достижимость с учетом предсказанной позиции приземления
+        # Сначала вычисляем предсказанную позицию приземления для сравнения
+        predicted_landing_x = None
+        if self.current_game_state:
+            intersection_point = self.trajectory_predictor.predict_paddle_intersection(
+                self.current_game_state,
+                self.current_game_state.paddle_position.y
+            )
+            
+            if intersection_point is None:
+                predicted_landing_x = self._predict_exact_landing_position()
+            else:
+                predicted_landing_x = intersection_point.x
+        
+        # Проверяем достижимость только если мяч действительно летит к платформе
         if time_to_paddle != float('inf') and time_to_paddle > 0 and distance_to_target > 0:
             # КРИТИЧНО: paddle_speed уже в px/кадр
             frames_available = max(1, int(time_to_paddle))
@@ -941,6 +1021,19 @@ class PaddleMovementStrategy:
             # Учитываем также, что платформа может начать движение не сразу
             safety_factor = 0.90  # 90% от доступного времени
             max_reachable_distance = paddle_speed * frames_available * safety_factor
+            
+            # ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ (Задача 6): Если цель недостижима, но предсказанная позиция приземления достижима, используем предсказанную позицию
+            if predicted_landing_x is not None:
+                distance_to_predicted = abs(current_x - predicted_landing_x)
+                if distance_to_predicted <= max_reachable_distance and distance_to_target > max_reachable_distance:
+                    # Предсказанная позиция достижима, а текущая цель нет - используем предсказанную позицию
+                    self._logger.debug(
+                        f"[NEW TARGET] Цель недостижима ({distance_to_target:.1f}px > {max_reachable_distance:.1f}px), "
+                        f"но предсказанная позиция приземления достижима ({distance_to_predicted:.1f}px <= {max_reachable_distance:.1f}px), "
+                        f"используем предсказанную позицию: {predicted_landing_x:.1f}px"
+                    )
+                    optimal_x = int(predicted_landing_x)
+                    distance_to_target = distance_to_predicted
             
             # ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Если цель слишком далеко, корректируем её
             # НО стараемся сохранить направление к оптимальной позиции
@@ -1016,11 +1109,38 @@ class PaddleMovementStrategy:
         target_pos = int(optimal_x)
         distance_to_target = abs(current_x - target_pos)
 
-        # КРИТИЧНО: Логируем установку новой цели для диагностики
-        self._logger.debug(
-            f"[NEW TARGET] Установлена новая цель: current_x={current_x:.1f}, target_pos={target_pos:.1f}, "
-            f"distance={distance_to_target:.1f}px, ball_y={ball_y:.1f}, ball_vel_y={ball_vel_y:.1f}, paddle_speed={paddle_speed}"
-        )
+        # ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ (Задача 5): Добавляем логирование предсказанной позиции приземления для диагностики
+        if self.current_game_state:
+            intersection_point = self.trajectory_predictor.predict_paddle_intersection(
+                self.current_game_state,
+                self.current_game_state.paddle_position.y
+            )
+            
+            if intersection_point is None:
+                predicted_landing_x = self._predict_exact_landing_position()
+            else:
+                predicted_landing_x = intersection_point.x
+            
+            # Логируем предсказанную позицию и сравнение с целевой позицией
+            position_diff = abs(target_pos - predicted_landing_x)
+            self._logger.debug(
+                f"[NEW TARGET] Установлена новая цель: current_x={current_x:.1f}, target_pos={target_pos:.1f}, "
+                f"predicted_landing_x={predicted_landing_x:.1f}, position_diff={position_diff:.1f}px, "
+                f"distance={distance_to_target:.1f}px, ball_y={ball_y:.1f}, ball_vel_y={ball_vel_y:.1f}, paddle_speed={paddle_speed}"
+            )
+            
+            # Предупреждение, если целевая позиция сильно отличается от предсказанной
+            if position_diff > 50:
+                self._logger.warning(
+                    f"[NEW TARGET] ⚠️ Целевая позиция ({target_pos:.1f}px) сильно отличается от "
+                    f"предсказанной позиции приземления ({predicted_landing_x:.1f}px, разница: {position_diff:.1f}px)"
+                )
+        else:
+            # КРИТИЧНО: Логируем установку новой цели для диагностики (fallback)
+            self._logger.debug(
+                f"[NEW TARGET] Установлена новая цель: current_x={current_x:.1f}, target_pos={target_pos:.1f}, "
+                f"distance={distance_to_target:.1f}px, ball_y={ball_y:.1f}, ball_vel_y={ball_vel_y:.1f}, paddle_speed={paddle_speed}"
+            )
 
         if target_pos == current_x:
             self._logger.debug(f"[NEW TARGET] Цель совпадает с текущей позицией, возвращаем 0")
