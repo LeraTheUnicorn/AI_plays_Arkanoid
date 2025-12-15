@@ -333,3 +333,4 @@ class AIPlayerMovementCorePart1Mixin:
         
         # Продолжаем обработку в следующей части метода
         return None
+

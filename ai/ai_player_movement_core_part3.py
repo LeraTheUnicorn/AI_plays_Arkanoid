@@ -263,3 +263,4 @@ class AIPlayerMovementCorePart3Mixin:
             duration = time.time() - start_time_monitor
             self.performance_monitor.record_metric("move_paddle_towards", duration)
         return movement
+

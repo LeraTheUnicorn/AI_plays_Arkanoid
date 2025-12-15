@@ -86,3 +86,6 @@ if __name__ == "__main__":
     # Запуск синхронного примера
     example_sync_usage()
 
+
+
+

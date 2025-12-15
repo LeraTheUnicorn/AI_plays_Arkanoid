@@ -12,3 +12,6 @@ export AI_ASYNC_MAX_WORKERS=2
 cd "$(dirname "$0")"
 python game/PyGameBall.py
 
+
+
+
