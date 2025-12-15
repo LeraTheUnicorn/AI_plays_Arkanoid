@@ -58,6 +58,7 @@ from .game_loop_physics import (
     handle_paddle_side_collision,
     handle_ball_out_of_bounds,
     handle_game_restart_manual,
+    handle_victory_manual,
 )
 
 # Импортируем функции отрисовки
@@ -784,51 +785,41 @@ def main() -> None:
                                 is_victory=True,
                             )
                         else:
-                            # Обычный режим - показываем экран результатов
-                            game_over = True
-                            # Рассчитываем время игры и сохраняем результат
-                            game_time_seconds = int(time.time() - game_start_time)
-
-                            # Показываем заставку победы только в обычном режиме (с вводом имени)
-                            # и если у игрока остались жизни (победа)
-                            if not training_mode and lives_left > 0:
-                                show_victory_splash(screen, duration_seconds=5.0)
-
-                            # В любом режиме показываем экран результатов
-                            sound_enabled, restart_game, exit_game = show_game_results(
+                            # Обычный режим - обрабатываем победу используя модуль game_loop_physics
+                            should_exit, new_paddle, new_ball, new_bricks, new_score, new_lives_left, new_game_over, new_game_started, new_game_start_time, new_ai_player = handle_victory_manual(
                                 screen,
                                 font,
                                 big_font,
                                 score,
                                 player_name,
-                                game_time_seconds,
+                                lives_left,
+                                game_start_time,
                                 highscore_manager,
                                 settings_manager,
                                 ball,
+                                paddle,
+                                bricks,
+                                game_over,
+                                game_started,
+                                show_victory_splash,
+                                show_game_results,
+                                create_ai_player,
+                                SCREEN_WIDTH,
+                                SCREEN_HEIGHT,
                             )
-
-                            # Если игрок хочет выйти из игры
-                            if exit_game:
-                                # Сохраняем данные обучения перед выходом
+                            if should_exit:
                                 pygame.quit()
                                 return
-
-                            # Обработка перезапуска
-                            if restart_game:
-                                # Перезапускаем игру используя модуль game_loop_physics
-                                paddle, ball, bricks, score, lives_left, game_over, game_started, game_start_time, ai_player = handle_game_restart_manual(
-                                    paddle,
-                                    ball,
-                                    bricks,
-                                    score,
-                                    lives_left,
-                                    game_over,
-                                    game_started,
-                                    settings_manager,
-                                    SCREEN_WIDTH,
-                                    SCREEN_HEIGHT,
-                                    create_ai_player,
-                                )
+                            if new_paddle is not None:
+                                paddle = new_paddle
+                                ball = new_ball
+                                bricks = new_bricks
+                                score = new_score
+                                lives_left = new_lives_left
+                                game_over = new_game_over
+                                game_started = new_game_started
+                                game_start_time = new_game_start_time
+                                ai_player = new_ai_player
 
             # Отрисовка игры используя модуль game_loop_rendering
             render_game_frame(

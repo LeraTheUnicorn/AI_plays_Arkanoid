@@ -1072,3 +1072,165 @@ def handle_paddle_side_collision(
             return False, new_lives_left, new_game_over, new_paddle, new_ball, new_bricks, new_score, ai_player, new_game_start_time
         else:
             return True, new_lives_left, new_game_over, None, None, None, None, None, None
+
+
+def handle_game_restart_manual(
+    paddle: Paddle,
+    ball: Ball,
+    bricks: list,
+    score: int,
+    lives_left: int,
+    game_over: bool,
+    game_started: bool,
+    settings_manager: Any,
+    screen_width: int,
+    screen_height: int,
+    create_ai_player_func: Any,
+) -> Tuple[Paddle, Ball, list, int, int, bool, bool, float, Optional[AIPlayer]]:
+    """
+    Обрабатывает перезапуск игры в обычном (ручном) режиме.
+    
+    Args:
+        paddle: Объект платформы
+        ball: Объект мяча
+        bricks: Список кирпичей
+        score: Текущий счет
+        lives_left: Количество жизней
+        game_over: Флаг окончания игры
+        game_started: Флаг запуска игры
+        settings_manager: Менеджер настроек
+        screen_width: Ширина экрана
+        screen_height: Высота экрана
+        create_ai_player_func: Функция для создания AI игрока
+        
+    Returns:
+        Tuple: (new_paddle, new_ball, new_bricks, new_score, new_lives_left, game_over, game_started, new_game_start_time, new_ai_player)
+    """
+    # Перезапускаем игру - ПОЛНЫЙ СБРОС СОСТОЯНИЯ
+    new_paddle = Paddle()
+    new_ball = Ball()
+    ball_speed = settings_manager.get_ball_speed()
+    new_ball.set_speed(ball_speed)
+    new_ball.reset(new_paddle.rect)
+    new_ball.vel_y = 0
+    new_bricks = build_bricks()
+    new_score = 0
+    new_lives_left = MAX_LIVES
+    new_game_over = False
+    new_game_started = False
+    # Пересоздаем AI для новой игры
+    new_ai_player = create_ai_player_func(
+        screen_width,
+        screen_height,
+        debug_mode=True
+    )
+    new_ai_player.activate()
+    # Перезапускаем отсчет времени игры
+    new_game_start_time = time.time()
+    
+    return new_paddle, new_ball, new_bricks, new_score, new_lives_left, new_game_over, new_game_started, new_game_start_time, new_ai_player
+
+
+def handle_victory_manual(
+    screen: Any,
+    font: Any,
+    big_font: Any,
+    score: int,
+    player_name: str,
+    lives_left: int,
+    game_start_time: float,
+    highscore_manager: Any,
+    settings_manager: Any,
+    ball: Ball,
+    paddle: Paddle,
+    bricks: list,
+    game_over: bool,
+    game_started: bool,
+    show_victory_splash_func: Any,
+    show_game_results_func: Any,
+    create_ai_player_func: Any,
+    screen_width: int,
+    screen_height: int,
+) -> Tuple[bool, Optional[Paddle], Optional[Ball], Optional[list], Optional[int], Optional[int], Optional[bool], Optional[bool], Optional[float], Optional[AIPlayer]]:
+    """
+    Обрабатывает победу в обычном (ручном) режиме.
+    
+    Args:
+        screen: Поверхность pygame для отрисовки
+        font: Шрифт для обычного текста
+        big_font: Шрифт для заголовков
+        score: Текущий счет
+        player_name: Имя игрока
+        lives_left: Количество жизней
+        game_start_time: Время начала игры
+        highscore_manager: Менеджер рекордов
+        settings_manager: Менеджер настроек
+        ball: Объект мяча
+        paddle: Объект платформы
+        bricks: Список кирпичей
+        game_over: Флаг окончания игры
+        game_started: Флаг запуска игры
+        show_victory_splash_func: Функция показа заставки победы
+        show_game_results_func: Функция показа экрана результатов
+        create_ai_player_func: Функция создания AI игрока
+        screen_width: Ширина экрана
+        screen_height: Высота экрана
+        
+    Returns:
+        Tuple: (should_exit, new_paddle, new_ball, new_bricks, new_score, new_lives_left, new_game_over, new_game_started, new_game_start_time, new_ai_player)
+        should_exit: Выход из игры (True если нужно выйти)
+        new_paddle: Новая платформа (если перезапуск)
+        new_ball: Новый мяч (если перезапуск)
+        new_bricks: Новые кирпичи (если перезапуск)
+        new_score: Новый счет (если перезапуск)
+        new_lives_left: Новое количество жизней (если перезапуск)
+        new_game_over: Новый флаг окончания игры (если перезапуск)
+        new_game_started: Новый флаг запуска игры (если перезапуск)
+        new_game_start_time: Новое время начала игры (если перезапуск)
+        new_ai_player: Новый AI игрок (если перезапуск)
+    """
+    new_game_over = True
+    # Рассчитываем время игры и сохраняем результат
+    game_time_seconds = int(time.time() - game_start_time)
+
+    # Показываем заставку победы только в обычном режиме (с вводом имени)
+    # и если у игрока остались жизни (победа)
+    if lives_left > 0:
+        show_victory_splash_func(screen, duration_seconds=5.0)
+
+    # В любом режиме показываем экран результатов
+    sound_enabled, restart_game, exit_game = show_game_results_func(
+        screen,
+        font,
+        big_font,
+        score,
+        player_name,
+        game_time_seconds,
+        highscore_manager,
+        settings_manager,
+        ball,
+    )
+
+    # Если игрок хочет выйти из игры
+    if exit_game:
+        return True, None, None, None, None, None, None, None, None, None
+
+    # Обработка перезапуска
+    if restart_game:
+        # Перезапускаем игру используя модуль game_loop_physics
+        new_paddle, new_ball, new_bricks, new_score, new_lives_left, new_game_over, new_game_started, new_game_start_time, new_ai_player = handle_game_restart_manual(
+            paddle,
+            ball,
+            bricks,
+            score,
+            lives_left,
+            game_over,
+            game_started,
+            settings_manager,
+            screen_width,
+            screen_height,
+            create_ai_player_func,
+        )
+        return False, new_paddle, new_ball, new_bricks, new_score, new_lives_left, new_game_over, new_game_started, new_game_start_time, new_ai_player
+    
+    return False, None, None, None, None, None, new_game_over, None, None, None
