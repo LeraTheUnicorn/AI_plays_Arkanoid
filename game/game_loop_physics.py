@@ -971,3 +971,104 @@ def handle_game_restart_training(
         ai_player.performance_logger.log_game_start(ai_player.current_game_state)
     
     return new_paddle, new_ball, new_bricks, new_score, new_lives_left, game_over, game_started, new_game_start_time
+
+
+def handle_paddle_side_collision(
+    ball: Ball,
+    paddle: Paddle,
+    lives_left: int,
+    game_over: bool,
+    frame_counter: int,
+    training_mode: bool,
+    ai_player: Optional[AIPlayer],
+    logger: Any,
+    bricks: list,
+    score: int,
+    game_start_time: float,
+    settings_manager: Any,
+) -> Tuple[bool, int, bool, Optional[Paddle], Optional[Ball], Optional[list], Optional[int], Optional[AIPlayer], Optional[float]]:
+    """
+    Обрабатывает боковое столкновение мяча с платформой (потеря мяча).
+    
+    Args:
+        ball: Объект мяча
+        paddle: Объект платформы
+        lives_left: Текущее количество жизней
+        game_over: Флаг окончания игры
+        frame_counter: Счетчик кадров
+        training_mode: Режим обучения
+        ai_player: Объект AI игрока
+        logger: Логгер
+        bricks: Список кирпичей
+        score: Текущий счет
+        game_start_time: Время начала игры
+        settings_manager: Менеджер настроек
+        
+    Returns:
+        Tuple: (should_continue, new_lives_left, new_game_over, new_paddle, new_ball, new_bricks, new_score, new_ai_player, new_game_start_time)
+        should_continue: Продолжить обработку кадра (False если нужно пропустить)
+        new_lives_left: Новое количество жизней
+        new_game_over: Новый флаг окончания игры
+        new_paddle: Новая платформа (если перезапуск)
+        new_ball: Новый мяч (если перезапуск)
+        new_bricks: Новые кирпичи (если перезапуск)
+        new_score: Новый счет (если перезапуск)
+        new_ai_player: Новый AI игрок (если перезапуск)
+        new_game_start_time: Новое время начала игры (если перезапуск)
+    """
+    if frame_counter <= 3:
+        logger.debug(f"[AI DEBUG] ball_hits_paddle_side=True, обрабатываем боковое столкновение")
+    # Мяч попал на боковую сторону платформы - это потеря мяча
+    new_lives_left = lives_left - 1
+    if new_lives_left > 0:
+        # КРИТИЧНО: Правильно сбрасываем мяч после бокового удара
+        ball.reset(paddle.rect)
+        # КРИТИЧНО: Принудительно устанавливаем мяч ВЫШЕ платформы, чтобы избежать прилипания
+        ball_radius = BALL_SIZE // 2
+        ball.rect.centery = paddle.rect.top - ball_radius - 5
+        # КРИТИЧНО: Убеждаемся, что мяч не находится внутри платформы
+        if ball.rect.colliderect(paddle.rect):
+            ball.rect.centery = paddle.rect.top - ball_radius - 15
+        # КРИТИЧНО: Сбрасываем все трекеры после бокового удара
+        if training_mode and ai_player is not None:
+            ai_player._reset_game_state_trackers()
+        
+        # Логируем потерю мяча из-за бокового удара
+        if training_mode and ai_player is not None:
+            ai_result = {
+                "action_type": "paddle_side_hit",
+                "success": False,
+                "confidence": 0.0,
+                "ball_speed": ball.get_speed(),
+                "remaining_bricks": len(bricks),
+            }
+            ai_player.learn_from_result(ai_result)
+            ai_player._log_paddle_movement(
+                paddle.rect.centerx,
+                paddle.rect.centerx,
+                f"ПОТЕРЯ МЯЧА: боковой удар о платформу. Мяч X={ball.rect.centerx}, Платформа X={paddle.rect.centerx}, Платформа left={paddle.rect.left}, right={paddle.rect.right}",
+                0.0
+            )
+        
+        return True, new_lives_left, False, None, None, None, None, None, None
+    else:
+        # Все жизни потрачены - перезапускаем в режиме обучения
+        new_game_over = True
+        if training_mode and ai_player is not None:
+            # Перезапускаем игру в режиме обучения
+            new_paddle, new_ball, new_bricks, new_score, new_lives_left, new_game_over, game_started, new_game_start_time = handle_game_restart_training(
+                ball,
+                paddle,
+                bricks,
+                score,
+                new_lives_left,
+                game_start_time,
+                training_mode,
+                ai_player,
+                settings_manager,
+                logger,
+                is_victory=False,
+            )
+            return False, new_lives_left, new_game_over, new_paddle, new_ball, new_bricks, new_score, ai_player, new_game_start_time
+        else:
+            return True, new_lives_left, new_game_over, None, None, None, None, None, None

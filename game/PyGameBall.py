@@ -55,6 +55,7 @@ from .game_loop_physics import (
     check_brick_collisions,
     handle_ball_loss,
     handle_game_restart_training,
+    handle_paddle_side_collision,
 )
 
 # Импортируем функции отрисовки
@@ -438,74 +439,31 @@ def main() -> None:
                         logger,
                     )
                     
-                    # Обрабатываем боковое столкновение - это потеря мяча
+                    # Обрабатываем боковое столкновение используя модуль game_loop_physics
                     if ball_hits_paddle_side:
-                        if frame_counter <= 3:
-                            logger.debug(f"[AI DEBUG] ball_hits_paddle_side=True, обрабатываем боковое столкновение")
-                        if frame_counter <= 3:
-                            logger.debug(f"[AI DEBUG] Боковое столкновение! Обрабатываем...")
-                        # Мяч попал на боковую сторону платформы - это потеря мяча
-                        lives_left -= 1
-                        if lives_left > 0:
-                            # КРИТИЧНО: Правильно сбрасываем мяч после бокового удара
-                            # Сначала сбрасываем позицию и скорость
-                            ball.reset(paddle.rect)
-                            # КРИТИЧНО: Принудительно устанавливаем мяч ВЫШЕ платформы, чтобы избежать прилипания
-                            ball_radius = BALL_SIZE // 2
-                            ball.rect.centery = paddle.rect.top - ball_radius - 5  # Мяч должен быть минимум на 5 пикселей выше платформы
-                            # КРИТИЧНО: Убеждаемся, что мяч не находится внутри платформы
-                            if ball.rect.colliderect(paddle.rect):
-                                # Если мяч все еще внутри платформы, перемещаем его еще выше
-                                ball.rect.centery = paddle.rect.top - ball_radius - 15
-                            # КРИТИЧНО: После бокового удара мяч потерян, но не устанавливаем vel_y = 0
-                            # Вместо этого мяч будет обработан в логике потери жизни ниже
-                            # КРИТИЧНО: Сбрасываем все трекеры после бокового удара
-                            if training_mode:
-                                assert ai_player is not None, "ai_player должен быть создан в режиме обучения"
-                                ai_player._reset_game_state_trackers()
-                        else:
-                            game_over = True
-                            # КРИТИЧНО: В режиме обучения перезапускаем игру после потери всех жизней
-                            if training_mode and lives_left <= 0:
-                                # Перезапускаем игру в режиме обучения используя модуль game_loop_physics
-                                paddle, ball, bricks, score, lives_left, game_over, game_started, game_start_time = handle_game_restart_training(
-                                    ball,
-                                    paddle,
-                                    bricks,
-                                    score,
-                                    lives_left,
-                                    game_start_time,
-                                    training_mode,
-                                    ai_player,
-                                    settings_manager,
-                                    logger,
-                                    is_victory=False,
-                                )
-                                
-                                if frame_counter <= 3:
-                                    logger.debug(f"[AI DEBUG] Игра перезапущена после бокового удара, lives_left={lives_left}")
-                                
-                                continue  # Пропускаем остальную обработку кадра
-                        
-                        # Логируем потерю мяча из-за бокового удара
-                        if training_mode:
-                            ai_result = {
-                                "action_type": "paddle_side_hit",
-                                "success": False,
-                                "confidence": 0.0,
-                                "ball_speed": ball.get_speed(),
-                                "remaining_bricks": len(bricks),
-                            }
-                            ai_player.learn_from_result(ai_result)
-                            ai_player._log_paddle_movement(
-                                paddle.rect.centerx,
-                                paddle.rect.centerx,
-                                f"ПОТЕРЯ МЯЧА: боковой удар о платформу. Мяч X={ball.rect.centerx}, Платформа X={paddle.rect.centerx}, Платформа left={paddle.rect.left}, right={paddle.rect.right}",
-                                0.0
-                            )
-                        if frame_counter <= 3:
-                            logger.debug(f"[AI DEBUG] Боковое столкновение обработано, continue")
-                        continue  # Пропускаем проверку верхней поверхности после бокового удара
+                        should_continue, lives_left, game_over, new_paddle, new_ball, new_bricks, new_score, new_ai_player, new_game_start_time = handle_paddle_side_collision(
+                            ball,
+                            paddle,
+                            lives_left,
+                            game_over,
+                            frame_counter,
+                            training_mode,
+                            ai_player,
+                            logger,
+                            bricks,
+                            score,
+                            game_start_time,
+                            settings_manager,
+                        )
+                        if new_paddle is not None:
+                            paddle = new_paddle
+                            ball = new_ball
+                            bricks = new_bricks
+                            score = new_score
+                            ai_player = new_ai_player
+                            game_start_time = new_game_start_time
+                        if not should_continue:
+                            continue  # Пропускаем остальную обработку кадра
                     
                     # Обрабатываем прилипание мяча
                     if ball_stuck:
