@@ -33,6 +33,18 @@ from .game_main_helpers import (
     render_game_frame,
 )
 
+# Импортируем функции инициализации игры
+from .game_loop_initialization import (
+    initialize_pygame,
+    initialize_managers,
+    load_background_music,
+    initialize_game_objects,
+    initialize_game_variables,
+    create_ai_player_system,
+    setup_ai_player_for_training,
+    start_background_music,
+)
+
 os.environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "1"  # Скрыть сообщение поддержки pygame
 
 import random
@@ -158,226 +170,6 @@ except ImportError:
 
 
 # show_highscores, trigger_instant_victory, show_victory_splash, show_settings_window теперь в game_ui.py
-    # Сохраняем исходный размер экрана в начале функции
-    initial_screen_size = screen.get_size()
-    if not getattr(sys, "frozen", False):
-        print(f"[VICTORY SPLASH] Начальный размер экрана при входе в функцию: {initial_screen_size}")
-    """
-    Показывает заставку победы с анимированным изображением.
-    Использует Pyglet для загрузки анимированного GIF.
-    
-    Args:
-        screen: Поверхность pygame для отрисовки
-        duration_seconds: Длительность показа заставки в секундах (по умолчанию 5)
-    """
-    if not getattr(sys, "frozen", False):
-        print(f"[VICTORY SPLASH] Начало функции show_victory_splash, длительность: {duration_seconds} сек")
-    
-    # Загружаем изображение
-    image_path = resource_path("images/d2.gif")
-    
-    if not getattr(sys, "frozen", False):
-        print(f"[VICTORY SPLASH] Путь к изображению: {image_path}")
-    
-    try:
-        # Используем PIL для загрузки и изменения размера GIF (НЕ МЕНЯЕМ размер окна!)
-        try:
-            from PIL import Image, ImageSequence
-            
-            # Получаем размеры экрана (НЕ МЕНЯЕМ их!)
-            screen_width, screen_height = screen.get_size()
-            if not getattr(sys, "frozen", False):
-                print(f"[VICTORY SPLASH] Размер экрана: {screen_width}x{screen_height} (НЕ МЕНЯЕМ!)")
-                print(f"[VICTORY SPLASH] Загружаем GIF через PIL: {image_path}")
-            
-            # Определяем правильный фильтр для изменения размера (совместимость с разными версиями Pillow)
-            # Pillow >= 9.0.0 использует Image.Resampling.LANCZOS, старые версии - Image.LANCZOS
-            if hasattr(Image, 'Resampling'):
-                lanczos_filter = Image.Resampling.LANCZOS
-            else:
-                # Для старых версий Pillow используем getattr для безопасного доступа
-                # Совместимость со старыми версиями Pillow, где LANCZOS это int
-                lanczos_filter: Any = getattr(Image, 'LANCZOS', 1)  # type: ignore[no-redef]  # 1 - это числовая константа LANCZOS
-            
-            # Загружаем GIF с помощью PIL
-            with Image.open(image_path) as im:
-                # Получаем длительность кадров из метаданных
-                default_duration = im.info.get("duration", 100)
-                
-                # Изменяем размер каждого кадра до размера экрана (800x600)
-                frames = []
-                frame_durations = []
-                
-                for i, frame in enumerate(ImageSequence.Iterator(im)):
-                    # Копируем кадр и изменяем размер до размера экрана
-                    resized_frame = frame.copy().resize((screen_width, screen_height), lanczos_filter)
-                    
-                    # Получаем длительность кадра
-                    duration = frame.info.get("duration", default_duration)
-                    frame_durations.append(duration)
-                    
-                    # Конвертируем PIL Image в pygame Surface
-                    # Конвертируем в RGBA для поддержки прозрачности
-                    if resized_frame.mode != 'RGBA':
-                        resized_frame = resized_frame.convert('RGBA')
-                    
-                    # Получаем данные изображения
-                    img_data = resized_frame.tobytes()
-                    
-                    # Создаем pygame Surface
-                    try:
-                        frame_surface = pygame.image.fromstring(
-                            img_data, (screen_width, screen_height), 'RGBA'
-                        )
-                    except (AttributeError, TypeError):
-                        # Fallback для новых версий pygame
-                        frame_surface = pygame.image.frombuffer(
-                            img_data, (screen_width, screen_height), 'RGBA'
-                        )
-                    frame_surface = frame_surface.convert_alpha()
-                    
-                    frames.append(frame_surface)
-                    
-                    if i < 3 and not getattr(sys, "frozen", False):
-                        print(f"[VICTORY SPLASH] Кадр {i}: длительность {duration} мс, размер {frame_surface.get_size()}")
-            
-            if len(frames) == 0:
-                raise ValueError("Не удалось загрузить кадры анимации")
-            
-            # Изображение уже имеет размер экрана, координаты (0, 0)
-            x = 0
-            y = 0
-            
-            if not getattr(sys, "frozen", False):
-                print(f"[VICTORY SPLASH] Загружено кадров: {len(frames)}, размер каждого: {screen_width}x{screen_height}")
-            
-            # Время начала показа
-            start_time = time.time()
-            clock = pygame.time.Clock()
-            frame_index = 0
-            frame_accumulator = 0.0
-            last_frame_time = time.time()
-            
-            # Показываем заставку в течение указанного времени
-            if not getattr(sys, "frozen", False):
-                print(f"[VICTORY SPLASH] Длительность показа: {duration_seconds} сек")
-                if len(frames) > 1:
-                    print(f"[VICTORY SPLASH] Длительности кадров (мс): {frame_durations[:5]}...")  # Показываем первые 5
-            
-            # Если только один кадр, просто показываем его
-            if len(frames) == 1:
-                while time.time() - start_time < duration_seconds:
-                    for event in pygame.event.get():
-                        if event.type == pygame.QUIT:
-                            return
-                    screen.fill((0, 0, 0))
-                    screen.blit(frames[0], (x, y))
-                    pygame.display.flip()
-                    clock.tick(30)
-            else:
-                # Анимация с несколькими кадрами
-                while time.time() - start_time < duration_seconds:
-                    # Обрабатываем события (чтобы окно не зависало)
-                    for event in pygame.event.get():
-                        if event.type == pygame.QUIT:
-                            return
-                    
-                    # Вычисляем время, прошедшее с последнего кадра
-                    current_frame_time = time.time()
-                    delta_time = current_frame_time - last_frame_time
-                    last_frame_time = current_frame_time
-                    frame_accumulator += delta_time
-                    
-                    # Переключаем кадры анимации на основе длительности кадра
-                    frame_duration_sec = frame_durations[frame_index] / 1000.0
-                    # Минимальная длительность кадра - 30 FPS (33 мс)
-                    if frame_duration_sec < 0.033:
-                        frame_duration_sec = 0.033
-                    
-                    # Если накопилось достаточно времени, переключаем кадр
-                    if frame_accumulator >= frame_duration_sec:
-                        old_index = frame_index
-                        frame_index = (frame_index + 1) % len(frames)
-                        frame_accumulator -= frame_duration_sec
-                        
-                        # Отладочный вывод для первых нескольких переключений
-                        if old_index < 5 and not getattr(sys, "frozen", False):
-                            print(f"[VICTORY SPLASH] Кадр изменен: {old_index} -> {frame_index}")
-                    
-                    # Очищаем экран
-                    screen.fill((0, 0, 0))
-                    
-                    # Рисуем текущий кадр (уже размером с экран)
-                    screen.blit(frames[frame_index], (x, y))
-                    
-                    # Обновляем экран
-                    pygame.display.flip()
-                    
-                    # Ограничиваем FPS для плавной анимации
-                    clock.tick(30)
-                    
-        except (ImportError, Exception) as e:
-            # Если PIL не установлен или произошла ошибка, используем pygame для загрузки первого кадра
-            if not getattr(sys, "frozen", False):
-                print(f"[VICTORY SPLASH] Ошибка при загрузке через PIL: {e}, используем pygame для статического изображения")
-            # Загружаем статическое изображение через pygame (только первый кадр)
-            try:
-                image = pygame.image.load(image_path)
-                if not getattr(sys, "frozen", False):
-                    print(f"[VICTORY SPLASH] Изображение загружено через pygame, размер: {image.get_size()}")
-                
-                # Получаем размеры экрана (НЕ МЕНЯЕМ их!)
-                screen_width, screen_height = screen.get_size()
-                
-                # Конвертируем изображение в формат, поддерживающий smoothscale
-                if image.get_bitsize() not in (24, 32):
-                    image = image.convert()
-                
-                # Растягиваем изображение до размера экрана
-                try:
-                    image = pygame.transform.smoothscale(image, (screen_width, screen_height))
-                except ValueError:
-                    # Если smoothscale не работает, используем обычный scale
-                    image = pygame.transform.scale(image, (screen_width, screen_height))
-                
-                # Координаты (0, 0) - изображение уже размером с экран
-                x = 0
-                y = 0
-                
-                # Показываем статическое изображение
-                start_time = time.time()
-                clock = pygame.time.Clock()
-                
-                while time.time() - start_time < duration_seconds:
-                    for event in pygame.event.get():
-                        if event.type == pygame.QUIT:
-                            return
-                    
-                    screen.fill((0, 0, 0))
-                    screen.blit(image, (x, y))
-                    pygame.display.flip()
-                    clock.tick(30)
-                    
-            except Exception as e2:
-                # Если даже pygame не может загрузить, просто выходим и переходим к результатам
-                if not getattr(sys, "frozen", False):
-                    print(f"[VICTORY SPLASH] Критическая ошибка: не удалось загрузить изображение: {e2}")
-                    import traceback
-                    traceback.print_exc()
-                # Выходим из функции, чтобы сразу перейти к экрану результатов
-                return
-                
-    except Exception as e:
-        # Если не удалось загрузить изображение, просто выходим и переходим к результатам
-        if not getattr(sys, "frozen", False):
-            print(f"[VICTORY SPLASH] ОШИБКА при загрузке изображения победы: {e}")
-            import traceback
-            traceback.print_exc()
-        # Выходим из функции, чтобы сразу перейти к экрану результатов
-        return
-
-
-# show_victory_splash теперь в game_ui.py
 
 def show_game_results(
     screen: pygame.Surface,
@@ -532,143 +324,50 @@ from .game_rendering import (
 # show_settings_window теперь в game_ui.py
 
 def main() -> None:
-    startup_start_time = time.time()
-    if not getattr(sys, "frozen", False):
-        print(f"[STARTUP] Начало инициализации игры...")
+    # Инициализация pygame и создание основных объектов
+    screen, clock, font, big_font = initialize_pygame()
     
-    pygame.init()
-    pygame.mixer.init()  # Инициализация аудио микшера
-    screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-    pygame.display.set_caption("Арканоид")
-    clock = pygame.time.Clock()
-    font = pygame.font.SysFont("arial", 20)
-    big_font = pygame.font.SysFont("arial", 42, bold=True)
-    
-    if not getattr(sys, "frozen", False):
-        pygame_init_time = time.time() - startup_start_time
-        print(f"[STARTUP] pygame инициализирован за {pygame_init_time:.3f} сек")
-
     # Инициализация менеджеров
-    highscore_manager = HighScoreManager()
-    settings_manager = SettingsManager()
-
-    # AI система будет создана в основном цикле для каждого нового запуска
-
+    highscore_manager, settings_manager = initialize_managers()
+    
     # Загрузка фоновой музыки
-    try:
-        music_path = resource_path("audio/FVCK_AI.mp3")
-        # Нормализуем путь для корректной работы на Windows
-        music_path = os.path.normpath(music_path)
-        
-        if os.path.exists(music_path):
-            pygame.mixer.music.load(music_path)
-            pygame.mixer.music.set_volume(0.3)
-        else:
-            # Файл не найден - выводим отладочную информацию только в режиме разработки
-            if not getattr(sys, "frozen", False):
-                print(f"[DEBUG] Файл музыки не найден по пути: {music_path}")
-                # Пробуем альтернативный путь относительно текущей директории
-                alt_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "resources", "audio", "FVCK_AI.mp3")
-                alt_path = os.path.normpath(alt_path)
-                if os.path.exists(alt_path):
-                    print(f"[DEBUG] Найден альтернативный путь: {alt_path}")
-                    pygame.mixer.music.load(alt_path)
-                    pygame.mixer.music.set_volume(0.3)
-    except (pygame.error, FileNotFoundError, OSError) as e:
-        # Музыка не загружена - выводим информацию только в режиме разработки
-        if not getattr(sys, "frozen", False):
-            print(f"[DEBUG] Не удалось загрузить фоновую музыку: {e}")
-
-    # Инициализация переменных
-    score = 0
-    lives_left = MAX_LIVES
+    load_background_music()
+    
+    # Инициализация переменных состояния игры
+    game_vars = initialize_game_variables()
+    score = game_vars["score"]
+    lives_left = game_vars["lives_left"]
+    game_over = game_vars["game_over"]
+    game_started = game_vars["game_started"]
+    running = game_vars["running"]
+    sound_enabled = game_vars["sound_enabled"]
+    training_mode = game_vars["training_mode"]
+    training_rounds = game_vars["training_rounds"]
+    ai_player = game_vars["ai_player"]
+    player_name = game_vars["player_name"]
+    key_1_press_count = game_vars["key_1_press_count"]
+    key_1_last_press_time = game_vars["key_1_last_press_time"]
+    KEY_1_RESET_TIME = game_vars["KEY_1_RESET_TIME"]
+    
+    # Создание объектов игры
+    paddle, ball, bricks, score = initialize_game_objects(settings_manager)
     game_over = False
     game_started = False
-    running = True
-    sound_enabled = True
-    training_mode = True  # Всегда режим обучения (режим 8)
-    training_rounds = 0  # Счетчик раундов в режиме обучения
-    ai_player: Optional[AIPlayer] = None  # Инициализация AI-игрока
-    player_name = "training"  # Имя для режима обучения
-
-    # ПОЛНЫЙ СБРОС СОСТОЯНИЯ ИГРЫ
-    paddle = Paddle()
-    ball = Ball()
-    ball_speed = settings_manager.get_ball_speed()
-    ball.set_speed(ball_speed)
-    ball.reset(paddle.rect)
-    ball.vel_y = 0
-    bricks = build_bricks()
-    score = 0
-    game_over = False
-    game_started = False
-
+    
     # Создаем AI-систему для режима обучения
-    ai_player = None
     if training_mode:
-            # Логируем создание AIPlayer (только в файл, не в консоль)
-            logger.debug(f"[AI DEBUG] Создание AIPlayer... training_mode={training_mode}")
-            try:
-                # КРИТИЧНО: Создаем AIPlayer БЕЗ блокирующего сообщения на экране
-                # Сообщение может остаться на экране, если создание занимает время
-                ai_player = create_ai_player(SCREEN_WIDTH, SCREEN_HEIGHT, debug_mode=True)
-                # Логируем создание AIPlayer (только в файл, не в консоль)
-                logger.debug(f"[AI DEBUG] Новый AIPlayer создан. Обучение будет продолжено...")
-            except Exception as e:
-                # Логируем ошибку (только в файл, не в консоль)
-                logger.error(f"[ERROR] Ошибка при создании AIPlayer: {e}")
-                import traceback
-                traceback.print_exc()
-                # Создаем базовый AI без логирования в случае ошибки
-                try:
-                    ai_player = create_ai_player(SCREEN_WIDTH, SCREEN_HEIGHT, debug_mode=True)
-                except:
-                    # Если и это не работает, создаем минимальный AI
-                    if not getattr(sys, "frozen", False):
-                        print(f"[ERROR] Критическая ошибка: не удалось создать AIPlayer")
-                    raise
+        ai_player = create_ai_player_system(logger)
+    
     # Устанавливаем жизни для режима обучения
     lives_left = MAX_LIVES  # Всегда 3 жизни в режиме обучения
-
+    
     # Запускаем музыку (если звук включен)
-    if sound_enabled:
-        try:
-            pygame.mixer.music.play(-1)  # Цикличное воспроизведение фоновой музыки
-        except pygame.error:
-            # Не выводим в exe файле
-            if not getattr(sys, "frozen", False):
-                print("Не удалось запустить фоновую музыку")
-
-    # Активируем AI систему для режима обучения
-    if ai_player is None:
-        raise RuntimeError("ai_player должен быть создан в режиме обучения")
-    ai_player.activate()  # ВАЖНО: активируем AI систему
-
-    # В режиме обучения используем оптимальную скорость из обучения
-    try:
-        optimal_speed = ai_player.get_optimal_ball_speed()
-        if optimal_speed > 10:
-            ball.current_speed = optimal_speed
-            # Устанавливаем начальные скорости движения
-            ball.vel_x = optimal_speed
-            ball.vel_y = -optimal_speed
-        else:
-            ball.set_speed(optimal_speed, settings_manager)
-        # Не выводим в exe файле
-        if not getattr(sys, "frozen", False):
-            print(
-                f"Режим обучения: Игра запущена. AI активен: {ai_player.is_active}, "
-                f"Скорость мяча: {optimal_speed}, Множитель платформы: {ai_player.get_optimal_paddle_speed_multiplier():.2f}"
-            )
-    except Exception as e:
-        # Не выводим в exe файле
-        if not getattr(sys, "frozen", False):
-            print(f"[ERROR] Ошибка при настройке скорости в режиме обучения: {e}")
-            import traceback
-            traceback.print_exc()
-        # Используем скорость по умолчанию
-        ball.set_speed(8, settings_manager)
-
+    start_background_music(sound_enabled)
+    
+    # Настраиваем AI-систему для режима обучения
+    if training_mode and ai_player is not None:
+        setup_ai_player_for_training(ai_player, ball, settings_manager, logger)
+    
     game_started = True  # Игра начинается сразу
     ball.vel_x = ball.get_speed()  # Направление вправо
     ball.vel_y = -ball.get_speed()
@@ -680,11 +379,6 @@ def main() -> None:
 
     # Счетчик кадров для обновления скорости в режиме обучения
     frame_counter = 0
-    
-    # Отслеживание тройного нажатия "1" для немедленной победы
-    key_1_press_count = 0
-    key_1_last_press_time = 0.0
-    KEY_1_RESET_TIME = 2.0  # Время в секундах для сброса счетчика
 
     # КРИТИЧНО: Обновляем состояние игры для AI перед входом в основной цикл
     assert ai_player is not None, "ai_player должен быть создан в режиме обучения"
