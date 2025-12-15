@@ -1,0 +1,48 @@
+[run]
+# Исключаем из покрытия модули, которые сложно тестировать
+# (UI, рендеринг, игровые циклы, утилиты)
+omit =
+    */game/game_loop_*.py
+    */game/game_ui.py
+    */game/game_rendering.py
+    */game/game_views.py
+    */game/PyGameBall.py
+    */game/game_main_helpers.py
+    */game/dirty_rects.py
+    */game/di_container.py
+    */game/highscores.py
+    */game/game_controllers.py
+    */utils/*.py
+    */ai/analyze_ball_loss.py
+    */ai/async_trajectory_example.py
+    */ai/buffered_logger.py
+    */__pycache__/*
+    */tests/*
+    */venv/*
+    */.venv/*
+    */htmlcov/*
+
+source = ai,game
+
+[report]
+# Исключаем строки из отчета
+exclude_lines =
+    pragma: no cover
+    def __repr__
+    raise AssertionError
+    raise NotImplementedError
+    if __name__ == .__main__.:
+    if TYPE_CHECKING:
+    @abstractmethod
+    if False:
+    if settings.DEBUG
+    class .*\bProtocol\):
+    @(abc\.)?abstractmethod
+
+precision = 2
+show_missing = True
+skip_covered = False
+
+[html]
+directory = htmlcov
+

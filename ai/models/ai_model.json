@@ -560,7 +560,7 @@
     "6_6_6_6_7_6": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 2
+      "pattern_frequency": 4
     },
     "8_7_8_7_9_8": {
       "accuracy_scores": [],
@@ -1080,7 +1080,7 @@
     "30_6_30_6_29_6": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 28
+      "pattern_frequency": 29
     },
     "27_5_27_5_27_6": {
       "accuracy_scores": [],
@@ -1090,7 +1090,7 @@
     "25_6_24_6_24_6": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 6
+      "pattern_frequency": 7
     },
     "23_6_22_6_22_6": {
       "accuracy_scores": [],
@@ -1195,7 +1195,7 @@
     "34_5_34_6_34_6": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 3
+      "pattern_frequency": 4
     },
     "31_6_30_6_30_7": {
       "accuracy_scores": [],
@@ -1210,7 +1210,7 @@
     "24_5_24_5_23_5": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 3
+      "pattern_frequency": 4
     },
     "22_5_21_6_21_6": {
       "accuracy_scores": [],
@@ -1225,7 +1225,7 @@
     "17_5_16_5_16_5": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 3
+      "pattern_frequency": 4
     },
     "14_5_14_6_14_6": {
       "accuracy_scores": [],
@@ -1875,7 +1875,7 @@
     "21_8_20_9_19_9": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 48
+      "pattern_frequency": 66
     },
     "33_27_32_27_31_28": {
       "accuracy_scores": [],
@@ -2445,7 +2445,7 @@
     "3_2_2_3_2_3": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 2
+      "pattern_frequency": 3
     },
     "13_5_14_6_14_6": {
       "accuracy_scores": [],
@@ -2805,92 +2805,92 @@
     "34_8_34_8_34_8": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 4
+      "pattern_frequency": 6
     },
     "32_8_31_9_31_8": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 6
+      "pattern_frequency": 10
     },
     "34_5_34_5_34_5": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 22
+      "pattern_frequency": 23
     },
     "31_6_30_7_30_6": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 13
+      "pattern_frequency": 14
     },
     "27_8_27_9_26_8": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 16
+      "pattern_frequency": 18
     },
     "24_8_24_9_23_8": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 16
+      "pattern_frequency": 18
     },
     "26_4_26_4_25_4": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 3
+      "pattern_frequency": 4
     },
     "19_2_18_3_18_2": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 3
+      "pattern_frequency": 4
     },
     "13_2_12_3_12_2": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 10
+      "pattern_frequency": 11
     },
     "7_2_6_3_6_2": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 4
+      "pattern_frequency": 5
     },
     "2_5_2_5_3_5": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 4
+      "pattern_frequency": 5
     },
     "6_6_6_7_6_6": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 39
+      "pattern_frequency": 40
     },
     "21_2_21_3_20_2": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 3
+      "pattern_frequency": 4
     },
     "16_2_16_3_15_2": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 3
+      "pattern_frequency": 4
     },
     "15_4_16_4_16_4": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 1
+      "pattern_frequency": 2
     },
     "13_6_13_6_12_6": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 30
+      "pattern_frequency": 31
     },
     "18_4_17_4_17_4": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 1
+      "pattern_frequency": 2
     },
     "17_6_17_6_18_6": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 4
+      "pattern_frequency": 6
     },
     "35_9_34_10_34_9": {
       "accuracy_scores": [],
@@ -2925,17 +2925,17 @@
     "9_2_8_3_8_2": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 5
+      "pattern_frequency": 6
     },
     "3_2_3_3_2_2": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 7
+      "pattern_frequency": 8
     },
     "4_4_5_4_5_4": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 4
+      "pattern_frequency": 5
     },
     "11_2_12_3_12_2": {
       "accuracy_scores": [],
@@ -2950,7 +2950,7 @@
     "20_4_21_4_21_4": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 5
+      "pattern_frequency": 6
     },
     "29_4_29_4_30_4": {
       "accuracy_scores": [],
@@ -2970,7 +2970,7 @@
     "17_5_17_6_16_5": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 9
+      "pattern_frequency": 10
     },
     "15_7_14_7_14_7": {
       "accuracy_scores": [],
@@ -2985,7 +2985,7 @@
     "10_5_10_6_9_5": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 8
+      "pattern_frequency": 9
     },
     "12_26_13_27_13_27": {
       "accuracy_scores": [],
@@ -2995,7 +2995,7 @@
     "32_5_31_6_31_5": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 8
+      "pattern_frequency": 9
     },
     "20_5_20_6_19_5": {
       "accuracy_scores": [],
@@ -3010,7 +3010,7 @@
     "25_5_25_6_24_5": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 49
+      "pattern_frequency": 67
     },
     "20_7_20_7_21_7": {
       "accuracy_scores": [],
@@ -3065,7 +3065,7 @@
     "10_5_11_6_11_5": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 3
+      "pattern_frequency": 4
     },
     "13_5_13_5_14_5": {
       "accuracy_scores": [],
@@ -3105,12 +3105,12 @@
     "34_7_34_8_34_7": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 20
+      "pattern_frequency": 21
     },
     "32_8_32_9_31_8": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 27
+      "pattern_frequency": 28
     },
     "9_8_10_9_10_8": {
       "accuracy_scores": [],
@@ -3145,7 +3145,7 @@
     "8_2_7_3_7_2": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 56
+      "pattern_frequency": 75
     },
     "3_4_4_4_4_4": {
       "accuracy_scores": [],
@@ -3175,17 +3175,17 @@
     "9_7_10_7_10_7": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 11
+      "pattern_frequency": 12
     },
     "13_10_13_10_14_10": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 22
+      "pattern_frequency": 23
     },
     "16_7_17_7_17_7": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 41
+      "pattern_frequency": 42
     },
     "30_27_30_27_30_27": {
       "accuracy_scores": [],
@@ -3290,7 +3290,7 @@
     "27_5_27_6_28_5": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 53
+      "pattern_frequency": 71
     },
     "30_5_30_6_31_5": {
       "accuracy_scores": [],
@@ -3360,12 +3360,12 @@
     "13_2_13_3_12_2": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 48
+      "pattern_frequency": 68
     },
     "8_2_8_3_7_2": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 3
+      "pattern_frequency": 4
     },
     "13_4_13_4_14_4": {
       "accuracy_scores": [],
@@ -3405,37 +3405,37 @@
     "31_6_30_6_30_6": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 1
+      "pattern_frequency": 2
     },
     "10_7_10_7_10_7": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 28
+      "pattern_frequency": 29
     },
     "13_9_13_10_14_9": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 6
+      "pattern_frequency": 7
     },
     "26_5_26_6_26_5": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 1
+      "pattern_frequency": 2
     },
     "22_5_21_6_21_5": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 1
+      "pattern_frequency": 2
     },
     "19_5_19_6_18_5": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 1
+      "pattern_frequency": 2
     },
     "14_5_14_6_14_5": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 1
+      "pattern_frequency": 2
     },
     "12_2_12_3_12_2": {
       "accuracy_scores": [],
@@ -3485,12 +3485,12 @@
     "15_2_14_3_14_2": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 4
+      "pattern_frequency": 5
     },
     "5_7_5_7_4_7": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 3
+      "pattern_frequency": 4
     },
     "13_8_13_9_14_8": {
       "accuracy_scores": [],
@@ -3515,7 +3515,7 @@
     "10_7_10_7_11_7": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 42
+      "pattern_frequency": 43
     },
     "16_7_16_7_16_7": {
       "accuracy_scores": [],
@@ -3715,7 +3715,7 @@
     "18_7_17_7_17_7": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 15
+      "pattern_frequency": 19
     },
     "30_26_30_27_30_27": {
       "accuracy_scores": [],
@@ -3805,7 +3805,7 @@
     "28_2_27_3_27_2": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 1
+      "pattern_frequency": 3
     },
     "22_2_22_3_22_2": {
       "accuracy_scores": [],
@@ -3890,7 +3890,7 @@
     "13_6_13_6_14_6": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 18
+      "pattern_frequency": 20
     },
     "15_7_16_7_16_7": {
       "accuracy_scores": [],
@@ -4015,7 +4015,7 @@
     "27_2_28_3_28_2": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 17
+      "pattern_frequency": 19
     },
     "32_2_33_3_33_2": {
       "accuracy_scores": [],
@@ -4070,7 +4070,7 @@
     "30_6_29_6_29_6": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 6
+      "pattern_frequency": 7
     },
     "27_5_27_5_26_5": {
       "accuracy_scores": [],
@@ -4085,7 +4085,7 @@
     "16_6_16_6_15_6": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 7
+      "pattern_frequency": 9
     },
     "13_5_13_6_12_5": {
       "accuracy_scores": [],
@@ -4135,7 +4135,7 @@
     "23_7_24_8_24_7": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 6
+      "pattern_frequency": 7
     },
     "8_26_8_27_7_27": {
       "accuracy_scores": [],
@@ -4185,7 +4185,7 @@
     "5_2_4_3_4_2": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 50
+      "pattern_frequency": 69
     },
     "21_8_21_9_20_8": {
       "accuracy_scores": [],
@@ -4745,7 +4745,7 @@
     "6_2_5_3_5_2": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 3
+      "pattern_frequency": 4
     },
     "2_4_3_4_3_4": {
       "accuracy_scores": [],
@@ -5065,7 +5065,7 @@
     "36_2_36_3_37_2": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 48
+      "pattern_frequency": 67
     },
     "39_26_39_27_39_27": {
       "accuracy_scores": [],
@@ -5215,7 +5215,7 @@
     "35_8_34_9_34_8": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 2
+      "pattern_frequency": 4
     },
     "28_8_27_9_27_9": {
       "accuracy_scores": [],
@@ -5240,7 +5240,7 @@
     "34_2_34_3_35_2": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 1
+      "pattern_frequency": 2
     },
     "22_2_21_3_21_2": {
       "accuracy_scores": [],
@@ -5260,352 +5260,352 @@
     "37_5_36_6_35_5": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 3
+      "pattern_frequency": 4
     },
     "34_4_34_5_33_4": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 2
+      "pattern_frequency": 3
     },
     "31_5_30_6_29_5": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 3
+      "pattern_frequency": 4
     },
     "28_5_27_5_26_5": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 2
+      "pattern_frequency": 3
     },
     "25_5_24_6_23_5": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 2
+      "pattern_frequency": 3
     },
     "23_5_23_6_22_5": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 2
+      "pattern_frequency": 3
     },
     "20_5_20_5_19_5": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 2
+      "pattern_frequency": 3
     },
     "16_5_16_6_15_5": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 2
+      "pattern_frequency": 3
     },
     "13_5_13_5_12_5": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 2
+      "pattern_frequency": 3
     },
     "8_7_7_7_7_7": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 2
+      "pattern_frequency": 3
     },
     "17_8_16_8_16_8": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 2
+      "pattern_frequency": 3
     },
     "36_5_36_6_35_5": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 2
+      "pattern_frequency": 3
     },
     "34_4_33_4_32_4": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 2
+      "pattern_frequency": 3
     },
     "27_2_26_3_25_2": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 2
+      "pattern_frequency": 3
     },
     "21_2_20_3_19_2": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 2
+      "pattern_frequency": 3
     },
     "4_4_5_4_6_4": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 2
+      "pattern_frequency": 3
     },
     "11_2_12_3_13_2": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 2
+      "pattern_frequency": 3
     },
     "19_4_19_4_20_4": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 2
+      "pattern_frequency": 3
     },
     "34_3_34_4_35_3": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 2
+      "pattern_frequency": 3
     },
     "35_7_34_8_34_7": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 2
+      "pattern_frequency": 3
     },
     "34_7_33_8_32_7": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 2
+      "pattern_frequency": 3
     },
     "18_6_17_6_16_6": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 3
+      "pattern_frequency": 5
     },
     "4_6_3_6_3_6": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 2
+      "pattern_frequency": 3
     },
     "7_4_8_4_8_4": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 2
+      "pattern_frequency": 3
     },
     "19_7_19_8_20_7": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 3
+      "pattern_frequency": 4
     },
     "20_7_21_8_21_7": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 3
+      "pattern_frequency": 4
     },
     "25_6_26_6_26_6": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 2
+      "pattern_frequency": 3
     },
     "27_10_27_10_26_10": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 2
+      "pattern_frequency": 3
     },
     "14_6_13_7_12_6": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 3
+      "pattern_frequency": 4
     },
     "10_7_10_8_9_7": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 2
+      "pattern_frequency": 3
     },
     "9_7_8_8_8_7": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 4
+      "pattern_frequency": 6
     },
     "38_6_37_6_36_6": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 1
+      "pattern_frequency": 2
     },
     "35_4_34_5_33_4": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 2
+      "pattern_frequency": 3
     },
     "32_6_31_6_30_6": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 1
+      "pattern_frequency": 2
     },
     "28_4_27_5_26_4": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 2
+      "pattern_frequency": 3
     },
     "24_6_23_6_22_6": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 1
+      "pattern_frequency": 2
     },
     "21_4_20_5_19_4": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 1
+      "pattern_frequency": 2
     },
     "14_4_13_5_12_4": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 1
+      "pattern_frequency": 2
     },
     "11_6_10_6_10_6": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 1
+      "pattern_frequency": 2
     },
     "10_6_9_6_8_6": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 1
+      "pattern_frequency": 2
     },
     "7_4_6_5_5_4": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 1
+      "pattern_frequency": 2
     },
     "4_6_3_6_2_6": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 1
+      "pattern_frequency": 2
     },
     "24_7_25_7_26_7": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 1
+      "pattern_frequency": 2
     },
     "12_8_13_9_14_8": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 48
+      "pattern_frequency": 67
     },
     "28_7_29_7_30_7": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 1
+      "pattern_frequency": 2
     },
     "16_7_16_8_17_7": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 1
+      "pattern_frequency": 2
     },
     "31_7_32_7_33_7": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 1
+      "pattern_frequency": 2
     },
     "19_8_20_9_21_8": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 48
+      "pattern_frequency": 67
     },
     "37_7_36_8_35_7": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 48
+      "pattern_frequency": 67
     },
     "34_6_33_6_32_6": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 47
+      "pattern_frequency": 66
     },
     "31_4_30_5_29_4": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 48
+      "pattern_frequency": 67
     },
     "24_2_23_3_22_2": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 49
+      "pattern_frequency": 68
     },
     "19_2_18_3_17_2": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 47
+      "pattern_frequency": 66
     },
     "2_6_3_7_3_6": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 47
+      "pattern_frequency": 66
     },
     "5_6_6_7_6_6": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 47
+      "pattern_frequency": 66
     },
     "6_6_7_7_8_6": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 47
+      "pattern_frequency": 66
     },
     "9_6_9_6_10_6": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 47
+      "pattern_frequency": 66
     },
     "11_6_12_7_12_6": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 47
+      "pattern_frequency": 66
     },
     "13_6_14_6_15_6": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 47
+      "pattern_frequency": 66
     },
     "16_4_17_5_18_4": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 47
+      "pattern_frequency": 66
     },
     "24_2_24_3_25_2": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 47
+      "pattern_frequency": 66
     },
     "30_3_30_3_31_3": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 47
+      "pattern_frequency": 66
     },
     "37_3_37_4_36_3": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 47
+      "pattern_frequency": 66
     },
     "28_5_27_6_26_5": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 47
+      "pattern_frequency": 66
     },
     "15_6_14_7_13_6": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 47
+      "pattern_frequency": 66
     },
     "22_5_22_6_21_5": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 47
+      "pattern_frequency": 65
     },
     "7_9_6_10_5_9": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 47
+      "pattern_frequency": 65
     },
     "16_8_17_9_18_8": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 47
+      "pattern_frequency": 65
     },
     "30_6_29_7_28_6": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 47
+      "pattern_frequency": 65
     },
     "30_6_30_7_31_8": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 47
+      "pattern_frequency": 65
     },
     "37_3_36_4_36_3": {
       "accuracy_scores": [],
@@ -6465,7 +6465,7 @@
     "4_2_3_3_3_2": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 1
+      "pattern_frequency": 2
     },
     "3_4_3_4_4_4": {
       "accuracy_scores": [],
@@ -6495,37 +6495,37 @@
     "9_8_9_8_10_8": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 1
+      "pattern_frequency": 3
     },
     "12_9_13_10_13_9": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 1
+      "pattern_frequency": 3
     },
     "28_7_27_8_27_7": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 1
+      "pattern_frequency": 3
     },
     "16_5_16_5_17_5": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 1
+      "pattern_frequency": 3
     },
     "18_5_19_6_19_5": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 1
+      "pattern_frequency": 3
     },
     "20_5_21_6_21_5": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 1
+      "pattern_frequency": 3
     },
     "23_5_23_5_24_5": {
       "accuracy_scores": [],
       "success_rates": [],
-      "pattern_frequency": 1
+      "pattern_frequency": 3
     },
     "19_7_19_7_20_7": {
       "accuracy_scores": [],
@@ -6596,12 +6596,37 @@
       "accuracy_scores": [],
       "success_rates": [],
       "pattern_frequency": 1
+    },
+    "27_4_28_5_28_4": {
+      "accuracy_scores": [],
+      "success_rates": [],
+      "pattern_frequency": 1
+    },
+    "16_4_16_5_17_4": {
+      "accuracy_scores": [],
+      "success_rates": [],
+      "pattern_frequency": 1
+    },
+    "20_7_21_7_21_7": {
+      "accuracy_scores": [],
+      "success_rates": [],
+      "pattern_frequency": 2
+    },
+    "30_2_31_3_31_2": {
+      "accuracy_scores": [],
+      "success_rates": [],
+      "pattern_frequency": 2
+    },
+    "10_4_10_4_9_4": {
+      "accuracy_scores": [],
+      "success_rates": [],
+      "pattern_frequency": 1
     }
   },
   "success_factors": {
     "ball_speed": {
-      "total_cases": 14365,
-      "successful_cases": 13244,
+      "total_cases": 15728,
+      "successful_cases": 14607,
       "factor_values": [
         15,
         15,
@@ -6626,6 +6651,70 @@
         15,
         15,
         15,
+        15,
+        15,
+        15,
+        15,
+        15,
+        15,
+        15,
+        15,
+        15,
+        15,
+        15,
+        15,
+        15,
+        5,
+        15,
+        15,
+        15,
+        15,
+        15,
+        15,
+        15,
+        15,
+        15,
+        15,
+        15,
+        15,
+        15,
+        15,
+        15,
+        15,
+        15,
+        15,
+        15,
+        15,
+        15,
+        15,
+        15,
+        15,
+        15,
+        15,
+        15,
+        15,
+        15,
+        15,
+        15,
+        15,
+        15,
+        15,
+        15,
+        15,
+        15,
+        15,
+        15,
+        15,
+        15,
+        15,
+        15,
+        15,
+        15,
+        15,
+        15,
+        15,
+        15,
+        15,
         5,
         15,
         15,
@@ -6678,20 +6767,6 @@
         15,
         15,
         5,
-        15,
-        15,
-        15,
-        15,
-        15,
-        15,
-        15,
-        15,
-        15,
-        15,
-        15,
-        15,
-        15,
-        15,
         15,
         15,
         15,
@@ -6730,9 +6805,73 @@
       ]
     },
     "bricks_remaining": {
-      "total_cases": 14365,
-      "successful_cases": 13244,
+      "total_cases": 15728,
+      "successful_cases": 14607,
       "factor_values": [
+        35,
+        34,
+        33,
+        32,
+        31,
+        30,
+        29,
+        28,
+        27,
+        26,
+        25,
+        24,
+        23,
+        22,
+        21,
+        20,
+        19,
+        18,
+        17,
+        16,
+        15,
+        14,
+        13,
+        12,
+        11,
+        10,
+        9,
+        8,
+        7,
+        6,
+        5,
+        4,
+        3,
+        2,
+        1,
+        0,
+        0,
+        49,
+        48,
+        47,
+        46,
+        45,
+        44,
+        43,
+        42,
+        41,
+        40,
+        39,
+        38,
+        37,
+        36,
+        35,
+        34,
+        33,
+        32,
+        31,
+        30,
+        29,
+        28,
+        27,
+        26,
+        25,
+        24,
+        23,
         22,
         21,
         20,
@@ -6842,27 +6981,63 @@
         18,
         17,
         16,
-        15,
-        14,
-        13,
-        12,
-        11,
-        10,
-        9,
-        8,
-        7,
-        6,
-        5,
-        4,
-        3,
-        2,
-        1
+        15
       ]
     },
     "paddle_distance": {
-      "total_cases": 14365,
-      "successful_cases": 13244,
+      "total_cases": 15728,
+      "successful_cases": 14607,
       "factor_values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
         0,
         0,
         0,
@@ -6990,8 +7165,8 @@
       ]
     },
     "prediction_confidence": {
-      "total_cases": 14365,
-      "successful_cases": 13244,
+      "total_cases": 15728,
+      "successful_cases": 14607,
       "factor_values": [
         1.0,
         1.0,
@@ -7016,6 +7191,70 @@
         1.0,
         1.0,
         1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        0.5,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
         0.5,
         1.0,
         1.0,
@@ -7068,20 +7307,6 @@
         1.0,
         1.0,
         0.5,
-        1.0,
-        1.0,
-        1.0,
-        1.0,
-        1.0,
-        1.0,
-        1.0,
-        1.0,
-        1.0,
-        1.0,
-        1.0,
-        1.0,
-        1.0,
-        1.0,
         1.0,
         1.0,
         1.0,
@@ -7122,10 +7347,10 @@
   },
   "historical_performance": [],
   "learning_stats": {
-    "total_learning_iterations": 14365,
-    "successful_adaptations": 13244,
+    "total_learning_iterations": 15728,
+    "successful_adaptations": 14607,
     "failed_adaptations": 1121,
-    "average_improvement": 0.9219141480787146
+    "average_improvement": 0.9286850048468307
   },
   "success_prediction_model": null,
   "paddle_speed_factors": {
@@ -7186,33 +7411,10 @@
         1.0,
         1.0,
         1.0,
-        1.0,
-        1.0,
-        1.0,
-        1.0,
-        1.0,
-        1.0,
-        1.0,
-        1.0,
-        1.0,
-        1.0,
-        1.0,
-        1.0,
-        1.0,
-        1.0,
-        1.0,
-        1.0,
-        1.0,
-        1.0,
-        1.0,
-        1.0,
-        1.0,
-        1.0,
-        1.0,
         1.0
       ],
-      "success_cases": 204,
-      "total_cases": 204
+      "success_cases": 51,
+      "total_cases": 51
     },
     "15": {
       "speed_multipliers": [
@@ -7244,28 +7446,10 @@
         1.0,
         1.0,
         1.0,
-        1.0,
-        1.0,
-        1.0,
-        1.0,
-        1.0,
-        1.0,
-        1.0,
-        1.0,
-        1.0,
-        1.0,
-        1.0,
-        1.0,
-        1.0,
-        1.0,
-        1.0,
-        1.0,
-        1.0,
-        1.0,
         1.0
       ],
-      "success_cases": 255,
-      "total_cases": 255
+      "success_cases": 2343,
+      "total_cases": 2343
     },
     "20": {
       "speed_multipliers": [
@@ -7426,17 +7610,30 @@
         1.0,
         1.0,
         1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
         1.0
       ],
-      "success_cases": 2343,
-      "total_cases": 2343
+      "success_cases": 952,
+      "total_cases": 952
     }
   },
   "user_prompt_destruction_control": "",
   "model_metrics": {
-    "last_accuracy": 0.9375,
-    "training_samples": 128,
-    "test_samples": 32,
+    "last_accuracy": 0.9666666666666667,
+    "training_samples": 116,
+    "test_samples": 30,
     "features_count": 1
   }
 }

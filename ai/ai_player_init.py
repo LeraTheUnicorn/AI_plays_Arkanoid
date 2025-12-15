@@ -198,18 +198,33 @@ class AIPlayerInitMixin:
                 logs_dir = base_logs_dir
             
             # Создаем ротирующий handler с инкрементными номерами файлов
+            # ✅ ИСПРАВЛЕНО: Увеличено max_lines до 5000 для уменьшения частоты ротации
+            # и предотвращения фризов из-за синхронной ротации файлов
             base_log_file = os.path.join(logs_dir, "ai_player.log")
-            handler = RotatingLinesFileHandler(
+            file_handler = RotatingLinesFileHandler(
                 base_log_file,
-                max_lines=500,
+                max_lines=5000,  # Увеличено с 500 до 5000 для уменьшения частоты ротации
                 encoding='utf-8'
             )
             formatter = logging.Formatter(
                 '%(asctime)s - %(name)s - %(levelname)s - %(message)s',
                 datefmt='%Y-%m-%d %H:%M:%S'
             )
-            handler.setFormatter(formatter)
-            logger.addHandler(handler)
+            file_handler.setFormatter(formatter)
+            
+            # Получаем уровень логирования из централизованной конфигурации
+            # ВАЖНО: уровень логирования настраивается ТОЛЬКО в logging_config.py
+            log_level = get_log_level()
+            
+            # ✅ НОВОЕ: Используем асинхронное логирование для предотвращения фризов
+            # Логи записываются в очередь и обрабатываются в отдельном потоке
+            from .async_logging_handler import get_async_logging_setup
+            async_setup = get_async_logging_setup()
+            # Настраиваем асинхронное логирование (QueueHandler будет добавлен к logger)
+            async_setup.setup_async_logging(file_handler, log_level, logger)
+            
+            # НЕ добавляем file_handler напрямую к logger - он используется через QueueListener
+            # QueueHandler уже добавлен в setup_async_logging
             # Предотвращаем дублирование сообщений через родительские логгеры
             logger.propagate = False
         

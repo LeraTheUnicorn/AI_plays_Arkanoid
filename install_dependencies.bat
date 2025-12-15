@@ -68,12 +68,19 @@ if !ERRORLEVEL! NEQ 0 (
 )
 
 echo.
-echo [ШАГ 5] Установка зависимостей с помощью Poetry...
-echo    (устанавливаем только зависимости, без установки проекта)
-.venv\Scripts\python.exe -m poetry install --no-root
+echo [ШАГ 5] Обновление зависимостей с помощью Poetry...
+echo    (обновляем зависимости до последних совместимых версий)
+.venv\Scripts\python.exe -m poetry update --no-root
 if !ERRORLEVEL! NEQ 0 (
-    echo ❌ Ошибка установки зависимостей!
-    goto error_exit
+    echo ⚠️  Предупреждение: не удалось обновить зависимости
+    echo    Пробуем установить зависимости из poetry.lock...
+    .venv\Scripts\python.exe -m poetry install --no-root
+    if !ERRORLEVEL! NEQ 0 (
+        echo ❌ Ошибка установки зависимостей!
+        goto error_exit
+    )
+) else (
+    echo ✅ Зависимости успешно обновлены!
 )
 
 echo.
@@ -126,7 +133,8 @@ echo 4. Попробуйте вручную:
 echo    python -m venv .venv
 echo    .venv\Scripts\activate.bat
 echo    .venv\Scripts\python.exe -m pip install poetry
-echo    .venv\Scripts\python.exe -m poetry install --no-root
+echo    .venv\Scripts\python.exe -m poetry update --no-root
+echo    (или .venv\Scripts\python.exe -m poetry install --no-root)
 echo.
 pause
 exit /b 1
