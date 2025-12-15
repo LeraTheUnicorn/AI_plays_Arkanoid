@@ -6,8 +6,35 @@
 CURSOR_AI/
 │
 ├── 📁 ai/                          # AI-система для авторежима
-│   ├── ai_player.py                # Основной класс AIPlayer (координатор)
-│   ├── ai_player_*.py              # Миксины для функциональности AIPlayer
+│   ├── ai_player.py                # Основной класс AIPlayer (координатор, 479 строк)
+│   ├── ai_player_init.py           # Миксин: инициализация
+│   ├── ai_player_state.py          # Миксин: управление состоянием
+│   ├── ai_player_targeting.py      # Миксин: прицеливание
+│   ├── ai_player_target_selection_part1.py # Миксин: выбор целей (часть 1)
+│   ├── ai_player_target_selection_part2.py # Миксин: выбор целей (часть 2)
+│   ├── ai_player_target_calculation.py # Миксин: расчет целей
+│   ├── ai_player_positioning.py    # Миксин: позиционирование
+│   ├── ai_player_position_optimization_part1.py # Миксин: оптимизация позиции (часть 1)
+│   ├── ai_player_position_optimization_part2.py # Миксин: оптимизация позиции (часть 2)
+│   ├── ai_player_movement.py       # Миксин: движение платформы
+│   ├── ai_player_movement_core_part1.py # Миксин: ядро движения (часть 1)
+│   ├── ai_player_movement_core_part2.py # Миксин: ядро движения (часть 2)
+│   ├── ai_player_movement_core_part3.py # Миксин: ядро движения (часть 3)
+│   ├── ai_player_movement_helpers.py # Миксин: вспомогательные функции движения
+│   ├── ai_player_learning.py       # Миксин: обучение (координатор)
+│   ├── ai_player_learning_core_part1.py # Миксин: ядро обучения (часть 1)
+│   ├── ai_player_learning_core_part2.py # Миксин: ядро обучения (часть 2)
+│   ├── ai_player_match_processing.py # Миксин: обработка матчей
+│   ├── ai_player_metrics.py        # Миксин: метрики производительности
+│   ├── ai_player_reset.py          # Миксин: сброс состояния
+│   ├── ai_player_zones.py          # Миксин: работа с зонами
+│   ├── ai_player_loop_prevention.py # Миксин: предотвращение зацикливания
+│   ├── ai_player_ball_tracking.py # Миксин: отслеживание мяча
+│   ├── ai_player_fallback.py      # Миксин: резервные стратегии
+│   ├── ai_player_cache.py          # Миксин: кэширование
+│   ├── ai_player_utils.py          # Миксин: утилиты
+│   ├── ai_player_models.py         # Модели данных AIPlayer
+│   ├── ai_player_debug_visualization.py # Миксин: визуализация отладки
 │   ├── trajectory_predictor.py     # Предсказание траектории мяча
 │   ├── async_trajectory_predictor.py # Асинхронное предсказание траекторий
 │   ├── position_optimizer.py       # Оптимизация позиции платформы
@@ -21,6 +48,10 @@ CURSOR_AI/
 │   ├── logging_config.py           # Настройка логирования
 │   ├── debug_logger.py             # Отладочное логирование
 │   ├── platform_utils.py           # Утилиты для платформ
+│   ├── buffered_logger.py          # Буферизованное логирование
+│   ├── rotating_file_handler.py    # Ротирующий file handler
+│   ├── analyze_ball_loss.py        # Анализ потери мяча
+│   └── async_trajectory_example.py # Пример асинхронного предсказателя
 │   │
 │   ├── 📁 core/                    # Ядро AI системы
 │   │   ├── ai_coordinator.py       # Координатор AI компонентов
@@ -56,13 +87,18 @@ CURSOR_AI/
 │       └── analyze_performance_degradation.py # Анализ деградации
 │
 ├── 📁 game/                        # Основная логика игры
-│   ├── PyGameBall.py               # Главный файл игры (точка входа)
+│   ├── PyGameBall.py               # Главный файл игры (точка входа, 437 строк)
+│   ├── game_loop_initialization.py # Инициализация игры (255 строк)
+│   ├── game_loop_events.py         # Обработка событий (203 строки)
+│   ├── game_loop_physics.py        # Физика и столкновения (845+ строк)
+│   ├── game_loop_rendering.py      # Отрисовка игры (120 строк)
+│   ├── game_loop_ai.py             # Логика AI (221 строка)
 │   ├── game_config.py              # Конфигурация игры
 │   ├── game_models.py              # Модели данных игры
 │   ├── game_utils.py               # Утилиты игры
 │   ├── game_ui.py                  # UI компоненты
-│   ├── game_rendering.py           # Отрисовка игры
-│   ├── game_main_helpers.py        # Вспомогательные функции main()
+│   ├── game_rendering.py           # Функции отрисовки
+│   ├── game_main_helpers.py        # Вспомогательные функции (legacy)
 │   ├── game_controllers.py        # Контроллеры игры
 │   ├── game_views.py               # Представления игры
 │   ├── highscores.py               # Система рекордов
@@ -83,11 +119,15 @@ CURSOR_AI/
 ├── 📄 pyproject.toml               # Конфигурация Poetry
 ├── 📄 poetry.lock                  # Зафиксированные зависимости
 ├── 📄 install_dependencies.bat     # Установка зависимостей
-├── 📄 run_with_multithreading.bat  # Запуск с многопоточностью
+├── 📄 run_with_multithreading.bat  # Запуск с многопоточностью (Windows)
 ├── 📄 run_with_multithreading.sh   # Запуск с многопоточностью (Linux)
 ├── 📄 OPTIMIZATION_PLAN.md         # План оптимизации
 ├── 📄 PROGRESS_REPORT.md           # Отчет о прогрессе
-├── 📄 REFACTORING_LOG.md           # Лог рефакторинга
+├── 📄 REFACTORING_LOG.md           # Лог рефакторинга (часть 1)
+├── 📄 REFACTORING_LOG_PART2.md     # Лог рефакторинга (часть 2)
+├── 📄 REFACTORING_LOG_PART3_PYGAMEBALL.md # Лог рефакторинга PyGameBall
+├── 📄 REMAINING_TASKS.md           # Оставшиеся задачи
+├── 📄 PROJECT_IMPROVEMENT_PLAN.md  # План исправлений и доработок
 ├── 📄 MULTITHREADING_GUIDE.md      # Руководство по многопоточности
 └── 📄 QUICK_START_MULTITHREADING.md # Быстрый старт многопоточности
 ```
@@ -159,7 +199,42 @@ CURSOR_AI/
 ---
 
 #### `REFACTORING_LOG.md`
-**Назначение**: Лог выполненных рефакторингов.
+**Назначение**: Лог выполненных рефакторингов (часть 1).
+
+**Связан с**: `REFACTORING_LOG_PART2.md`, `REFACTORING_LOG_PART3_PYGAMEBALL.md`
+
+---
+
+#### `REFACTORING_LOG_PART2.md`
+**Назначение**: Лог рефакторинга AI системы (часть 2).
+
+**Связан с**: `REFACTORING_LOG.md`, `ai/ai_player.py`
+
+---
+
+#### `REFACTORING_LOG_PART3_PYGAMEBALL.md`
+**Назначение**: Лог рефакторинга PyGameBall.py - дробление на модули.
+
+**Связан с**: `game/PyGameBall.py`, `game/game_loop_*.py`
+
+---
+
+#### `REMAINING_TASKS.md`
+**Назначение**: Список оставшихся задач по оптимизации проекта.
+
+**Связан с**: `OPTIMIZATION_PLAN.md`, `PROGRESS_REPORT.md`
+
+---
+
+#### `PROJECT_IMPROVEMENT_PLAN.md`
+**Назначение**: План исправлений и доработок проекта после основного рефакторинга.
+
+**Содержит**:
+- Статус выполненных задач
+- План дробления оставшихся больших файлов
+- План исправлений и улучшений
+
+**Связан с**: `REMAINING_TASKS.md`, `OPTIMIZATION_PLAN.md`
 
 ---
 
@@ -190,6 +265,8 @@ CURSOR_AI/
 
 #### `ai/ai_player.py`
 **Назначение**: Основной класс AIPlayer - координатор всей AI системы. Использует множественное наследование (миксины) для организации функциональности.
+
+**Размер**: 479 строк (было 6912 строк, уменьшено на 93%)
 
 **Основные компоненты**:
 - Координация работы всех подсистем AI
@@ -237,11 +314,40 @@ CURSOR_AI/
 ---
 
 #### `ai/ai_player_targeting.py`
-**Назначение**: Миксин для системы прицеливания по кубикам.
+**Назначение**: Миксин для системы прицеливания по кубикам (координатор).
 
-**Содержит**: Выбор целей, расчет углов отскока, приоритизация целей.
+**Содержит**: Координация выбора целей, расчет углов отскока, приоритизация целей.
 
-**Связан с**: `ai_player.py`, `ai/strategy/target_tracker.py`, `ai/targeting/target_selector.py`
+**Связан с**: 
+- `ai_player.py`
+- `ai_player_target_selection_part1.py`
+- `ai_player_target_selection_part2.py`
+- `ai/strategy/target_tracker.py`
+- `ai/targeting/target_selector.py`
+
+---
+
+#### `ai/ai_player_target_selection_part1.py`
+**Назначение**: Миксин для выбора целей (часть 1).
+
+**Содержит**: 
+- `_find_optimal_angle_for_max_destruction` - поиск оптимального угла
+- `_count_bricks_in_trajectory` - подсчет кубиков в траектории
+- `_find_first_brick_in_trajectory` - поиск первого кубика
+
+**Связан с**: `ai_player.py`, `ai_player_targeting.py`
+
+---
+
+#### `ai/ai_player_target_selection_part2.py`
+**Назначение**: Миксин для выбора целей (часть 2).
+
+**Содержит**: 
+- `_find_best_target_for_few_bricks` - поиск лучшей цели при малом количестве кубиков
+- `_calculate_optimal_offset` - расчет оптимального смещения
+- `_adjust_offset_from_history` - корректировка смещения из истории
+
+**Связан с**: `ai_player.py`, `ai_player_targeting.py`
 
 ---
 
@@ -313,11 +419,84 @@ CURSOR_AI/
 ---
 
 #### `ai/ai_player_learning.py`
-**Назначение**: Миксин для интеграции системы обучения в AIPlayer.
+**Назначение**: Миксин для интеграции системы обучения в AIPlayer (координатор, 64 строки).
 
-**Содержит**: Методы обучения на основе опыта, сохранение/загрузка моделей.
+**Содержит**: Координация обучения, интеграция с подсистемами обучения.
 
-**Связан с**: `ai_player.py`, `learning_system.py`, `lazy_learning_system.py`
+**Связан с**: 
+- `ai_player.py`
+- `ai_player_learning_core_part1.py`
+- `ai_player_learning_core_part2.py`
+- `ai_player_match_processing.py`
+- `learning_system.py`
+- `lazy_learning_system.py`
+
+---
+
+#### `ai/ai_player_learning_core_part1.py`
+**Назначение**: Миксин для ядра системы обучения (часть 1).
+
+**Содержит**: 
+- `learn_from_result` - обучение на основе результата
+- `_update_performance_metrics` - обновление метрик производительности
+
+**Связан с**: `ai_player.py`, `ai_player_learning.py`
+
+---
+
+#### `ai/ai_player_learning_core_part2.py`
+**Назначение**: Миксин для ядра системы обучения (часть 2).
+
+**Содержит**: 
+- `on_game_end` - обработка окончания игры
+- `_reset_game_state_trackers` - сброс трекеров состояния
+- `_reset_current_game_stats` - сброс статистики игры
+
+**Связан с**: `ai_player.py`, `ai_player_learning.py`
+
+---
+
+#### `ai/ai_player_match_processing.py`
+**Назначение**: Миксин для обработки матчей в режиме обучения.
+
+**Содержит**: 
+- `_process_training_match` - обработка тренировочного матча
+- `get_optimal_ball_speed` - получение оптимальной скорости мяча
+- `get_optimal_paddle_speed_multiplier` - получение множителя скорости платформы
+- `update_training_stats` - обновление статистики обучения
+
+**Связан с**: `ai_player.py`, `ai_player_learning.py`
+
+---
+
+#### `ai/ai_player_metrics.py`
+**Назначение**: Миксин для метрик производительности AI.
+
+**Связан с**: `ai_player.py`, `performance_monitor.py`
+
+---
+
+#### `ai/ai_player_reset.py`
+**Назначение**: Миксин для сброса состояния AI.
+
+**Содержит**: 
+- `reset_learning` - сброс обучения
+- `reset_for_testing` - сброс для тестирования
+- `save_learning_data` - сохранение данных обучения
+- `load_learning_data` - загрузка данных обучения
+
+**Связан с**: `ai_player.py`, `learning_system.py`
+
+---
+
+#### `ai/ai_player_debug_visualization.py`
+**Назначение**: Миксин для визуализации отладочной информации.
+
+**Содержит**: 
+- `visualize_debug_info` - визуализация отладочной информации
+- `_draw_predicted_trajectory` - отрисовка предсказанной траектории
+
+**Связан с**: `ai_player.py`, `trajectory_predictor.py`
 
 ---
 
@@ -727,19 +906,114 @@ CURSOR_AI/
 ---
 
 #### `game/PyGameBall.py`
-**Назначение**: Главный файл игры - точка входа, основной игровой цикл.
+**Назначение**: Главный файл игры - точка входа, координатор игрового цикла.
+
+**Размер**: 437 строк (было 2456 строк, уменьшено на 82%)
 
 **Основные функции**:
-- Инициализация pygame
+- Координация работы модулей игрового цикла
 - Главный игровой цикл
-- Обработка событий
-- Интеграция с AI системой
 - Управление жизнями, очками, уровнями
+- Интеграция с AI системой
 
 **Связан с**: 
-- Все модули в `game/`
+- `game_loop_initialization.py` - инициализация
+- `game_loop_events.py` - обработка событий
+- `game_loop_physics.py` - физика
+- `game_loop_rendering.py` - отрисовка
+- `game_loop_ai.py` - логика AI
+- Все остальные модули в `game/`
 - `ai/ai_player.py`
 - `resources/`
+
+---
+
+#### `game/game_loop_initialization.py`
+**Назначение**: Модуль инициализации игры (255 строк).
+
+**Основные функции**:
+- `initialize_pygame()` - инициализация pygame
+- `initialize_managers()` - создание менеджеров (HighScoreManager, SettingsManager)
+- `load_background_music()` - загрузка фоновой музыки
+- `initialize_game_objects()` - создание объектов игры (Ball, Paddle, Bricks)
+- `initialize_game_variables()` - инициализация переменных игры
+- `create_ai_player_system()` - создание AI системы
+- `setup_ai_player_for_training()` - настройка AI для обучения
+- `start_background_music()` - запуск музыки
+
+**Связан с**: 
+- `PyGameBall.py`
+- `game_models.py`
+- `game_utils.py`
+- `ai/ai_player.py`
+
+---
+
+#### `game/game_loop_events.py`
+**Назначение**: Модуль обработки событий игры (203 строки).
+
+**Основные функции**:
+- `process_keyboard_events()` - обработка событий клавиатуры
+- `process_restart_key()` - обработка клавиши перезапуска
+- `apply_game_restart()` - применение перезапуска игры
+
+**Связан с**: 
+- `PyGameBall.py`
+- `game_config.py`
+- `game_models.py`
+- `game_utils.py`
+- `game_ui.py`
+
+---
+
+#### `game/game_loop_physics.py`
+**Назначение**: Модуль физики и столкновений игры (845+ строк).
+
+**Основные функции**:
+- `update_ball_physics()` - обновление физики мяча
+- `handle_ball_paddle_collision()` - обработка столкновения мяча с платформой
+- `handle_ball_brick_collision()` - обработка столкновения мяча с кубиками
+- `handle_ball_wall_collision()` - обработка столкновения мяча со стенами
+- `check_ball_loss()` - проверка потери мяча
+- `update_game_state()` - обновление состояния игры
+- `handle_victory()` - обработка победы
+
+**Связан с**: 
+- `PyGameBall.py`
+- `game_config.py`
+- `game_models.py`
+
+---
+
+#### `game/game_loop_rendering.py`
+**Назначение**: Модуль отрисовки игры (120 строк).
+
+**Основные функции**:
+- `render_game_frame()` - отрисовка игрового кадра
+- Интеграция с `game_rendering.py` для отрисовки объектов
+
+**Связан с**: 
+- `PyGameBall.py`
+- `game_rendering.py`
+- `game_models.py`
+- `dirty_rects.py`
+
+---
+
+#### `game/game_loop_ai.py`
+**Назначение**: Модуль логики AI для игрового цикла (221 строка).
+
+**Основные функции**:
+- `update_ai_state()` - обновление состояния AI
+- `process_ai_movement()` - обработка движения платформы через AI
+- `handle_ai_training_mode()` - обработка режима обучения AI
+- Логика работы с зоной разделения
+
+**Связан с**: 
+- `PyGameBall.py`
+- `game_config.py`
+- `game_models.py`
+- `ai/ai_player.py`
 
 ---
 
@@ -817,16 +1091,13 @@ CURSOR_AI/
 ---
 
 #### `game/game_main_helpers.py`
-**Назначение**: Вспомогательные функции для main() в PyGameBall.py.
+**Назначение**: Вспомогательные функции для main() в PyGameBall.py (legacy, заменены модулями game_loop_*).
 
-**Основные функции**:
-- `handle_game_events()` - обработка событий
-- `update_game_state()` - обновление состояния
-- `update_ball_physics()` - физика мяча
-- `render_game_frame()` - рендеринг кадра
+**Примечание**: Функции из этого модуля были перенесены в специализированные модули `game_loop_*`.
 
 **Связан с**: 
-- `PyGameBall.py`
+- `PyGameBall.py` (legacy)
+- Заменен модулями `game_loop_*.py`
 
 ---
 
@@ -951,13 +1222,17 @@ CURSOR_AI/
 ### Поток данных в игре:
 
 ```
-PyGameBall.py (главный цикл)
+PyGameBall.py (главный цикл - координатор)
     ↓
-game_main_helpers.py (обработка событий, обновление, рендеринг)
+├── game_loop_initialization.py (инициализация)
+├── game_loop_events.py (обработка событий)
+├── game_loop_physics.py (физика и столкновения)
+├── game_loop_rendering.py (отрисовка)
+└── game_loop_ai.py (логика AI)
     ↓
 game_models.py (модели данных)
     ↓
-game_rendering.py (отрисовка)
+game_rendering.py (функции отрисовки)
     ↓
 dirty_rects.py (оптимизация)
 ```
@@ -981,15 +1256,19 @@ AIPlayer (координатор)
 ```
 PyGameBall.py
     ↓
+game_loop_initialization.py
+    ↓
 game_utils.create_ai_player()
     ↓
 AIPlayer.__init__()
+    ↓
+game_loop_ai.py
     ↓
 AIPlayer.update() (в каждом кадре)
     ↓
 AIPlayer.get_paddle_direction() (получение направления движения)
     ↓
-PyGameBall.py (применение движения к платформе)
+game_loop_physics.py (применение движения к платформе)
 ```
 
 ## Зависимости между пакетами
@@ -1003,12 +1282,34 @@ PyGameBall.py (применение движения к платформе)
 
 1. **Модульная архитектура**: Проект использует модульную архитектуру с четким разделением ответственности.
 
-2. **Миксины**: AIPlayer использует множественное наследование (миксины) для организации функциональности, что позволяет легко добавлять/удалять возможности.
+2. **Миксины**: AIPlayer использует множественное наследование (миксины) для организации функциональности, что позволяет легко добавлять/удалять возможности. Основной файл `ai_player.py` уменьшен с 6912 до 479 строк (93% уменьшение).
 
 3. **Разделение логики**: Игровая логика (`game/`) отделена от AI логики (`ai/`), что упрощает тестирование и поддержку.
 
-4. **Централизованная конфигурация**: Конфигурация вынесена в отдельные файлы (`game_config.py`, `config.py`).
+4. **Рефакторинг PyGameBall.py**: Главный файл игры разбит на модули:
+   - `PyGameBall.py`: 437 строк (было 2456, уменьшено на 82%)
+   - `game_loop_initialization.py`: 255 строк
+   - `game_loop_events.py`: 203 строки
+   - `game_loop_physics.py`: 845+ строк
+   - `game_loop_rendering.py`: 120 строк
+   - `game_loop_ai.py`: 221 строка
 
-5. **Логирование**: Централизованная система логирования через `logging_config.py`.
+5. **Централизованная конфигурация**: Конфигурация вынесена в отдельные файлы (`game_config.py`, `config.py`).
 
-6. **Оптимизация**: Используются различные техники оптимизации (кэширование, dirty rectangles, асинхронные расчеты).
+6. **Логирование**: Централизованная система логирования через `logging_config.py`.
+
+7. **Оптимизация**: Используются различные техники оптимизации (кэширование, dirty rectangles, асинхронные расчеты).
+
+8. **Статус рефакторинга**: 
+   - ✅ `ai_player.py`: разбит на 25+ миксинов (479 строк, уменьшено на 93%)
+   - ✅ `PyGameBall.py`: разбит на 5 модулей игрового цикла (437 строк, уменьшено на 82%)
+   - ⚠️ `ai/strategy/paddle_movement.py`: требует дальнейшего разбиения (1486 строк)
+   - ⚠️ `ai/core/decision_maker.py`: требует дальнейшего разбиения (1349 строк)
+   - ⚠️ `ai/core/movement_engine.py`: требует дальнейшего разбиения (1617 строк)
+
+9. **Документация**: Проект включает подробную документацию:
+   - `OPTIMIZATION_PLAN.md` - план оптимизации
+   - `PROGRESS_REPORT.md` - отчет о прогрессе
+   - `REMAINING_TASKS.md` - оставшиеся задачи
+   - `PROJECT_IMPROVEMENT_PLAN.md` - план дальнейших улучшений
+   - `REFACTORING_LOG*.md` - логи рефакторинга
