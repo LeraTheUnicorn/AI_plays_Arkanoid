@@ -86,11 +86,21 @@ def process_keyboard_events(
             elif event.key == pygame.K_m:
                 # Переключение всех звуков
                 if sound_enabled:
-                    pygame.mixer.music.stop()
+                    try:
+                        pygame.mixer.music.stop()
+                    except pygame.error:
+                        pass  # Музыка не загружена или не воспроизводится
                     sound_enabled = False
                 else:
-                    pygame.mixer.music.play(-1)
-                    sound_enabled = True
+                    # Проверяем, загружена ли музыка перед воспроизведением
+                    try:
+                        pygame.mixer.music.play(-1)
+                        sound_enabled = True
+                    except pygame.error:
+                        # Музыка не загружена - звук остается выключенным
+                        sound_enabled = False
+                        if not getattr(__import__('sys'), 'frozen', False):
+                            print("[DEBUG] Не удалось воспроизвести музыку: музыка не загружена")
             elif event.key == pygame.K_UP:
                 # Увеличение скорости мяча
                 ball.increase_speed(settings_manager)
