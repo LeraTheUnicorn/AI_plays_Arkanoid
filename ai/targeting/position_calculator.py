@@ -109,31 +109,58 @@ class PositionCalculator:
 
         bricks_count = len(game_state.remaining_bricks)
 
-        # КРИТИЧНО: При 1 кирпиче - используем максимально агрессивные углы
+        # КРИТИЧНО: При 1 кирпиче - используем максимально точный расчет с учетом траектории
         if bricks_count == 1:
             brick_center_x = getattr(target_brick, "x", 0) + getattr(target_brick, "width", 60) / 2
             brick_y = getattr(target_brick, "y", 0)
+            brick_height = getattr(target_brick, "height", 20)
+            brick_width = getattr(target_brick, "width", 60)
 
             ball_y = game_state.ball_position.y
+            ball_x = game_state.ball_position.x
             paddle_y = game_state.paddle_position.y
-
-            distance_to_brick = brick_y - paddle_y
-            horizontal_offset_needed = brick_center_x - landing_x
-
-            paddle_half_width = self.paddle_width / 2
-            max_offset = 1.5
-
-            if abs(horizontal_offset_needed) > paddle_half_width * max_offset:
-                offset = max_offset if horizontal_offset_needed > 0 else -max_offset
-            else:
-                offset = horizontal_offset_needed / (paddle_half_width * max_offset) * max_offset
-
             vel_x = game_state.ball_velocity.x if hasattr(game_state, "ball_velocity") else 0
-            if abs(vel_x) > 0.1:
-                prediction_adjustment = (vel_x / abs(vel_x)) * 0.2
-                offset += prediction_adjustment
+            vel_y = game_state.ball_velocity.y if hasattr(game_state, "ball_velocity") else 0
 
+            # Расстояние от платформы до кирпича
+            distance_to_brick = brick_y - paddle_y
+
+            # КРИТИЧНО: Используем более точный расчет с учетом угла отскока
+            # Рассчитываем требуемый угол отскока для попадания в центр кирпича
+            horizontal_distance_needed = brick_center_x - landing_x
+
+            # Учитываем, что мяч должен попасть в кирпич после отскока
+            # Используем формулу: угол = atan2(horizontal_distance, vertical_distance)
+            # Но учитываем максимальный угол отскока от платформы
+            paddle_half_width = self.paddle_width / 2
+            max_angle = math.atan2(paddle_half_width, 50)  # Максимальный угол отскока
+
+            # Рассчитываем требуемый угол для попадания в кирпич
+            required_angle = math.atan2(horizontal_distance_needed, distance_to_brick)
+
+            # Нормализуем угол до максимально возможного
+            normalized_angle = max(-max_angle, min(max_angle, required_angle))
+
+            # Преобразуем угол в offset (-1.0 до 1.0 соответствует -max_angle до +max_angle)
+            offset = normalized_angle / max_angle if max_angle > 0 else 0
+
+            # КРИТИЧНО: Учитываем текущую траекторию мяча для более точного предсказания
+            if abs(vel_x) > 0.1 and abs(vel_y) > 0.1:
+                # Если мяч движется в сторону кирпича, немного корректируем offset
+                direction_to_brick = 1.0 if (brick_center_x - ball_x) > 0 else -1.0
+                ball_direction = 1.0 if vel_x > 0 else -1.0
+
+                # Если мяч движется в сторону кирпича, уменьшаем offset (мяч уже направлен правильно)
+                # Если мяч движется от кирпича, увеличиваем offset (нужно больше коррекции)
+                if direction_to_brick == ball_direction:
+                    offset *= 0.9  # Небольшое уменьшение, т.к. мяч уже направлен правильно
+                else:
+                    offset *= 1.1  # Увеличение для компенсации неправильного направления
+
+            # Ограничиваем диапазоном (используем максимальный offset 1.5 для экстремальных углов)
+            max_offset = 1.5
             offset = max(-max_offset, min(max_offset, offset))
+
             return offset
 
         # Точные координаты кубика
@@ -250,8 +277,49 @@ class PositionCalculator:
             game_state, paddle_y
         )
 
+        # КРИТИЧНО: Если intersection_point is None, используем упрощенный расчет на основе landing_x
         if intersection_point is None:
-            return None
+            # Для малого количества кирпичей (особенно для последнего) ВСЕГДА пытаемся прицелиться
+            if is_critical:
+                # Для последнего кирпича используем упрощенный расчет на основе landing_x
+                brick = bricks[0]
+                brick_x = getattr(brick, "x", 0)
+                brick_y = getattr(brick, "y", 0)
+                brick_width = getattr(brick, "width", self.config.brick.default_width)
+                brick_center_x = brick_x + brick_width / 2
+                
+                # Рассчитываем требуемое смещение для попадания в кирпич
+                dx = brick_center_x - landing_x
+                distance_to_brick = brick_y - paddle_y
+                
+                # Используем максимальный offset для экстремальных углов
+                max_offset = 1.5
+                required_offset = max(-max_offset, min(max_offset, dx / (paddle_half_width * max_offset)))
+                
+                optimal_position = landing_x - (required_offset * paddle_half_width)
+                min_position = paddle_half_width
+                max_position = self.screen_width - paddle_half_width
+                optimal_position = max(min_position, min(max_position, optimal_position))
+                
+                return float(optimal_position)
+            else:
+                # Для нескольких кирпичей используем упрощенный расчет
+                closest_brick = min(
+                    bricks,
+                    key=lambda b: (
+                        paddle_y - getattr(b, "y", 0),
+                        abs((getattr(b, "x", 0) + getattr(b, "width", 60) / 2) - landing_x),
+                    ),
+                )
+                brick_center_x = getattr(closest_brick, "x", 0) + getattr(closest_brick, "width", 60) / 2
+                dx = brick_center_x - landing_x
+                required_offset = max(-1.0, min(1.0, dx / (paddle_half_width * 1.5)))
+                optimal_position = landing_x - (required_offset * paddle_half_width)
+                min_position = paddle_half_width
+                max_position = self.screen_width - paddle_half_width
+                optimal_position = max(min_position, min(max_position, optimal_position))
+                
+                return float(optimal_position)
 
         best_position = None
         best_score = -float("inf")

@@ -241,12 +241,19 @@ class AIPlayerPositionOptimizationPart2Mixin:
         if not bricks:
             return None
 
-        # КРИТИЧНО: Для 1 кирпича - используем улучшенную логику
+        # КРИТИЧНО: Для 1 кирпича - используем улучшенную логику с максимальным приоритетом
         if len(bricks) == 1:
             brick = bricks[0]
             # Всегда выбираем единственный оставшийся кирпич
-            # Но логируем его координаты для отладки
-            self._logger.debug(f"[LAST BRICK] Таргетирование последнего кирпича: x={getattr(brick, 'x', 0)}, y={getattr(brick, 'y', 0)}")
+            # Логируем его координаты для отладки с максимальным приоритетом
+            brick_x = getattr(brick, "x", 0)
+            brick_y = getattr(brick, "y", 0)
+            brick_center_x = brick_x + getattr(brick, "width", 60) / 2
+            self._logger.warning(
+                f"[LAST BRICK CRITICAL] КРИТИЧНО: Таргетирование ПОСЛЕДНЕГО кирпича! "
+                f"x={brick_x:.0f}, y={brick_y:.0f}, center_x={brick_center_x:.0f}, "
+                f"ball_x={ball_x:.0f}, paddle_y={paddle_y:.0f}"
+            )
             return brick
 
         # Для 2-3 кубиков — самый нижний, но с учетом траектории
@@ -323,42 +330,64 @@ class AIPlayerPositionOptimizationPart2Mixin:
         
         bricks_count = len(self.current_game_state.remaining_bricks)
         
-        # КРИТИЧНО: При 1 кирпиче - используем максимально агрессивные углы
+        # КРИТИЧНО: При 1 кирпиче - используем максимально точный расчет с учетом траектории
         if bricks_count == 1:
             brick_center_x = getattr(target_brick, "x", 0) + getattr(target_brick, "width", 60) / 2
             brick_y = getattr(target_brick, "y", 0)
+            brick_height = getattr(target_brick, "height", 20)
+            brick_width = getattr(target_brick, "width", 60)
             
             # Вычисляем, куда нужно направить мяч для попадания в кирпич
             ball_y = self.current_game_state.ball_position.y
+            ball_x = self.current_game_state.ball_position.x
             paddle_y = self.current_game_state.paddle_position.y
+            vel_x = self.current_game_state.ball_velocity.x if hasattr(self.current_game_state, "ball_velocity") else 0
+            vel_y = self.current_game_state.ball_velocity.y if hasattr(self.current_game_state, "ball_velocity") else 0
             
             # Расстояние от платформы до кирпича
             distance_to_brick = brick_y - paddle_y
             
-            # Горизонтальное смещение, необходимое для попадания
-            horizontal_offset_needed = brick_center_x - landing_x
+            # КРИТИЧНО: Используем более точный расчет с учетом угла отскока
+            # Рассчитываем требуемый угол отскока для попадания в центр кирпича
+            horizontal_distance_needed = brick_center_x - landing_x
             
-            # Вычисляем требуемый offset (от -1.5 до +1.5 для максимальной агрессивности)
+            # Учитываем, что мяч должен попасть в кирпич после отскока
+            # Используем формулу: угол = atan2(horizontal_distance, vertical_distance)
+            # Но учитываем максимальный угол отскока от платформы
             paddle_half_width = self.paddle_width / 2
-            max_offset = 1.5  # Увеличено с 1.0 до 1.5 для экстремальных углов
+            max_angle = math.atan2(paddle_half_width, 50)  # Максимальный угол отскока
             
-            # Нормализуем смещение
-            if abs(horizontal_offset_needed) > paddle_half_width * max_offset:
-                offset = max_offset if horizontal_offset_needed > 0 else -max_offset
-            else:
-                offset = horizontal_offset_needed / (paddle_half_width * max_offset) * max_offset
+            # Рассчитываем требуемый угол для попадания в кирпич
+            required_angle = math.atan2(horizontal_distance_needed, distance_to_brick)
             
-            # КРИТИЧНО: Добавляем небольшое упреждение для учета движения мяча
-            vel_x = self.current_game_state.ball_velocity.x if hasattr(self.current_game_state, "ball_velocity") else 0
-            if abs(vel_x) > 0.1:
-                # Учитываем направление движения мяча
-                prediction_adjustment = (vel_x / abs(vel_x)) * 0.2  # Небольшое упреждение
-                offset += prediction_adjustment
+            # Нормализуем угол до максимально возможного
+            normalized_angle = max(-max_angle, min(max_angle, required_angle))
             
-            # Ограничиваем диапазоном
+            # Преобразуем угол в offset (-1.0 до 1.0 соответствует -max_angle до +max_angle)
+            offset = normalized_angle / max_angle if max_angle > 0 else 0
+            
+            # КРИТИЧНО: Учитываем текущую траекторию мяча для более точного предсказания
+            if abs(vel_x) > 0.1 and abs(vel_y) > 0.1:
+                # Если мяч движется в сторону кирпича, немного корректируем offset
+                direction_to_brick = 1.0 if (brick_center_x - ball_x) > 0 else -1.0
+                ball_direction = 1.0 if vel_x > 0 else -1.0
+                
+                # Если мяч движется в сторону кирпича, уменьшаем offset (мяч уже направлен правильно)
+                # Если мяч движется от кирпича, увеличиваем offset (нужно больше коррекции)
+                if direction_to_brick == ball_direction:
+                    offset *= 0.9  # Небольшое уменьшение, т.к. мяч уже направлен правильно
+                else:
+                    offset *= 1.1  # Увеличение для компенсации неправильного направления
+            
+            # Ограничиваем диапазоном (используем максимальный offset 1.5 для экстремальных углов)
+            max_offset = 1.5
             offset = max(-max_offset, min(max_offset, offset))
             
-            self._logger.debug(f"[LAST BRICK OFFSET] brick_x={brick_center_x:.1f}, landing_x={landing_x:.1f}, offset={offset:.2f}, max_offset={max_offset}")
+            self._logger.debug(
+                f"[LAST BRICK OFFSET] brick_x={brick_center_x:.1f}, landing_x={landing_x:.1f}, "
+                f"offset={offset:.2f}, required_angle={math.degrees(required_angle):.1f}°, "
+                f"normalized_angle={math.degrees(normalized_angle):.1f}°"
+            )
             
             return offset
         

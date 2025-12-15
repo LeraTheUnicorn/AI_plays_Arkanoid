@@ -153,6 +153,20 @@ class AIPlayerPositioningMixin:
         
         is_critical = bricks_count == 1
 
+        # КРИТИЧНО: Для последнего кирпича используем специальную логику с максимальным приоритетом
+        if is_critical:
+            brick = bricks[0]
+            brick_x = getattr(brick, "x", 0)
+            brick_y = getattr(brick, "y", 0)
+            brick_width = getattr(brick, "width", self.config.brick.default_width)
+            brick_height = getattr(brick, "height", 20)
+            brick_center_x = brick_x + brick_width / 2
+            
+            self._logger.warning(
+                f"[LAST BRICK PRECISION] КРИТИЧНО: Расчет позиции для ПОСЛЕДНЕГО кирпича! "
+                f"brick=({brick_x:.0f}, {brick_y:.0f}), center_x={brick_center_x:.0f}"
+            )
+
         paddle_y = self.current_game_state.paddle_position.y
         paddle_half_width = self.paddle_width / 2
 
@@ -165,6 +179,9 @@ class AIPlayerPositioningMixin:
 
         best_position = None
         best_score = -float("inf")
+
+        # КРИТИЧНО: Для последнего кирпича увеличиваем приоритет точности
+        critical_multiplier = 10.0 if is_critical else 1.0
 
         for brick in bricks:
             brick_x = getattr(brick, "x", 0)
@@ -246,10 +263,16 @@ class AIPlayerPositioningMixin:
                 center_distance = abs(brick_center_x - self.screen_width // 2)
                 score -= center_distance * 0.1
                 
+                # КРИТИЧНО: Для последнего кирпича максимально увеличиваем приоритет
                 if is_critical:
+                    score *= critical_multiplier  # Умножаем на 10 для максимального приоритета
                     score += hit_confidence * 50000.0
                     if hit_confidence > 0.2:
                         score += 100000.0
+                    self._logger.warning(
+                        f"[LAST BRICK SCORE] Позиция найдена! score={score:.0f}, "
+                        f"hit_confidence={hit_confidence:.2f}, paddle_position={paddle_position:.0f}"
+                    )
 
                 if score > best_score:
                     best_score = score

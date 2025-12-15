@@ -50,8 +50,11 @@ class AIPlayerTargetCalculationMixin:
         )
 
         # КРИТИЧНО: Для малого количества блоков (<=10) ВСЕГДА используем точное прицеливание
+        # КРИТИЧНО: Для последнего кирпича (<=1) ПРИНУДИТЕЛЬНО используем максимально точное прицеливание
         precision_priority = (
-            user_rules.get("precision_priority", False) or bricks_count <= self.config.precision_priority_threshold
+            user_rules.get("precision_priority", False) or 
+            bricks_count <= self.config.precision_priority_threshold or
+            bricks_count <= 1  # Принудительно для последнего кирпича
         )
         
         # Применяем правила из промпта: если указан приоритет точности, используем его
@@ -92,11 +95,22 @@ class AIPlayerTargetCalculationMixin:
         if precision_priority:
             if not self.current_game_state:
                 return self._calculate_fallback_position(landing_x, ball_y, zones, bricks_count)
+            
+            # КРИТИЧНО: Для малого количества кирпичей ВСЕГДА используем точное прицеливание
+            # Даже если calculate_precise_position_for_few_bricks вернет None, используем _calculate_precision_position
+            # который имеет fallback логику с прицеливанием по координатам кирпичей
             optimal_position = self.position_calculator.calculate_precise_position_for_few_bricks(
                 landing_x, self.current_game_state
             )
-            if optimal_position is not None:
-                return self._calculate_precision_position(landing_x, ball_y, zones, bricks_count, ball_speed, user_rules)
+            
+            # КРИТИЧНО: Логируем, если метод вернул None для диагностики
+            if optimal_position is None and bricks_count <= 3:
+                self._logger.warning(
+                    f"[PRECISION TARGETING] calculate_precise_position_for_few_bricks вернул None "
+                    f"для {bricks_count} кирпичей! Используем fallback с прицеливанием."
+                )
+            
+            # Всегда вызываем _calculate_precision_position, который имеет fallback логику
             return self._calculate_precision_position(landing_x, ball_y, zones, bricks_count, ball_speed, user_rules)
 
         # На поздних этапах используем стратегию максимизации разрушений
@@ -160,11 +174,81 @@ class AIPlayerTargetCalculationMixin:
         """Рассчитывает точную позицию для малого количества блоков."""
         if not self.current_game_state:
             return self._calculate_fallback_position(landing_x, ball_y, zones, bricks_count)
+        
+        # КРИТИЧНО: Для последнего кирпича используем специальную логику
+        if bricks_count == 1:
+            # Находим последний кирпич
+            target_brick = None
+            if self.current_game_state.remaining_bricks:
+                target_brick = self.current_game_state.remaining_bricks[0]
+            
+            if target_brick:
+                # Используем точный расчет позиции с учетом целевого кирпича
+                optimal_offset = self.position_calculator.calculate_optimal_offset(
+                    landing_x, target_brick, self.current_game_state
+                )
+                paddle_half_width = self.paddle_width / 2
+                optimal_position = landing_x - (optimal_offset * paddle_half_width)
+                
+                # Обеспечиваем безопасную позицию
+                safe_margin = 30
+                min_position = paddle_half_width + safe_margin
+                max_position = self.screen_width - paddle_half_width - safe_margin
+                optimal_position = self._ensure_safe_paddle_position(float(optimal_position), landing_x)
+                optimal_position = max(min_position, min(max_position, int(optimal_position)))
+                
+                # КРИТИЧНО: Для последнего кирпича не проверяем success_probability - всегда используем расчет
+                in_separation_zone = zones["separation_zone_start"] <= ball_y < zones["paddle_zone_start"]
+                if in_separation_zone:
+                    self._set_target_position_if_needed(int(optimal_position), "last_brick_precision")
+                
+                if self.current_game_state:
+                    brick_x = getattr(target_brick, "x", 0)
+                    brick_y = getattr(target_brick, "y", 0)
+                    self._log_paddle_movement(
+                        self.current_game_state.paddle_position.x,
+                        int(optimal_position),
+                        f"КРИТИЧНО: Точное прицеливание в ПОСЛЕДНИЙ кирпич ({brick_x:.0f}, {brick_y:.0f}), offset={optimal_offset:.2f}",
+                        1.0  # Максимальная уверенность
+                    )
+                return int(optimal_position)
+        
         optimal_position = self.position_calculator.calculate_precise_position_for_few_bricks(
             landing_x, self.current_game_state
         )
-        if optimal_position is None and self.targeting_system.brick_coordinates:
-            optimal_position = self._force_target_brick_from_coordinates(landing_x)
+        
+        # КРИТИЧНО: Если метод вернул None, используем fallback с прицеливанием по координатам
+        if optimal_position is None:
+            if self.targeting_system.brick_coordinates:
+                optimal_position = self._force_target_brick_from_coordinates(landing_x)
+                if optimal_position is not None:
+                    self._logger.warning(
+                        f"[PRECISION FALLBACK] Используем _force_target_brick_from_coordinates "
+                        f"для {bricks_count} кирпичей"
+                    )
+            else:
+                # Если нет координат кирпичей, используем упрощенный расчет на основе текущего состояния
+                if self.current_game_state and self.current_game_state.remaining_bricks:
+                    bricks = self.current_game_state.remaining_bricks
+                    closest_brick = min(
+                        bricks,
+                        key=lambda b: (
+                            self.current_game_state.paddle_position.y - getattr(b, "y", 0),
+                            abs((getattr(b, "x", 0) + getattr(b, "width", 60) / 2) - landing_x),
+                        ),
+                    )
+                    brick_center_x = getattr(closest_brick, "x", 0) + getattr(closest_brick, "width", 60) / 2
+                    paddle_half_width = self.paddle_width / 2
+                    dx = brick_center_x - landing_x
+                    required_offset = max(-1.5, min(1.5, dx / (paddle_half_width * 1.5)))
+                    optimal_position = landing_x - (required_offset * paddle_half_width)
+                    min_position = paddle_half_width + 30
+                    max_position = self.screen_width - paddle_half_width - 30
+                    optimal_position = max(min_position, min(max_position, optimal_position))
+                    self._logger.warning(
+                        f"[PRECISION FALLBACK] Используем упрощенный расчет для {bricks_count} кирпичей, "
+                        f"brick_center_x={brick_center_x:.0f}, optimal_position={optimal_position:.0f}"
+                    )
         
         if optimal_position is not None:
             if not self.current_game_state:

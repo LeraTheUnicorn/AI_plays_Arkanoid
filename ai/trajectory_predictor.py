@@ -163,6 +163,10 @@ class TrajectoryPredictor:
         bricks_count = len(game_state.remaining_bricks) if game_state.remaining_bricks else 50
         ball_y = game_state.ball_position.y if hasattr(game_state, 'ball_position') else 0
         
+        # КРИТИЧНО: Для последнего кирпича (<= 1) ВСЕГДА используем полную симуляцию для максимальной точности
+        if bricks_count <= 1:
+            return self._full_trajectory_simulation(game_state, paddle_y)
+        
         # Упрощенный расчет ТОЛЬКО при безопасных условиях:
         # 1. Высокая скорость (>= 25) - меньше времени для отскоков от блоков
         # 2. Много блоков (>= 10) - меньше важность точности прицеливания

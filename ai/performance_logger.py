@@ -194,11 +194,18 @@ class PerformanceLogger:
 
     def log_game_end(self, game_state: GameState, success: bool, final_score: int):
         """Логирует окончание игры"""
+        # КРИТИЧНО: При победе (success=True) должно быть 0 оставшихся кирпичей
+        # Используем success флаг для правильного определения, т.к. game_state может быть устаревшим
+        if success:
+            bricks_remaining = 0
+        else:
+            bricks_remaining = len(game_state.remaining_bricks)
+        
         end_data = {
             "type": "game_end",
             "success": success,
             "final_score": final_score,
-            "final_bricks_remaining": len(game_state.remaining_bricks),
+            "final_bricks_remaining": bricks_remaining,
             "game_duration": time.time() - self.session_start_time,
             "total_actions": len(self.actions_log),
         }
