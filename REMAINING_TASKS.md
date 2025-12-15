@@ -9,9 +9,9 @@
 - ✅ Исправлены ошибки линтера
 
 ### Текущие размеры файлов:
-- `ai/ai_player.py`: **1759 строк** (нужно уменьшить до ≤500)
-- `ai/ai_player_learning.py`: **529 строк** (превышает 500, нужно разбить)
-- `game/PyGameBall.py`: **2341 строк** (нужно разбить на 6 модулей)
+- `ai/ai_player.py`: **1221 строка** (было 1887, уменьшено на 35%, нужно уменьшить до ≤500)
+- `ai/ai_player_learning.py`: **64 строки** (было 529, разбито на модули)
+- `game/PyGameBall.py`: **2457 строк** (нужно разбить на 6 модулей)
 
 ---
 
@@ -23,16 +23,15 @@
 
 **Осталось выполнить:**
 
-**Модуль 8-9: Выбор целей** ❌ **НЕ ВЫПОЛНЕНО**
-- `ai/ai_player_target_selection_part1.py` (~400 строк)
-  - `_calculate_position_for_max_destruction`
-  - `_find_optimal_angle_for_max_destruction`
-  - `_count_bricks_in_trajectory`
-  - `_find_first_brick_in_trajectory`
-- `ai/ai_player_target_selection_part2.py` (~400 строк)
-  - `_find_best_target_for_few_bricks`
-  - `_calculate_optimal_offset`
-  - `_adjust_offset_from_history`
+**Модуль 8-9: Выбор целей** ✅ **ВЫПОЛНЕНО**
+- ✅ `ai/ai_player_target_selection_part1.py` (177 строк)
+  - ✅ `_find_optimal_angle_for_max_destruction`
+  - ✅ `_count_bricks_in_trajectory`
+  - ✅ `_find_first_brick_in_trajectory`
+- ✅ `ai/ai_player_target_selection_part2.py` (170 строк)
+  - ✅ `_find_best_target_for_few_bricks`
+  - ✅ `_calculate_optimal_offset`
+  - ✅ `_adjust_offset_from_history`
 
 **Модуль 18-19: Дополнительные части движения** ❌ **НЕ ВЫПОЛНЕНО**
 - `ai/ai_player_movement_core_part4.py` (~500 строк)
@@ -44,34 +43,33 @@
   - Обработка ошибок
   - Запись метрик
 
-**Модуль 21: Разбиение `ai_player_learning.py`** ⚠️ **ЧАСТИЧНО** (529 строк, превышает 500)
-- `ai/ai_player_learning_core_part1.py` (~400 строк)
-  - Первая половина `learn_from_result`
-  - `_update_performance_metrics`
-- `ai/ai_player_learning_core_part2.py` (~400 строк)
-  - Вторая половина `learn_from_result`
-  - `on_game_end`
-  - `_reset_game_state_trackers`
+**Модуль 21: Разбиение `ai_player_learning.py`** ✅ **ВЫПОЛНЕНО** (было 529 строк, теперь 64 строки)
+- ✅ `ai/ai_player_learning_core_part1.py` (135 строк)
+  - ✅ `learn_from_result`
+  - ✅ `_update_performance_metrics`
+- ✅ `ai/ai_player_learning_core_part2.py` (95 строк)
+  - ✅ `on_game_end`
+  - ✅ `_reset_game_state_trackers`
+  - ✅ `_reset_current_game_stats`
 
-**Модуль 22-25: Дополнительные модули** ⚠️ **ЧАСТИЧНО**
-- `ai/ai_player_match_processing.py` (~400 строк)
-  - `_process_training_match`
-  - `_learn_from_match_results`
-  - `_get_average_efficiency`
-  - `get_optimal_ball_speed`
-  - `get_optimal_paddle_speed_multiplier`
-  - `get_adjusted_paddle_speed`
-  - `update_training_stats`
-  - `_print_training_parameters`
-  - `_print_console_summary`
-- `ai/ai_player_debug_visualization.py` (~200 строк)
-  - `visualize_debug_info`
-  - `_draw_predicted_trajectory`
-- `ai/ai_player_reset.py` (~100 строк)
-  - `reset_learning`
-  - `reset_for_testing`
-  - `save_learning_data`
-  - `load_learning_data`
+**Модуль 22-25: Дополнительные модули** ✅ **ВЫПОЛНЕНО**
+- ✅ `ai/ai_player_match_processing.py` (326 строк)
+  - ✅ `_process_training_match`
+  - ✅ `_get_average_efficiency`
+  - ✅ `get_optimal_ball_speed`
+  - ✅ `get_optimal_paddle_speed_multiplier`
+  - ✅ `get_adjusted_paddle_speed`
+  - ✅ `update_training_stats`
+  - ✅ `_print_training_parameters`
+  - ✅ `_print_console_summary`
+- ✅ `ai/ai_player_debug_visualization.py` (134 строки)
+  - ✅ `visualize_debug_info`
+  - ✅ `_draw_predicted_trajectory`
+- ✅ `ai/ai_player_reset.py` (213 строк)
+  - ✅ `reset_learning`
+  - ✅ `reset_for_testing`
+  - ✅ `save_learning_data`
+  - ✅ `load_learning_data`
 
 #### 2. Дробление `PyGameBall.py` (2341 строк → 6 модулей по ≤500 строк) ❌ **НЕ ВЫПОЛНЕНО**
 

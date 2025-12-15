@@ -119,11 +119,10 @@ class AIPlayerLearningCorePart2Mixin:
     def _reset_current_game_stats(self) -> None:
         """Сбрасывает статистику текущей игры."""
         self.current_game_stats = {
+            "start_time": None,
             "bricks_destroyed": 0,
             "successful_predictions": 0,
             "total_predictions": 0,
-            "total_moves": 0,
             "optimal_moves": 0,
-            "start_time": time.time(),
-            "lives_left": 3,
+            "total_moves": 0,
         }
