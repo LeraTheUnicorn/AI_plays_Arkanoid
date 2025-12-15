@@ -674,3 +674,300 @@ def check_brick_collisions(
                 ai_player.empty_bounce_tracker["ceiling_bounces"] = 0
         
         return 0, None
+
+
+def handle_ball_loss(
+    ball: Ball,
+    paddle: Paddle,
+    ball_hits_paddle_top: bool,
+    frame_counter: int,
+    training_mode: bool,
+    ai_player: Optional[AIPlayer],
+    logger: Any,
+    bricks: list,
+) -> Tuple[bool, bool]:
+    """
+    Обрабатывает потерю мяча (мяч ниже платформы).
+    
+    Args:
+        ball: Объект мяча
+        paddle: Объект платформы
+        ball_hits_paddle_top: Мяч попал в верхнюю поверхность платформы
+        frame_counter: Счетчик кадров
+        training_mode: Режим обучения
+        ai_player: Объект AI игрока
+        logger: Логгер
+        bricks: Список кирпичей
+        
+    Returns:
+        Tuple: (ball_lost, should_reset_ball)
+        ball_lost: Мяч потерян (True если мяч ниже платформы)
+        should_reset_ball: Нужно сбросить мяч (True если нужно сбросить позицию)
+    """
+    # КРИТИЧНО: Проверяем потерю мяча ПОСЛЕ проверки столкновения с платформой
+    # Если мяч ниже верхней границы платформы И не было столкновения - он потерян
+    if ball.rect.bottom > paddle.rect.top and not ball_hits_paddle_top:
+        if frame_counter <= 3:
+            logger.debug(f"[AI DEBUG] Мяч потерян! Обрабатываем...")
+        
+        # КРИТИЧНО: Подробное логирование потери мяча для диагностики
+        if training_mode and ai_player is not None:
+            if not getattr(sys, "frozen", False):
+                # Получаем информацию о состоянии для диагностики
+                ball_x = ball.rect.centerx
+                ball_y = ball.rect.centery
+                ball_bottom = ball.rect.bottom
+                paddle_x = paddle.rect.centerx
+                paddle_top = paddle.rect.top
+                paddle_left = paddle.rect.left
+                paddle_right = paddle.rect.right
+                ball_vel_x = ball.vel_x
+                ball_vel_y = ball.vel_y
+                ball_speed = ball.get_speed()
+                
+                # Получаем информацию от AI о целевой позиции
+                optimal_x = ai_player.get_optimal_paddle_position() if hasattr(ai_player, 'get_optimal_paddle_position') else paddle_x
+                distance_to_optimal = abs(paddle_x - optimal_x) if optimal_x is not None else 0
+                
+                # Получаем предсказанную позицию приземления мяча
+                predicted_landing_x = None
+                prediction_error = None
+                try:
+                    if (hasattr(ai_player, 'trajectory_predictor') and 
+                        hasattr(ai_player, 'current_game_state')):
+                        current_state = ai_player.current_game_state
+                        if current_state is not None:
+                            try:
+                                intersection_point = ai_player.trajectory_predictor.predict_paddle_intersection(
+                                    current_state,
+                                    paddle.rect.centery
+                                )
+                                if intersection_point:
+                                    predicted_landing_x = intersection_point.x
+                                    prediction_error = abs(ball_x - predicted_landing_x)
+                            except:
+                                try:
+                                    if hasattr(ai_player, '_predict_exact_landing_position'):
+                                        predicted_landing_x = ai_player._predict_exact_landing_position()
+                                        prediction_error = abs(ball_x - predicted_landing_x)
+                                except:
+                                    pass
+                except:
+                    pass
+                
+                # Получаем информацию о зонах
+                separation_zone_start = ai_player.separation_zone_tracker.separation_zone_start if hasattr(ai_player, 'separation_zone_tracker') else 226
+                paddle_zone_start = ai_player.separation_zone_tracker.paddle_zone_start if hasattr(ai_player, 'separation_zone_tracker') else 540
+                
+                # Получаем информацию о скорости платформы
+                base_speed = PADDLE_SPEED
+                adjusted_speed = ai_player.get_adjusted_paddle_speed(base_speed) if hasattr(ai_player, 'get_adjusted_paddle_speed') else base_speed
+                
+                # Рассчитываем, где должна была быть платформа
+                ball_was_in_separation_zone = separation_zone_start <= ball_y < paddle_zone_start
+                
+                # Рассчитываем расстояние от мяча до платформы по горизонтали
+                horizontal_distance = abs(ball_x - paddle_x)
+                
+                # Определяем, в какую зону относительно платформы находится мяч
+                paddle_zone_size = PADDLE_WIDTH / 3
+                ball_offset_from_paddle_center = ball_x - paddle_x
+                if ball_offset_from_paddle_center < -paddle_zone_size:
+                    ball_zone = "LEFT (слева от платформы)"
+                elif ball_offset_from_paddle_center > paddle_zone_size:
+                    ball_zone = "RIGHT (справа от платформы)"
+                else:
+                    ball_zone = "CENTER (над платформой)"
+                
+                # Проверяем, действительно ли мяч попал в платформу
+                ball_hit_paddle = (paddle_left <= ball_x <= paddle_right and 
+                                  ball_bottom >= paddle_top and 
+                                  ball_bottom <= paddle_top + 5)
+                
+                print(f"[BALL LOST] ========== ДИАГНОСТИКА ПОТЕРИ МЯЧА ==========")
+                print(f"  Мяч: pos=({ball_x:.1f}, {ball_y:.1f}) bottom={ball_bottom:.1f} vel=({ball_vel_x:.1f}, {ball_vel_y:.1f}) speed={ball_speed:.1f}")
+                print(f"  Платформа: center_x={paddle_x:.1f} top={paddle_top:.1f} left={paddle_left:.1f} right={paddle_right:.1f}")
+                print(f"  Расстояние: horizontal={horizontal_distance:.1f}px vertical={ball_bottom - paddle_top:.1f}px")
+                print(f"  Мяч относительно платформы: {ball_zone} (offset={ball_offset_from_paddle_center:.1f}px)")
+                print(f"  Мяч ударился о платформу: {ball_hit_paddle} (если False - мяч пролетел мимо)")
+                print(f"  Целевая позиция AI: optimal_x={optimal_x:.1f} distance_to_optimal={distance_to_optimal:.1f}px")
+                if predicted_landing_x is not None:
+                    print(f"  🔴 ПРЕДСКАЗАНИЕ: Предсказанная позиция приземления: {predicted_landing_x:.1f}px")
+                    print(f"  🔴 ПРЕДСКАЗАНИЕ: Фактическая позиция мяча: {ball_x:.1f}px")
+                    print(f"  🔴 ПРЕДСКАЗАНИЕ: Ошибка предсказания: {prediction_error:.1f}px")
+                    print(f"  🔴 ПРЕДСКАЗАНИЕ: Мяч пролетел мимо на: {abs(ball_x - paddle_x):.1f}px от центра платформы")
+                else:
+                    print(f"  🔴 ПРЕДСКАЗАНИЕ: Предсказанная позиция НЕ ДОСТУПНА")
+                print(f"  Скорость платформы: base={base_speed} adjusted={adjusted_speed}")
+                print(f"  Зоны: separation_start={separation_zone_start} paddle_start={paddle_zone_start} ball_was_in_zone={ball_was_in_separation_zone}")
+                print(f"  Целевая позиция установлена: {ai_player.separation_zone_tracker.target_position_set if hasattr(ai_player, 'separation_zone_tracker') else False}")
+                if hasattr(ai_player, 'separation_zone_tracker') and ai_player.separation_zone_tracker.target_position:
+                    target_pos = ai_player.separation_zone_tracker.target_position
+                    if target_pos is not None:
+                        print(f"  Сохраненная целевая позиция: {target_pos:.1f} distance={abs(paddle_x - target_pos):.1f}px")
+                print(f"========================================================")
+                
+                # Логирование в файл для анализа
+                if hasattr(ai_player, '_logger'):
+                    ai_player._logger.warning(
+                        f"[BALL LOST PREDICTION] "
+                        f"Фактическая позиция мяча: {ball_x:.1f}px, "
+                        f"Предсказанная позиция: {predicted_landing_x:.1f}px (ошибка: {prediction_error:.1f}px), "
+                        f"Позиция платформы: {paddle_x:.1f}px, "
+                        f"Целевая позиция: {optimal_x:.1f}px, "
+                        f"Мяч пролетел мимо на: {abs(ball_x - paddle_x):.1f}px"
+                    )
+        
+        # Обучаем AI на результате потери мяча
+        if training_mode and ai_player is not None:
+            ai_result = {
+                "action_type": "ball_lost",
+                "success": False,
+                "confidence": 0.0,
+                "ball_speed": ball.get_speed(),
+                "remaining_bricks": len(bricks),
+            }
+            ai_player.learn_from_result(ai_result)
+            ai_player._log_paddle_movement(
+                paddle.rect.centerx,
+                paddle.rect.centerx,
+                f"ПОТЕРЯ МЯЧА: мяч ниже платформы. Мяч Y={ball.rect.bottom}, Платформа top={paddle.rect.top}",
+                0.0
+            )
+            # КРИТИЧНО: Сбрасываем все трекеры после потери мяча
+            ai_player._reset_game_state_trackers()
+        
+        return True, True  # Мяч потерян, нужно сбросить
+    
+    return False, False  # Мяч не потерян
+
+
+def handle_game_restart_training(
+    ball: Ball,
+    paddle: Paddle,
+    bricks: list,
+    score: int,
+    lives_left: int,
+    game_start_time: float,
+    training_mode: bool,
+    ai_player: Optional[AIPlayer],
+    settings_manager: Any,
+    logger: Any,
+    is_victory: bool = False,
+) -> Tuple[Paddle, Ball, list, int, int, bool, bool, float]:
+    """
+    Обрабатывает перезапуск игры в режиме обучения.
+    
+    Args:
+        ball: Объект мяча
+        paddle: Объект платформы
+        bricks: Список кирпичей
+        score: Текущий счет
+        lives_left: Количество жизней
+        game_start_time: Время начала игры
+        training_mode: Режим обучения
+        ai_player: Объект AI игрока
+        settings_manager: Менеджер настроек
+        logger: Логгер
+        is_victory: Победа (True) или проигрыш (False)
+        
+    Returns:
+        Tuple: (new_paddle, new_ball, new_bricks, new_score, new_lives_left, game_over, game_started, new_game_start_time)
+    """
+    if not training_mode or ai_player is None:
+        # В обычном режиме не перезапускаем автоматически
+        return paddle, ball, bricks, score, lives_left, True, False, game_start_time
+    
+    # Рассчитываем время игры
+    game_time_seconds = int(time.time() - game_start_time)
+    
+    # В режиме обучения считаем кубики за весь матч
+    total_bricks_destroyed = (BRICK_ROWS * BRICK_COLS) - len(bricks)
+    lives_lost = MAX_LIVES - lives_left if not is_victory else MAX_LIVES - lives_left
+    
+    # Обновляем финальную статистику обучения
+    ai_player.update_training_stats(
+        total_bricks_destroyed,
+        game_time_seconds,
+        MAX_LIVES if not is_victory else lives_lost,
+    )
+    
+    # Обучаем AI на результате игры
+    ai_result = {
+        "action_type": "game_end",
+        "success": is_victory,
+        "final_score": score,
+        "game_duration": game_time_seconds,
+        "bricks_remaining": len(bricks) if not is_victory else 0,
+        "bricks_destroyed": total_bricks_destroyed,
+        "lives_lost": MAX_LIVES if not is_victory else lives_lost,
+    }
+    
+    try:
+        ai_player.learn_from_result(ai_result)
+    except Exception as e:
+        if not getattr(sys, "frozen", False):
+            print(f"[GAME RESTART ERROR] Ошибка в learn_from_result: {e}")
+            import traceback
+            traceback.print_exc()
+    
+    try:
+        if hasattr(ai_player, 'on_game_end'):
+            ai_player.on_game_end(is_victory, score, training_mode=training_mode)
+    except Exception as e:
+        if not getattr(sys, "frozen", False):
+            print(f"[GAME RESTART ERROR] Ошибка в on_game_end: {e}")
+            import traceback
+            traceback.print_exc()
+    
+    # КРИТИЧНО: Сбрасываем все трекеры состояния AI перед новой игрой
+    ai_player._reset_game_state_trackers()
+    
+    # Автоматически перезапускаем игру в режиме обучения
+    new_paddle = Paddle()
+    new_ball = Ball()
+    optimal_ball_speed = ai_player.get_optimal_ball_speed()
+    if optimal_ball_speed > 10:
+        new_ball.current_speed = optimal_ball_speed
+    else:
+        new_ball.set_speed(optimal_ball_speed, settings_manager)
+    new_ball.reset(new_paddle.rect)
+    new_ball.vel_y = 0
+    new_bricks = build_bricks()
+    new_score = 0
+    new_lives_left = MAX_LIVES  # Восстанавливаем жизни для нового матча
+    game_over = False
+    game_started = True  # Автоматически запускаем
+    new_ball.vel_x = new_ball.get_speed()
+    new_ball.vel_y = -new_ball.get_speed()
+    new_game_start_time = time.time()
+    
+    # КРИТИЧНО: Сразу обновляем состояние игры для AI после перезапуска
+    ai_player.update_game_state(
+        new_ball, new_paddle, new_bricks, new_score, int(new_game_start_time)
+    )
+    
+    # КРИТИЧНО: Логируем перезапуск игры
+    if not getattr(sys, "frozen", False):
+        restart_type = "ПОБЕДА" if is_victory else "ПОРАЖЕНИЕ"
+        print(f"[GAME RESTART] Игра перезапущена после {restart_type}!")
+        print(f"[GAME RESTART] lives_left={new_lives_left}, game_over={game_over}, game_started={game_started}")
+        print(f"[GAME RESTART] ball.vel_x={new_ball.vel_x}, ball.vel_y={new_ball.vel_y}, paddle.x={new_paddle.rect.x}, bricks={len(new_bricks)}")
+    
+    ai_player.performance_logger.log_ball_paddle_positions(
+        new_ball.rect.centerx,
+        new_ball.rect.centery,
+        new_ball.vel_x,
+        new_ball.vel_y,
+        new_paddle.rect.x,
+        new_paddle.rect.y,
+        new_paddle.rect.width,
+        new_paddle.rect.height,
+        "GAME_RESTART_AFTER_WIN" if is_victory else "GAME_RESTART_AFTER_LOSS"
+    )
+    
+    # Логируем начало новой игры
+    if ai_player.current_game_state:
+        ai_player.performance_logger.log_game_start(ai_player.current_game_state)
+    
+    return new_paddle, new_ball, new_bricks, new_score, new_lives_left, game_over, game_started, new_game_start_time
