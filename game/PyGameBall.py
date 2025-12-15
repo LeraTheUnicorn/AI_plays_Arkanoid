@@ -64,6 +64,7 @@ from .game_loop_physics import (
     handle_victory_manual,
     handle_all_lives_lost_after_ball_loss,
     apply_restart_result,
+    handle_game_over_manual,
 )
 
 # Импортируем функции отрисовки
@@ -533,81 +534,34 @@ def main() -> None:
                             if not should_continue:
                                 continue  # Пропускаем остальную обработку кадра
                             
-                            # В обычном режиме показываем экран результатов после потери всех жизней
+                            # В обычном режиме обрабатываем окончание игры используя модуль game_loop_physics
                             if new_game_over and not training_mode:
-                                game_time_seconds = int(time.time() - game_start_time)
-                                sound_enabled, restart_game, exit_game = (
-                                    show_game_results(
-                                        screen,
-                                        font,
-                                        big_font,
-                                        score,
-                                        player_name,
-                                        game_time_seconds,
-                                        highscore_manager,
-                                        settings_manager,
-                                        ball,
-                                    )
+                                should_exit, new_paddle, new_ball, new_bricks, new_score, new_lives_left, new_game_over, new_game_started, new_game_start_time, new_ai_player = handle_game_over_manual(
+                                    screen,
+                                    font,
+                                    big_font,
+                                    score,
+                                    player_name,
+                                    game_start_time,
+                                    highscore_manager,
+                                    settings_manager,
+                                    ball,
+                                    paddle,
+                                    bricks,
+                                    new_game_over,
+                                    game_started,
+                                    show_game_results,
+                                    create_ai_player,
+                                    SCREEN_WIDTH,
+                                    SCREEN_HEIGHT,
                                 )
-
-                                # Если игрок хочет выйти из игры
-                                if exit_game:
+                                if should_exit:
                                     pygame.quit()
                                     return
-
-                                # Обработка перезапуска
-                                if restart_game:
-                                    # Перезапускаем игру используя модуль game_loop_physics
-                                    paddle, ball, bricks, score, lives_left, game_over, game_started, game_start_time, ai_player = handle_game_restart_manual(
-                                        paddle,
-                                        ball,
-                                        bricks,
-                                        score,
-                                        lives_left,
-                                        game_over,
-                                        game_started,
-                                        settings_manager,
-                                        SCREEN_WIDTH,
-                                        SCREEN_HEIGHT,
-                                        create_ai_player,
-                                    )
-                            else:
-                                # В ручном режиме показываем экран результатов
-                                sound_enabled, restart_game, exit_game = (
-                                    show_game_results(
-                                        screen,
-                                        font,
-                                        big_font,
-                                        score,
-                                        player_name,
-                                        game_time_seconds,
-                                        highscore_manager,
-                                        settings_manager,
-                                        ball,
-                                    )
-                                )
-
-                                # Если игрок хочет выйти из игры
-                                if exit_game:
-                                    # Сохраняем данные обучения перед выходом
-                                    pygame.quit()
-                                    return
-
-                                # Обработка перезапуска
-                                if restart_game:
-                                    # Перезапускаем игру используя модуль game_loop_physics
-                                    paddle, ball, bricks, score, lives_left, game_over, game_started, game_start_time, ai_player = handle_game_restart_manual(
-                                        paddle,
-                                        ball,
-                                        bricks,
-                                        score,
-                                        lives_left,
-                                        game_over,
-                                        game_started,
-                                        settings_manager,
-                                        SCREEN_WIDTH,
-                                        SCREEN_HEIGHT,
-                                        create_ai_player,
+                                if new_paddle is not None:
+                                    paddle, ball, bricks, score, lives_left, game_over, game_started, game_start_time, ai_player = apply_restart_result(
+                                        new_paddle, new_ball, new_bricks, new_score, new_lives_left, new_game_over, new_game_started, new_game_start_time, new_ai_player,
+                                        paddle, ball, bricks, score, lives_left, game_over, game_started, game_start_time, ai_player,
                                     )
                         continue  # Пропускаем остальную обработку кадра
 
@@ -668,43 +622,34 @@ def main() -> None:
                     if not should_continue:
                         continue  # Пропускаем остальную обработку кадра
                     
-                    # В обычном режиме показываем экран результатов после потери всех жизней
+                    # В обычном режиме обрабатываем окончание игры используя модуль game_loop_physics
                     if game_over and not training_mode:
-                        game_time_seconds = int(time.time() - game_start_time)
-                        sound_enabled, restart_game, exit_game = (
-                            show_game_results(
-                                screen,
-                                font,
-                                big_font,
-                                score,
-                                player_name,
-                                game_time_seconds,
-                                highscore_manager,
-                                settings_manager,
-                                ball,
-                            )
+                        should_exit, new_paddle, new_ball, new_bricks, new_score, new_lives_left, new_game_over, new_game_started, new_game_start_time, new_ai_player = handle_game_over_manual(
+                            screen,
+                            font,
+                            big_font,
+                            score,
+                            player_name,
+                            game_start_time,
+                            highscore_manager,
+                            settings_manager,
+                            ball,
+                            paddle,
+                            bricks,
+                            game_over,
+                            game_started,
+                            show_game_results,
+                            create_ai_player,
+                            SCREEN_WIDTH,
+                            SCREEN_HEIGHT,
                         )
-
-                        # Если игрок хочет выйти из игры
-                        if exit_game:
+                        if should_exit:
                             pygame.quit()
                             return
-
-                        # Обработка перезапуска
-                        if restart_game:
-                            # Перезапускаем игру используя модуль game_loop_physics
-                            paddle, ball, bricks, score, lives_left, game_over, game_started, game_start_time, ai_player = handle_game_restart_manual(
-                                paddle,
-                                ball,
-                                bricks,
-                                score,
-                                lives_left,
-                                game_over,
-                                game_started,
-                                settings_manager,
-                                SCREEN_WIDTH,
-                                SCREEN_HEIGHT,
-                                create_ai_player,
+                        if new_paddle is not None:
+                            paddle, ball, bricks, score, lives_left, game_over, game_started, game_start_time, ai_player = apply_restart_result(
+                                new_paddle, new_ball, new_bricks, new_score, new_lives_left, new_game_over, new_game_started, new_game_start_time, new_ai_player,
+                                paddle, ball, bricks, score, lives_left, game_over, game_started, game_start_time, ai_player,
                             )
 
                     if not bricks:
