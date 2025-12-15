@@ -40,6 +40,7 @@ import pygame
 from .ai_player_models import BrickInfo, TargetingSystem, SeparationZoneTracker
 from .ai_player_state import AIPlayerStateMixin
 from .ai_player_targeting import AIPlayerTargetingMixin
+from .ai_player_target_selection_part1 import AIPlayerTargetSelectionPart1Mixin
 from .ai_player_positioning import AIPlayerPositioningMixin
 from .ai_player_movement import AIPlayerMovementMixin
 from .ai_player_learning import AIPlayerLearningMixin
@@ -76,6 +77,7 @@ class AIPlayer(
     AIPlayerMovementCorePart3Mixin,
     AIPlayerStateMixin,
     AIPlayerTargetingMixin,
+    AIPlayerTargetSelectionPart1Mixin,
     AIPlayerPositioningMixin,
     AIPlayerMovementMixin,
     AIPlayerLearningMixin,
