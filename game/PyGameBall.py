@@ -46,6 +46,7 @@ from .game_loop_initialization import (
 from .game_loop_events import (
     process_keyboard_events,
     process_restart_key,
+    apply_game_restart,
 )
 
 # Импортируем функции физики и столкновений
@@ -340,23 +341,24 @@ def main() -> None:
                 ball.rect.center = paddle.rect.midtop
                 ball.rect.y -= BALL_SIZE
 
-            # Обработка перезапуска после окончания игры (только для ручного режима)
-            should_restart, restart_paddle, restart_ball, restart_bricks, restart_score, restart_lives, restart_game_over, restart_game_started, restart_ai_player, restart_game_start_time = process_restart_key(
+            # Обработка перезапуска после окончания игры используя модуль game_loop_events
+            restart_result = process_restart_key(
                 keys,
                 game_over,
                 settings_manager,
                 logger
             )
-            if should_restart:
-                paddle = restart_paddle
-                ball = restart_ball
-                bricks = restart_bricks
-                score = restart_score
-                lives_left = restart_lives
-                game_over = restart_game_over
-                game_started = restart_game_started
-                ai_player = restart_ai_player
-                game_start_time = restart_game_start_time
+            should_restart, new_paddle, new_ball, new_bricks, new_score, new_lives_left, new_game_over, new_game_started, new_ai_player, new_game_start_time = apply_game_restart(restart_result)
+            if should_restart and new_paddle is not None:
+                paddle = new_paddle
+                ball = new_ball
+                bricks = new_bricks
+                score = new_score
+                lives_left = new_lives_left
+                game_over = new_game_over
+                game_started = new_game_started
+                ai_player = new_ai_player
+                game_start_time = new_game_start_time
 
             if not game_over:
                 # Отладочное сообщение только в первых 3 кадрах
