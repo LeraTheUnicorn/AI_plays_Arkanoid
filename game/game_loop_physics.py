@@ -10,6 +10,11 @@ import time
 from typing import Tuple, Optional, Any
 
 try:
+    import pygame
+except ImportError:
+    pygame = None  # type: ignore
+
+try:
     from .game_config import (
         BALL_SIZE,
         BRICK_COLS,
@@ -1528,3 +1533,823 @@ def position_ball_on_paddle(
     if not game_started:
         ball.rect.center = paddle.rect.midtop
         ball.rect.y -= BALL_SIZE
+
+
+def handle_victory_check(
+    bricks: list,
+    ball: Ball,
+    paddle: Paddle,
+    score: int,
+    lives_left: int,
+    game_start_time: float,
+    frame_counter: int,
+    training_mode: bool,
+    ai_player: Optional[AIPlayer],
+    logger: Any,
+    settings_manager: Any,
+    screen: Any,
+    font: Any,
+    big_font: Any,
+    player_name: str,
+    highscore_manager: Any,
+    show_victory_splash_func: Any,
+    show_game_results_func: Any,
+    create_ai_player_func: Any,
+    screen_width: int,
+    screen_height: int,
+    training_rounds: int,
+) -> Tuple[bool, Optional[Paddle], Optional[Ball], Optional[list], Optional[int], Optional[int], Optional[bool], Optional[bool], Optional[float], Optional[AIPlayer], Optional[int]]:
+    """
+    Обрабатывает проверку победы (все кирпичи сбиты).
+    
+    Args:
+        bricks: Список кирпичей
+        ball: Объект мяча
+        paddle: Объект платформы
+        score: Текущий счет
+        lives_left: Количество жизней
+        game_start_time: Время начала игры
+        frame_counter: Счетчик кадров
+        training_mode: Режим обучения
+        ai_player: Объект AI игрока
+        logger: Логгер
+        settings_manager: Менеджер настроек
+        screen: Поверхность pygame
+        font: Шрифт
+        big_font: Большой шрифт
+        player_name: Имя игрока
+        highscore_manager: Менеджер рекордов
+        show_victory_splash_func: Функция показа заставки победы
+        show_game_results_func: Функция показа экрана результатов
+        create_ai_player_func: Функция создания AI игрока
+        screen_width: Ширина экрана
+        screen_height: Высота экрана
+        training_rounds: Количество раундов обучения
+        
+    Returns:
+        Tuple: (should_exit, new_paddle, new_ball, new_bricks, new_score, new_lives_left, new_game_over, new_game_started, new_game_start_time, new_ai_player, new_training_rounds)
+    """
+    if bricks:
+        return False, None, None, None, None, None, None, None, None, None, None
+    
+    game_over = True
+    game_time_seconds = int(time.time() - game_start_time)
+    
+    # В режиме обучения не показываем экран результатов, сразу перезапускаем
+    if training_mode:
+        # Перезапускаем игру в режиме обучения используя модуль game_loop_physics
+        new_paddle, new_ball, new_bricks, new_score, new_lives_left, new_game_over, new_game_started, new_game_start_time = handle_game_restart_training(
+            ball,
+            paddle,
+            bricks,
+            score,
+            lives_left,
+            game_start_time,
+            training_mode,
+            ai_player,
+            settings_manager,
+            logger,
+            is_victory=True,
+        )
+        return False, new_paddle, new_ball, new_bricks, new_score, new_lives_left, new_game_over, new_game_started, new_game_start_time, ai_player, training_rounds + 1
+    else:
+        # Обычный режим - обрабатываем победу используя модуль game_loop_physics
+        should_exit, new_paddle, new_ball, new_bricks, new_score, new_lives_left, new_game_over, new_game_started, new_game_start_time, new_ai_player = handle_victory_manual(
+            screen,
+            font,
+            big_font,
+            score,
+            player_name,
+            lives_left,
+            game_start_time,
+            highscore_manager,
+            settings_manager,
+            ball,
+            paddle,
+            bricks,
+            game_over,
+            True,  # game_started
+            show_victory_splash_func,
+            show_game_results_func,
+            create_ai_player_func,
+            screen_width,
+            screen_height,
+        )
+        if should_exit:
+            return True, None, None, None, None, None, None, None, None, None, None
+        if new_paddle is not None:
+            return False, new_paddle, new_ball, new_bricks, new_score, new_lives_left, new_game_over, new_game_started, new_game_start_time, new_ai_player, None
+    
+    return False, None, None, None, None, None, game_over, None, None, None, None
+
+
+def process_ball_physics_and_collisions(
+    ball: Ball,
+    paddle: Paddle,
+    bricks: list,
+    score: int,
+    lives_left: int,
+    game_over: bool,
+    game_started: bool,
+    game_start_time: float,
+    frame_counter: int,
+    training_mode: bool,
+    ai_player: Optional[AIPlayer],
+    logger: Any,
+    settings_manager: Any,
+    screen: Any,
+    font: Any,
+    big_font: Any,
+    player_name: str,
+    highscore_manager: Any,
+    show_victory_splash_func: Any,
+    show_game_results_func: Any,
+    create_ai_player_func: Any,
+    screen_width: int,
+    screen_height: int,
+    training_rounds: int,
+) -> Tuple[bool, Optional[Paddle], Optional[Ball], Optional[list], Optional[int], Optional[int], Optional[bool], Optional[bool], Optional[float], Optional[AIPlayer], Optional[int]]:
+    """
+    Обрабатывает физику мяча и столкновения для одного кадра.
+    
+    Args:
+        ball: Объект мяча
+        paddle: Объект платформы
+        bricks: Список кирпичей
+        score: Текущий счет
+        lives_left: Количество жизней
+        game_over: Флаг окончания игры
+        game_started: Флаг запуска игры
+        game_start_time: Время начала игры
+        frame_counter: Счетчик кадров
+        training_mode: Режим обучения
+        ai_player: Объект AI игрока
+        logger: Логгер
+        settings_manager: Менеджер настроек
+        screen: Поверхность pygame
+        font: Шрифт
+        big_font: Большой шрифт
+        player_name: Имя игрока
+        highscore_manager: Менеджер рекордов
+        show_victory_splash_func: Функция показа заставки победы
+        show_game_results_func: Функция показа экрана результатов
+        create_ai_player_func: Функция создания AI игрока
+        screen_width: Ширина экрана
+        screen_height: Высота экрана
+        training_rounds: Количество раундов обучения
+        
+    Returns:
+        Tuple: (should_exit, new_paddle, new_ball, new_bricks, new_score, new_lives_left, new_game_over, new_game_started, new_game_start_time, new_ai_player, new_training_rounds)
+    """
+    if not game_started:
+        return False, None, None, None, None, None, None, None, None, None, None
+    
+    # Обновляем физику мяча используя модуль game_loop_physics
+    ball_was_at_top, should_continue = update_ball_physics(
+        ball,
+        paddle,
+        frame_counter,
+        game_started,
+        training_mode,
+        ai_player,
+        logger,
+    )
+    if not should_continue:
+        return False, None, None, None, None, None, None, None, None, None, None
+
+    # Проверяем столкновения с платформой используя модуль game_loop_physics
+    ball_hits_paddle_top, ball_hits_paddle_side, ball_stuck = check_paddle_collisions(
+        ball,
+        paddle,
+        frame_counter,
+        game_started,
+        training_mode,
+        ai_player,
+        logger,
+    )
+    
+    # Обрабатываем боковое столкновение используя модуль game_loop_physics
+    if ball_hits_paddle_side:
+        should_continue, lives_left, game_over, new_paddle, new_ball, new_bricks, new_score, new_ai_player, new_game_start_time = handle_paddle_side_collision(
+            ball,
+            paddle,
+            lives_left,
+            game_over,
+            frame_counter,
+            training_mode,
+            ai_player,
+            logger,
+            bricks,
+            score,
+            game_start_time,
+            settings_manager,
+        )
+        if new_paddle is not None:
+            return False, new_paddle, new_ball, new_bricks, new_score, lives_left, game_over, None, new_game_start_time, new_ai_player, None
+        if not should_continue:
+            return False, None, None, None, None, lives_left, game_over, None, None, None, None
+    
+    # Обрабатываем прилипание мяча
+    if ball_stuck:
+        handle_ball_stuck(
+            ball,
+            paddle,
+            frame_counter,
+            game_started,
+            training_mode,
+            ai_player,
+            logger,
+        )
+        return False, None, None, None, None, None, None, None, None, None, None
+    
+    # Обрабатываем отскок от верхней поверхности платформы
+    if ball_hits_paddle_top:
+        handle_paddle_top_bounce(
+            ball,
+            paddle,
+            frame_counter,
+            training_mode,
+            ai_player,
+            logger,
+            bricks,
+        )
+    
+    # Проверяем потерю мяча используя модуль game_loop_physics
+    ball_lost, should_reset_ball = handle_ball_loss(
+        ball,
+        paddle,
+        ball_hits_paddle_top,
+        frame_counter,
+        training_mode,
+        ai_player,
+        logger,
+        bricks,
+    )
+    
+    if ball_lost:
+        # Мяч потерян - уменьшаем жизни
+        lives_left -= 1
+        # КРИТИЧНО: Логируем после уменьшения жизней (только в файл, не в консоль)
+        if training_mode:
+            logger.info(f"[LIFE LOSS] Жизни уменьшены! lives_left={lives_left}, game_over={game_over}")
+        if should_reset_ball and lives_left > 0:
+            ball.reset(paddle.rect)
+            ball.vel_y = 0
+            return False, None, None, None, None, lives_left, False, None, None, None, None
+        else:
+            # Обрабатываем потерю всех жизней используя модуль game_loop_physics
+            should_continue, new_paddle, new_ball, new_bricks, new_score, new_lives_left, new_game_over, new_game_started, new_game_start_time, new_ai_player = handle_all_lives_lost_after_ball_loss(
+                ball,
+                paddle,
+                bricks,
+                score,
+                lives_left,
+                game_start_time,
+                frame_counter,
+                training_mode,
+                ai_player,
+                logger,
+                settings_manager,
+            )
+            if new_paddle is not None:
+                return False, new_paddle, new_ball, new_bricks, new_score, new_lives_left, new_game_over, new_game_started, new_game_start_time, new_ai_player, None
+            if not should_continue:
+                return False, None, None, None, None, new_lives_left, new_game_over, None, None, None, None
+            
+            # В обычном режиме обрабатываем окончание игры используя модуль game_loop_physics
+            if new_game_over and not training_mode:
+                should_exit, new_paddle, new_ball, new_bricks, new_score, new_lives_left, new_game_over, new_game_started, new_game_start_time, new_ai_player = handle_game_over_manual(
+                    screen,
+                    font,
+                    big_font,
+                    score,
+                    player_name,
+                    game_start_time,
+                    highscore_manager,
+                    settings_manager,
+                    ball,
+                    paddle,
+                    bricks,
+                    new_game_over,
+                    game_started,
+                    show_game_results_func,
+                    create_ai_player_func,
+                    screen_width,
+                    screen_height,
+                )
+                if should_exit:
+                    return True, None, None, None, None, None, None, None, None, None, None
+                if new_paddle is not None:
+                    return False, new_paddle, new_ball, new_bricks, new_score, new_lives_left, new_game_over, new_game_started, new_game_start_time, new_ai_player, None
+            return False, None, None, None, None, new_lives_left, new_game_over, None, None, None, None
+
+    # Проверяем столкновения с кирпичами используя модуль game_loop_physics
+    score_increase, destroyed_brick = check_brick_collisions(
+        ball,
+        bricks,
+        frame_counter,
+        training_mode,
+        ai_player,
+        logger,
+    )
+    score += score_increase
+    
+    # Проверяем победу используя модуль game_loop_physics
+    should_exit, new_paddle, new_ball, new_bricks, new_score, new_lives_left, new_game_over, new_game_started, new_game_start_time, new_ai_player, new_training_rounds = handle_victory_check(
+        bricks,
+        ball,
+        paddle,
+        score,
+        lives_left,
+        game_start_time,
+        frame_counter,
+        training_mode,
+        ai_player,
+        logger,
+        settings_manager,
+        screen,
+        font,
+        big_font,
+        player_name,
+        highscore_manager,
+        show_victory_splash_func,
+        show_game_results_func,
+        create_ai_player_func,
+        screen_width,
+        screen_height,
+        training_rounds,
+    )
+    if should_exit:
+        return True, None, None, None, None, None, None, None, None, None, None
+    if new_paddle is not None:
+        return False, new_paddle, new_ball, new_bricks, new_score, new_lives_left, new_game_over, new_game_started, new_game_start_time, new_ai_player, new_training_rounds
+
+    # Обрабатываем потерю мяча за границей экрана используя модуль game_loop_physics
+    should_continue, lives_left, game_over, new_paddle, new_ball, new_bricks, new_score, new_ai_player, new_game_start_time, game_started = handle_ball_out_of_bounds(
+        ball,
+        paddle,
+        lives_left,
+        game_over,
+        bricks,
+        score,
+        game_start_time,
+        frame_counter,
+        training_mode,
+        ai_player,
+        logger,
+        settings_manager,
+    )
+    if new_paddle is not None:
+        return False, new_paddle, new_ball, new_bricks, new_score, lives_left, game_over, game_started, new_game_start_time, new_ai_player, None
+    if not should_continue:
+        return False, None, None, None, None, lives_left, game_over, game_started, None, None, None
+    
+    # В обычном режиме обрабатываем окончание игры используя модуль game_loop_physics
+    if game_over and not training_mode:
+        should_exit, new_paddle, new_ball, new_bricks, new_score, new_lives_left, new_game_over, new_game_started, new_game_start_time, new_ai_player = handle_game_over_manual(
+            screen,
+            font,
+            big_font,
+            score,
+            player_name,
+            game_start_time,
+            highscore_manager,
+            settings_manager,
+            ball,
+            paddle,
+            bricks,
+            game_over,
+            game_started,
+            show_game_results_func,
+            create_ai_player_func,
+            screen_width,
+            screen_height,
+        )
+        if should_exit:
+            return True, None, None, None, None, None, None, None, None, None, None
+        if new_paddle is not None:
+            return False, new_paddle, new_ball, new_bricks, new_score, new_lives_left, new_game_over, new_game_started, new_game_start_time, new_ai_player, None
+
+    # Проверяем победу используя модуль game_loop_physics
+    should_exit, new_paddle, new_ball, new_bricks, new_score, new_lives_left, new_game_over, new_game_started, new_game_start_time, new_ai_player, new_training_rounds = handle_victory_check(
+        bricks,
+        ball,
+        paddle,
+        score,
+        lives_left,
+        game_start_time,
+        frame_counter,
+        training_mode,
+        ai_player,
+        logger,
+        settings_manager,
+        screen,
+        font,
+        big_font,
+        player_name,
+        highscore_manager,
+        show_victory_splash_func,
+        show_game_results_func,
+        create_ai_player_func,
+        screen_width,
+        screen_height,
+        training_rounds,
+    )
+    if should_exit:
+        return True, None, None, None, None, None, None, None, None, None, None
+    if new_paddle is not None:
+        return False, new_paddle, new_ball, new_bricks, new_score, new_lives_left, new_game_over, new_game_started, new_game_start_time, new_ai_player, new_training_rounds
+    
+    return False, None, None, None, score, lives_left, game_over, game_started, None, None, None
+
+
+def _process_game_logic_frame_unused(
+    ball: Ball,
+    paddle: Paddle,
+    bricks: list,
+    score: int,
+    lives_left: int,
+    game_over: bool,
+    game_started: bool,
+    game_start_time: float,
+    frame_counter: int,
+    training_mode: bool,
+    ai_player: Optional[AIPlayer],
+    logger: Any,
+    settings_manager: Any,
+    keys: Any,
+    screen: Any,
+    font: Any,
+    big_font: Any,
+    player_name: str,
+    highscore_manager: Any,
+    show_victory_splash_func: Any,
+    show_game_results_func: Any,
+    create_ai_player_func: Any,
+    screen_width: int,
+    screen_height: int,
+) -> Tuple[bool, Optional[Paddle], Optional[Ball], Optional[list], Optional[int], Optional[int], Optional[bool], Optional[bool], Optional[float], Optional[AIPlayer], Optional[int], Optional[int]]:
+    """
+    Обрабатывает игровую логику для одного кадра.
+    
+    Args:
+        ball: Объект мяча
+        paddle: Объект платформы
+        bricks: Список кирпичей
+        score: Текущий счет
+        lives_left: Количество жизней
+        game_over: Флаг окончания игры
+        game_started: Флаг запуска игры
+        game_start_time: Время начала игры
+        frame_counter: Счетчик кадров
+        training_mode: Режим обучения
+        ai_player: Объект AI игрока
+        logger: Логгер
+        settings_manager: Менеджер настроек
+        keys: Нажатые клавиши
+        screen: Поверхность pygame
+        font: Шрифт
+        big_font: Большой шрифт
+        player_name: Имя игрока
+        highscore_manager: Менеджер рекордов
+        show_victory_splash_func: Функция показа заставки победы
+        show_game_results_func: Функция показа экрана результатов
+        create_ai_player_func: Функция создания AI игрока
+        screen_width: Ширина экрана
+        screen_height: Высота экрана
+        
+    Returns:
+        Tuple: (should_exit, new_paddle, new_ball, new_bricks, new_score, new_lives_left, new_game_over, new_game_started, new_game_start_time, new_ai_player, new_score, new_training_rounds)
+    """
+    if game_over:
+        return False, None, None, None, None, None, None, None, None, None, None, None
+    
+    # Отладочное сообщение только в первых 3 кадрах
+    if frame_counter <= 3:
+        logger.debug(f"[AI DEBUG] В блоке if not game_over, обновляем состояние игры")
+    
+    # Обновляем логику AI используя модуль game_loop_ai
+    if training_mode:
+        assert ai_player is not None, "ai_player должен быть создан в режиме обучения"
+        from .game_loop_ai import (
+            update_ai_logic,
+            calculate_paddle_speed_with_bricks,
+            update_ai_paddle_movement,
+            apply_paddle_movement,
+        )
+        
+        update_ai_logic(
+            ai_player,
+            ball,
+            paddle,
+            bricks,
+            score,
+            lives_left,
+            game_start_time,
+            frame_counter,
+            training_mode,
+            settings_manager,
+            logger,
+        )
+        
+        # Вычисляем скорость платформы с учетом количества блоков используя модуль game_loop_ai
+        base_speed = calculate_paddle_speed_with_bricks(
+            ball,
+            bricks,
+            ai_player,
+        )
+        
+        # Обновляем движение платформы используя модуль game_loop_ai
+        movement, adjusted_speed = update_ai_paddle_movement(
+            ai_player,
+            ball,
+            paddle,
+            frame_counter,
+            logger,
+        )
+        
+        # Применяем движение платформы используя модуль game_loop_ai
+        apply_paddle_movement(paddle, movement, adjusted_speed)
+        
+        # Отладочная информация (выводим периодически)
+        if pygame.time.get_ticks() % 1000 < 16:
+            optimal_x = ai_player.get_optimal_paddle_position()
+    else:
+        # Ручное управление платформой
+        if keys[pygame.K_LEFT]:
+            paddle.move(-1)
+        if keys[pygame.K_RIGHT]:
+            paddle.move(1)
+
+    if not game_started:
+        return False, None, None, None, None, None, None, None, None, None, None, None
+    
+    # Обновляем физику мяча используя модуль game_loop_physics
+    ball_was_at_top, should_continue = update_ball_physics(
+        ball,
+        paddle,
+        frame_counter,
+        game_started,
+        training_mode,
+        ai_player,
+        logger,
+    )
+    if not should_continue:
+        return False, None, None, None, None, None, None, None, None, None, None, None
+
+    # Проверяем столкновения с платформой используя модуль game_loop_physics
+    ball_hits_paddle_top, ball_hits_paddle_side, ball_stuck = check_paddle_collisions(
+        ball,
+        paddle,
+        frame_counter,
+        game_started,
+        training_mode,
+        ai_player,
+        logger,
+    )
+    
+    # Обрабатываем боковое столкновение используя модуль game_loop_physics
+    if ball_hits_paddle_side:
+        should_continue, lives_left, game_over, new_paddle, new_ball, new_bricks, new_score, new_ai_player, new_game_start_time = handle_paddle_side_collision(
+            ball,
+            paddle,
+            lives_left,
+            game_over,
+            frame_counter,
+            training_mode,
+            ai_player,
+            logger,
+            bricks,
+            score,
+            game_start_time,
+            settings_manager,
+        )
+        if new_paddle is not None:
+            return False, new_paddle, new_ball, new_bricks, new_score, lives_left, game_over, None, new_game_start_time, new_ai_player, None, None
+        if not should_continue:
+            return False, None, None, None, None, lives_left, game_over, None, None, None, None, None
+    
+    # Обрабатываем прилипание мяча
+    if ball_stuck:
+        handle_ball_stuck(
+            ball,
+            paddle,
+            frame_counter,
+            game_started,
+            training_mode,
+            ai_player,
+            logger,
+        )
+        return False, None, None, None, None, None, None, None, None, None, None, None
+    
+    # Обрабатываем отскок от верхней поверхности платформы
+    if ball_hits_paddle_top:
+        handle_paddle_top_bounce(
+            ball,
+            paddle,
+            frame_counter,
+            training_mode,
+            ai_player,
+            logger,
+            bricks,
+        )
+    
+    # Проверяем потерю мяча используя модуль game_loop_physics
+    ball_lost, should_reset_ball = handle_ball_loss(
+        ball,
+        paddle,
+        ball_hits_paddle_top,
+        frame_counter,
+        training_mode,
+        ai_player,
+        logger,
+        bricks,
+    )
+    
+    if ball_lost:
+        # Мяч потерян - уменьшаем жизни
+        lives_left -= 1
+        # КРИТИЧНО: Логируем после уменьшения жизней (только в файл, не в консоль)
+        if training_mode:
+            logger.info(f"[LIFE LOSS] Жизни уменьшены! lives_left={lives_left}, game_over={game_over}")
+        if should_reset_ball and lives_left > 0:
+            ball.reset(paddle.rect)
+            ball.vel_y = 0
+            return False, None, None, None, None, lives_left, False, None, None, None, None, None
+        else:
+            # Обрабатываем потерю всех жизней используя модуль game_loop_physics
+            should_continue, new_paddle, new_ball, new_bricks, new_score, new_lives_left, new_game_over, new_game_started, new_game_start_time, new_ai_player = handle_all_lives_lost_after_ball_loss(
+                ball,
+                paddle,
+                bricks,
+                score,
+                lives_left,
+                game_start_time,
+                frame_counter,
+                training_mode,
+                ai_player,
+                logger,
+                settings_manager,
+            )
+            if new_paddle is not None:
+                return False, new_paddle, new_ball, new_bricks, new_score, new_lives_left, new_game_over, new_game_started, new_game_start_time, new_ai_player, None, None
+            if not should_continue:
+                return False, None, None, None, None, new_lives_left, new_game_over, None, None, None, None, None
+            
+            # В обычном режиме обрабатываем окончание игры используя модуль game_loop_physics
+            if new_game_over and not training_mode:
+                should_exit, new_paddle, new_ball, new_bricks, new_score, new_lives_left, new_game_over, new_game_started, new_game_start_time, new_ai_player = handle_game_over_manual(
+                    screen,
+                    font,
+                    big_font,
+                    score,
+                    player_name,
+                    game_start_time,
+                    highscore_manager,
+                    settings_manager,
+                    ball,
+                    paddle,
+                    bricks,
+                    new_game_over,
+                    game_started,
+                    show_game_results_func,
+                    create_ai_player_func,
+                    screen_width,
+                    screen_height,
+                )
+                if should_exit:
+                    return True, None, None, None, None, None, None, None, None, None, None, None
+                if new_paddle is not None:
+                    return False, new_paddle, new_ball, new_bricks, new_score, new_lives_left, new_game_over, new_game_started, new_game_start_time, new_ai_player, None, None
+            return False, None, None, None, None, new_lives_left, new_game_over, None, None, None, None, None
+
+    # Проверяем столкновения с кирпичами используя модуль game_loop_physics
+    score_increase, destroyed_brick = check_brick_collisions(
+        ball,
+        bricks,
+        frame_counter,
+        training_mode,
+        ai_player,
+        logger,
+    )
+    score += score_increase
+    
+    # КРИТИЧНО: Проверяем победу (все кубики сбиты) и перезапускаем в режиме обучения
+    if not bricks:
+        game_over = True
+        game_time_seconds = int(time.time() - game_start_time)
+        
+        # В режиме обучения не показываем экран результатов, сразу перезапускаем
+        if training_mode:
+            # Перезапускаем игру в режиме обучения используя модуль game_loop_physics
+            new_paddle, new_ball, new_bricks, new_score, new_lives_left, new_game_over, new_game_started, new_game_start_time = handle_game_restart_training(
+                ball,
+                paddle,
+                bricks,
+                score,
+                lives_left,
+                game_start_time,
+                training_mode,
+                ai_player,
+                settings_manager,
+                logger,
+                is_victory=True,
+            )
+            return False, new_paddle, new_ball, new_bricks, new_score, new_lives_left, new_game_over, new_game_started, new_game_start_time, ai_player, None, None
+
+    # Обрабатываем потерю мяча за границей экрана используя модуль game_loop_physics
+    should_continue, lives_left, game_over, new_paddle, new_ball, new_bricks, new_score, new_ai_player, new_game_start_time, game_started = handle_ball_out_of_bounds(
+        ball,
+        paddle,
+        lives_left,
+        game_over,
+        bricks,
+        score,
+        game_start_time,
+        frame_counter,
+        training_mode,
+        ai_player,
+        logger,
+        settings_manager,
+    )
+    if new_paddle is not None:
+        return False, new_paddle, new_ball, new_bricks, new_score, lives_left, game_over, game_started, new_game_start_time, new_ai_player, None, None
+    if not should_continue:
+        return False, None, None, None, None, lives_left, game_over, game_started, None, None, None, None
+    
+    # В обычном режиме обрабатываем окончание игры используя модуль game_loop_physics
+    if game_over and not training_mode:
+        should_exit, new_paddle, new_ball, new_bricks, new_score, new_lives_left, new_game_over, new_game_started, new_game_start_time, new_ai_player = handle_game_over_manual(
+            screen,
+            font,
+            big_font,
+            score,
+            player_name,
+            game_start_time,
+            highscore_manager,
+            settings_manager,
+            ball,
+            paddle,
+            bricks,
+            game_over,
+            game_started,
+            show_game_results_func,
+            create_ai_player_func,
+            screen_width,
+            screen_height,
+        )
+        if should_exit:
+            return True, None, None, None, None, None, None, None, None, None, None, None
+        if new_paddle is not None:
+            return False, new_paddle, new_ball, new_bricks, new_score, new_lives_left, new_game_over, new_game_started, new_game_start_time, new_ai_player, None, None
+
+    if not bricks:
+        # В режиме обучения автоматически перезапускаем игру
+        if training_mode:
+            # Увеличиваем счетчик раундов
+            training_rounds = 1  # Будет обновлен в main()
+            
+            # Перезапускаем игру в режиме обучения используя модуль game_loop_physics
+            new_paddle, new_ball, new_bricks, new_score, new_lives_left, new_game_over, new_game_started, new_game_start_time = handle_game_restart_training(
+                ball,
+                paddle,
+                bricks,
+                score,
+                lives_left,
+                game_start_time,
+                training_mode,
+                ai_player,
+                settings_manager,
+                logger,
+                is_victory=True,
+            )
+            return False, new_paddle, new_ball, new_bricks, new_score, new_lives_left, new_game_over, new_game_started, new_game_start_time, ai_player, None, training_rounds
+        else:
+            # Обычный режим - обрабатываем победу используя модуль game_loop_physics
+            should_exit, new_paddle, new_ball, new_bricks, new_score, new_lives_left, new_game_over, new_game_started, new_game_start_time, new_ai_player = handle_victory_manual(
+                screen,
+                font,
+                big_font,
+                score,
+                player_name,
+                lives_left,
+                game_start_time,
+                highscore_manager,
+                settings_manager,
+                ball,
+                paddle,
+                bricks,
+                game_over,
+                game_started,
+                show_victory_splash_func,
+                show_game_results_func,
+                create_ai_player_func,
+                screen_width,
+                screen_height,
+            )
+            if should_exit:
+                return True, None, None, None, None, None, None, None, None, None, None, None
+            if new_paddle is not None:
+                return False, new_paddle, new_ball, new_bricks, new_score, new_lives_left, new_game_over, new_game_started, new_game_start_time, new_ai_player, None, None
+    
+    return False, None, None, None, score, lives_left, game_over, game_started, None, None, None, None
