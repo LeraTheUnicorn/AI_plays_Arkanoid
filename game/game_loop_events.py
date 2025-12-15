@@ -153,10 +153,9 @@ def process_keyboard_events(
                             return False, sound_enabled, key_1_press_count, key_1_last_press_time, bricks, game_over, True
                         
                         if restart_game:
-                            # Перезапускаем игру
-                            # Возвращаем флаг перезапуска через специальное значение
-                            # (это будет обработано в main())
-                            pass  # Перезапуск обрабатывается в main()
+                            # Перезапускаем игру - возвращаем флаг через game_over=False
+                            game_over = False
+                            # Перезапуск будет обработан в main() через process_restart_key
     
     return running, sound_enabled, key_1_press_count, key_1_last_press_time, bricks, game_over, exit_game
 
@@ -166,7 +165,7 @@ def process_restart_key(
     game_over: bool,
     settings_manager: Any,
     logger: Any
-) -> Tuple[Optional[Paddle], Optional[Ball], Optional[list], Optional[int], Optional[int], Optional[bool], Optional[bool], Optional[AIPlayer], Optional[float]]:
+) -> Tuple[bool, Optional[Paddle], Optional[Ball], Optional[list], Optional[int], Optional[int], Optional[bool], Optional[bool], Optional[AIPlayer], Optional[float]]:
     """
     Обрабатывает нажатие клавиши R для перезапуска игры.
     
@@ -177,7 +176,8 @@ def process_restart_key(
         logger: Логгер.
         
     Returns:
-        Tuple: (paddle, ball, bricks, score, lives_left, game_over, game_started, ai_player, game_start_time) или None для каждого элемента если перезапуск не требуется
+        Tuple: (should_restart, paddle, ball, bricks, score, lives_left, game_over, game_started, ai_player, game_start_time)
+        Если should_restart=False, остальные значения None
     """
     if game_over and keys[pygame.K_r]:
         # В ручном режиме R перезапускает игру
@@ -198,6 +198,6 @@ def process_restart_key(
         ai_player.activate()
         game_start_time = time.time()
         
-        return paddle, ball, bricks, score, lives_left, game_over, game_started, ai_player, game_start_time
+        return True, paddle, ball, bricks, score, lives_left, game_over, game_started, ai_player, game_start_time
     
-    return None, None, None, None, None, None, None, None, None
+    return False, None, None, None, None, None, None, None, None, None

@@ -407,107 +407,31 @@ def main() -> None:
             
             # КРИТИЧНО: Обработка событий должна быть первой и всегда выполняться
             events = pygame.event.get()
-            for event in events:
-                if event.type == pygame.QUIT:
-                    # QUIT всегда закрывает приложение немедленно
-                    running = False
-                    break  # Выходим из игрового цикла
-                elif event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_ESCAPE:
-                        # ESC всегда закрывает приложение немедленно
-                        running = False
-                        break  # Выходим из игрового цикла
-                    elif event.key == pygame.K_m:
-                        # Переключение всех звуков
-                        if sound_enabled:
-                            pygame.mixer.music.stop()
-                            sound_enabled = False
-                        else:
-                            pygame.mixer.music.play(-1)
-                            sound_enabled = True
-                    elif event.key == pygame.K_UP:
-                        # Увеличение скорости мяча
-                        ball.increase_speed(settings_manager)
-                    elif event.key == pygame.K_DOWN:
-                        # Уменьшение скорости мяча
-                        ball.decrease_speed(settings_manager)
-                    elif event.key == pygame.K_1 or event.key == ord('1'):
-                        # Обработка тройного нажатия "1" для немедленной победы
-                        current_time = time.time()
-                        # Если прошло больше времени сброса, сбрасываем счетчик
-                        if current_time - key_1_last_press_time > KEY_1_RESET_TIME:
-                            key_1_press_count = 0
-                        
-                        key_1_press_count += 1
-                        key_1_last_press_time = current_time
-                        
-                        # Если нажали три раза подряд
-                        if key_1_press_count >= 3:
-                            # Очищаем кирпичи для победы
-                            bricks = []
-                            key_1_press_count = 0  # Сбрасываем счетчик
-                            if not getattr(sys, "frozen", False):
-                                print(f"[CHEAT] Активирована немедленная победа (тройное нажатие '1')")
-                                print(f"[CHEAT] training_mode={training_mode}, lives_left={lives_left}")
-                            
-                            # В режиме обучения не показываем заставку победы
-                            if not training_mode and lives_left > 0:
-                                if not getattr(sys, "frozen", False):
-                                    print("[CHEAT] Условия выполнены, вызываем trigger_instant_victory...")
-                                game_over = True
-                                game_time_seconds = int(time.time() - game_start_time)
-                                
-                                # Используем отдельный метод для показа заставки и результатов
-                                try:
-                                    sound_enabled, restart_game, exit_game = trigger_instant_victory(
-                                        screen,
-                                        font,
-                                        big_font,
-                                        score,
-                                        player_name,
-                                        game_time_seconds,
-                                        highscore_manager,
-                                        settings_manager,
-                                        ball,
-                                    )
-                                    if not getattr(sys, "frozen", False):
-                                        print(f"[CHEAT] trigger_instant_victory завершена: restart_game={restart_game}, exit_game={exit_game}")
-                                except Exception as e:
-                                    if not getattr(sys, "frozen", False):
-                                        print(f"[CHEAT] ОШИБКА в trigger_instant_victory: {e}")
-                                        import traceback
-                                        traceback.print_exc()
-                                    # Продолжаем выполнение даже при ошибке
-                                    restart_game = False
-                                    exit_game = False
-                                
-                                # Обработка выхода или перезапуска
-                                if exit_game:
-                                    pygame.quit()
-                                    return
-                                
-                                if restart_game:
-                                    # Перезапускаем игру
-                                    paddle = Paddle()
-                                    ball = Ball()
-                                    ball_speed = settings_manager.get_ball_speed()
-                                    ball.set_speed(ball_speed)
-                                    ball.reset(paddle.rect)
-                                    ball.vel_y = 0
-                                    bricks = build_bricks()
-                                    score = 0
-                                    lives_left = MAX_LIVES
-                                    game_over = False
-                                    game_started = False
-                                    ai_player = create_ai_player(
-                                        SCREEN_WIDTH,
-                                        SCREEN_HEIGHT,
-                                        debug_mode=True
-                                    )
-                                    ai_player.activate()
-                                    game_start_time = time.time()
-                                    key_1_press_count = 0  # Сбрасываем счетчик
-                                    key_1_last_press_time = 0.0
+            running, sound_enabled, key_1_press_count, key_1_last_press_time, bricks, game_over, exit_game = process_keyboard_events(
+                events,
+                sound_enabled,
+                ball,
+                settings_manager,
+                training_mode,
+                key_1_press_count,
+                key_1_last_press_time,
+                KEY_1_RESET_TIME,
+                bricks,
+                game_over,
+                lives_left,
+                game_start_time,
+                score,
+                player_name,
+                highscore_manager,
+                screen,
+                font,
+                big_font,
+            )
+            
+            # Обработка выхода из игры
+            if exit_game:
+                pygame.quit()
+                return
 
             keys = pygame.key.get_pressed()
             
@@ -521,23 +445,22 @@ def main() -> None:
                 ball.rect.y -= BALL_SIZE
 
             # Обработка перезапуска после окончания игры (только для ручного режима)
-            if game_over and keys[pygame.K_r]:
-                # В ручном режиме R перезапускает игру
-                # Сброс состояния игры
-                paddle = Paddle()
-                ball = Ball()
-                ball_speed = settings_manager.get_ball_speed()
-                ball.set_speed(ball_speed)
-                ball.reset(paddle.rect)
-                ball.vel_y = 0
-                bricks = build_bricks()
-                score = 0
-                lives_left = MAX_LIVES
-                game_over = False
-                game_started = False
-                # Пересоздаем AI для новой игры
-                ai_player = create_ai_player(SCREEN_WIDTH, SCREEN_HEIGHT, debug_mode=True)
-                ai_player.activate()
+            should_restart, restart_paddle, restart_ball, restart_bricks, restart_score, restart_lives, restart_game_over, restart_game_started, restart_ai_player, restart_game_start_time = process_restart_key(
+                keys,
+                game_over,
+                settings_manager,
+                logger
+            )
+            if should_restart:
+                paddle = restart_paddle
+                ball = restart_ball
+                bricks = restart_bricks
+                score = restart_score
+                lives_left = restart_lives
+                game_over = restart_game_over
+                game_started = restart_game_started
+                ai_player = restart_ai_player
+                game_start_time = restart_game_start_time
 
             if not game_over:
                 # Отладочное сообщение только в первых 3 кадрах
