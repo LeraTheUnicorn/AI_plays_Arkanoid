@@ -843,6 +843,7 @@ class AIPlayer(
                 )
                 learning_progress_value = max(0.0, min(1.0, learning_progress_value))
         else:
+            # Если learning_progress не словарь, преобразуем в float
             learning_progress_value = (
                 float(learning_progress) if learning_progress else 0.0
             )
