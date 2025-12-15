@@ -8,6 +8,7 @@ import os
 import sys
 import time
 import random
+import math
 import pygame
 from typing import Tuple, Optional, Any
 
@@ -20,6 +21,8 @@ try:
         BALL_SPEED_MAX,
         BALL_SPEED_DEFAULT,
         RANDOM_BALL_START_DIRECTION,
+        BRICK_ROWS,
+        BRICK_COLS,
     )
     from .game_models import Paddle, Ball
     from .game_utils import build_bricks, create_ai_player, resource_path
@@ -35,6 +38,8 @@ except ImportError:
         BALL_SPEED_MAX,
         BALL_SPEED_DEFAULT,
         RANDOM_BALL_START_DIRECTION,
+        BRICK_ROWS,
+        BRICK_COLS,
     )
     from game.game_models import Paddle, Ball
     from game.game_utils import build_bricks, create_ai_player, resource_path
@@ -295,6 +300,40 @@ def save_training_data_on_exit(
                 print(f"[AI] Предупреждение: не удалось сохранить данные обучения: {e}")
 
 
+def set_random_ball_angle(ball: Ball, angle_range: int = 50) -> Tuple[int, int]:
+    """
+    Устанавливает рандомный угол для мяча в диапазоне от -angle_range до +angle_range градусов.
+    
+    Args:
+        ball: Объект мяча
+        angle_range: Диапазон углов в градусах (по умолчанию 50)
+        
+    Returns:
+        Tuple[int, int]: (vel_x, vel_y) - компоненты скорости
+    """
+    # Генерируем случайный угол в градусах от -angle_range до +angle_range
+    angle_degrees = random.uniform(-angle_range, angle_range)
+    # Конвертируем в радианы
+    angle_radians = math.radians(angle_degrees)
+    # Получаем скорость мяча
+    speed = ball.get_speed()
+    # Вычисляем компоненты скорости
+    # vel_x = speed * sin(angle), vel_y = -speed * cos(angle) (отрицательный, т.к. мяч движется вверх)
+    vel_x = int(speed * math.sin(angle_radians))
+    vel_y = int(-speed * math.cos(angle_radians))
+    
+    # Убеждаемся, что vel_y всегда отрицательный (мяч движется вверх)
+    if vel_y > 0:
+        vel_y = -vel_y
+    
+    # Убеждаемся, что скорость не равна нулю
+    if vel_x == 0 and vel_y == 0:
+        vel_x = speed if random.choice([True, False]) else -speed
+        vel_y = -speed
+    
+    return vel_x, vel_y
+
+
 def finalize_game_setup(
     ball: Ball,
     paddle: Paddle,
@@ -323,13 +362,21 @@ def finalize_game_setup(
     # Игра начинается сразу
     # ✅ Рандомизация направления мяча при старте (если включена)
     if RANDOM_BALL_START_DIRECTION:
-        # Рандомное направление: влево или вправо
-        ball.vel_x = random.choice([-ball.get_speed(), ball.get_speed()])
+        ball.vel_x, ball.vel_y = set_random_ball_angle(ball, angle_range=50)
     else:
         ball.vel_x = ball.get_speed()  # Направление вправо (по умолчанию)
-    ball.vel_y = -ball.get_speed()
-    # Логируем настройку игры (только в файл, не в консоль)
+        ball.vel_y = -ball.get_speed()
+    
+    # Логируем настройку игры
     logger.debug(f"[AI DEBUG] Игра настроена, game_started=True, ball.vel_x={ball.vel_x}, ball.vel_y={ball.vel_y}, random_start={RANDOM_BALL_START_DIRECTION}")
+    
+    # Логируем в консоль при первом запуске
+    if not getattr(sys, "frozen", False):
+        direction_info = "рандом" if RANDOM_BALL_START_DIRECTION else "фикс"
+        angle_degrees = int(math.degrees(math.atan2(ball.vel_x, -ball.vel_y)))
+        direction_text = "влево" if ball.vel_x < 0 else "вправо" if ball.vel_x > 0 else "прямо"
+        print(f"[GAME START] Игра запущена!")
+        print(f"[GAME START] Мяч: скорость={ball.get_speed()}, направление={direction_text} ({direction_info}), угол={angle_degrees}°, vel_x={ball.vel_x}, vel_y={ball.vel_y} | Платформа: x={paddle.rect.x} | Кирпичей: {BRICK_ROWS * BRICK_COLS}")
 
 
 # Удалена неиспользуемая функция setup_complete_game - инициализация выполняется напрямую в main()

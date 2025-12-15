@@ -90,7 +90,7 @@ class AIPlayerInitMixin:
             # Проверяем настройку удаления логов
             should_delete = True  # По умолчанию удаляем
             try:
-                from ..game.settings import SettingsManager
+                from game.settings import SettingsManager
                 settings_manager = SettingsManager(lazy_load=False)
                 should_delete = settings_manager.get_delete_ai_logs_on_start()
             except Exception as e:

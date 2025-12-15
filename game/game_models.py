@@ -6,6 +6,7 @@
 """
 
 import random
+import math
 from dataclasses import dataclass, field
 from typing import List, Optional
 
@@ -127,10 +128,23 @@ class Ball:
         self.rect.centery = paddle_rect.top - ball_radius - 5
         # ✅ Рандомизация направления мяча (если включена)
         if RANDOM_BALL_START_DIRECTION:
-            self.vel_x = random.choice([-self.current_speed, self.current_speed])
+            # Генерируем случайный угол в градусах от -50 до +50
+            angle_degrees = random.uniform(-50, 50)
+            angle_radians = math.radians(angle_degrees)
+            speed = self.current_speed
+            # Вычисляем компоненты скорости
+            self.vel_x = int(speed * math.sin(angle_radians))
+            self.vel_y = int(-speed * math.cos(angle_radians))
+            # Убеждаемся, что vel_y всегда отрицательный (мяч движется вверх)
+            if self.vel_y > 0:
+                self.vel_y = -self.vel_y
+            # Убеждаемся, что скорость не равна нулю
+            if self.vel_x == 0 and self.vel_y == 0:
+                self.vel_x = speed if random.choice([True, False]) else -speed
+                self.vel_y = -speed
         else:
             self.vel_x = self.current_speed  # Направление вправо (по умолчанию)
-        self.vel_y = -self.current_speed
+            self.vel_y = -self.current_speed
 
     def set_speed(
         self,

@@ -5,6 +5,7 @@
 """
 
 import random
+import math
 import sys
 import time
 from typing import Tuple, Optional, Any
@@ -851,6 +852,40 @@ def handle_ball_loss(
     return False, False  # Мяч не потерян
 
 
+def set_random_ball_angle(ball: Ball, angle_range: int = 50) -> Tuple[int, int]:
+    """
+    Устанавливает рандомный угол для мяча в диапазоне от -angle_range до +angle_range градусов.
+    
+    Args:
+        ball: Объект мяча
+        angle_range: Диапазон углов в градусах (по умолчанию 50)
+        
+    Returns:
+        Tuple[int, int]: (vel_x, vel_y) - компоненты скорости
+    """
+    # Генерируем случайный угол в градусах от -angle_range до +angle_range
+    angle_degrees = random.uniform(-angle_range, angle_range)
+    # Конвертируем в радианы
+    angle_radians = math.radians(angle_degrees)
+    # Получаем скорость мяча
+    speed = ball.get_speed()
+    # Вычисляем компоненты скорости
+    # vel_x = speed * sin(angle), vel_y = -speed * cos(angle) (отрицательный, т.к. мяч движется вверх)
+    vel_x = int(speed * math.sin(angle_radians))
+    vel_y = int(-speed * math.cos(angle_radians))
+    
+    # Убеждаемся, что vel_y всегда отрицательный (мяч движется вверх)
+    if vel_y > 0:
+        vel_y = -vel_y
+    
+    # Убеждаемся, что скорость не равна нулю
+    if vel_x == 0 and vel_y == 0:
+        vel_x = speed if random.choice([True, False]) else -speed
+        vel_y = -speed
+    
+    return vel_x, vel_y
+
+
 def handle_game_restart_training(
     ball: Ball,
     paddle: Paddle,
@@ -952,10 +987,10 @@ def handle_game_restart_training(
     game_started = True  # Автоматически запускаем
     # ✅ Рандомизация направления мяча при перезапуске (если включена)
     if RANDOM_BALL_START_DIRECTION:
-        new_ball.vel_x = random.choice([-new_ball.get_speed(), new_ball.get_speed()])
+        new_ball.vel_x, new_ball.vel_y = set_random_ball_angle(new_ball, angle_range=50)
     else:
         new_ball.vel_x = new_ball.get_speed()  # Направление вправо (по умолчанию)
-    new_ball.vel_y = -new_ball.get_speed()
+        new_ball.vel_y = -new_ball.get_speed()
     new_game_start_time = time.time()
     
     # КРИТИЧНО: Сразу обновляем состояние игры для AI после перезапуска
@@ -966,9 +1001,11 @@ def handle_game_restart_training(
     # КРИТИЧНО: Логируем перезапуск игры
     if not getattr(sys, "frozen", False):
         restart_type = "ПОБЕДА" if is_victory else "ПОРАЖЕНИЕ"
+        direction_info = "рандом" if RANDOM_BALL_START_DIRECTION else "фикс"
+        angle_degrees = int(math.degrees(math.atan2(new_ball.vel_x, -new_ball.vel_y)))
+        direction_text = "влево" if new_ball.vel_x < 0 else "вправо" if new_ball.vel_x > 0 else "прямо"
         print(f"[GAME RESTART] Игра перезапущена после {restart_type}!")
-        print(f"[GAME RESTART] lives_left={new_lives_left}, game_over={game_over}, game_started={game_started}")
-        print(f"[GAME RESTART] ball.vel_x={new_ball.vel_x}, ball.vel_y={new_ball.vel_y}, paddle.x={new_paddle.rect.x}, bricks={len(new_bricks)}")
+        print(f"[GAME RESTART] Мяч: скорость={new_ball.get_speed()}, направление={direction_text} ({direction_info}), угол={angle_degrees}°, vel_x={new_ball.vel_x}, vel_y={new_ball.vel_y} | Платформа: x={new_paddle.rect.x} | Кирпичей: {len(new_bricks)}")
     
     ai_player.performance_logger.log_ball_paddle_positions(
         new_ball.rect.centerx,
