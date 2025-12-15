@@ -173,6 +173,9 @@ class TestAIPlayerTargetingMixin:
                     game_time=0,
                     ball_speed=5,
                 )
+                self.config = Mock()
+                self.config.successful_hits_max = 100
+                self.config.successful_hits_keep = 50
         
         player = TestPlayer()
         

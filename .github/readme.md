@@ -3,8 +3,8 @@
 ## Схема проекта
 
 ```
-├── 📁 ai/                          # AI-система для авторежима
-│   ├── ai_player.py                # Основной класс AIPlayer (координатор, 525 строк)
+├─ 📁 ai/                          # AI-система для авторежима
+│   ├── ai_player.py                # Основной класс AIPlayer 
 │   ├── ai_player_init.py           # Миксин: инициализация
 │   ├── ai_player_state.py          # Миксин: управление состоянием
 │   ├── ai_player_targeting.py      # Миксин: прицеливание
@@ -86,12 +86,12 @@
 │       └── analyze_performance_degradation.py # Анализ деградации
 │
 ├── 📁 game/                        # Основная логика игры
-│   ├── PyGameBall.py               # Главный файл игры (точка входа, 481 строка)
+│   ├── PyGameBall.py               # Главный файл игры (точка входа, 561 строка)
 │   ├── game_loop_initialization.py # Инициализация игры (323 строки)
-│   ├── game_loop_events.py         # Обработка событий (203 строки)
-│   ├── game_loop_physics.py        # Физика и столкновения (1966 строк)
+│   ├── game_loop_events.py         # Обработка событий (213 строк)
+│   ├── game_loop_physics.py        # Физика и столкновения (1949 строк)
 │   ├── game_loop_rendering.py      # Отрисовка игры (133 строки)
-│   ├── game_loop_ai.py             # Логика AI (376 строк)
+│   ├── game_loop_ai.py             # Логика AI (379 строк)
 │   ├── game_config.py              # Конфигурация игры
 │   ├── game_models.py              # Модели данных игры
 │   ├── game_utils.py               # Утилиты игры
@@ -125,6 +125,39 @@
 ├── 📄 pyproject.toml               # Конфигурация Poetry
 ├── 📄 poetry.lock                  # Зафиксированные зависимости
 ├── 📄 install_dependencies.bat     # Установка зависимостей
+├── 📁 tests/                       # Тесты проекта
+│   ├── conftest.py                # Общие фикстуры pytest
+│   ├── README.md                  # Документация по тестам
+│   ├── ai/                        # Тесты AI модулей (22 файла)
+│   │   ├── test_ai_player_basic.py
+│   │   ├── test_ai_player_cache.py
+│   │   ├── test_ai_player_init.py
+│   │   ├── test_ai_player_models.py
+│   │   ├── test_ai_player_movement.py
+│   │   ├── test_ai_player_positioning.py
+│   │   ├── test_ai_player_targeting.py
+│   │   ├── test_ai_player_utils.py
+│   │   ├── test_async_trajectory_predictor.py
+│   │   ├── test_config.py
+│   │   ├── test_exceptions.py
+│   │   ├── test_game_state.py
+│   │   ├── test_lazy_learning_system.py
+│   │   ├── test_learning_system.py
+│   │   ├── test_logging_config.py
+│   │   ├── test_performance_logger.py
+│   │   ├── test_performance_monitor.py
+│   │   ├── test_platform_utils.py
+│   │   ├── test_position_optimizer.py
+│   │   ├── test_rotating_file_handler.py
+│   │   └── test_trajectory_predictor.py
+│   ├── game/                      # Тесты game модулей (6 файлов)
+│   │   ├── test_game_config.py
+│   │   ├── test_game_models.py
+│   │   ├── test_game_models_extended.py
+│   │   ├── test_game_utils.py
+│   │   └── test_settings.py
+│   └── utils/                     # Тесты utils модулей
+│
 ├── 📁 utils/                       # Вспомогательные скрипты
 │   ├── analyze_file_sizes.py      # Анализ размеров файлов
 │   ├── cleanup_duplicate.py       # Очистка дубликатов

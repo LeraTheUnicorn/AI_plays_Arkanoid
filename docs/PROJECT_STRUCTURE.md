@@ -6,7 +6,7 @@
 CURSOR_AI/
 │
 ├── 📁 ai/                          # AI-система для авторежима
-│   ├── ai_player.py                # Основной класс AIPlayer (координатор, 525 строк)
+│   ├── ai_player.py                # Основной класс AIPlayer 
 │   ├── ai_player_init.py           # Миксин: инициализация
 │   ├── ai_player_state.py          # Миксин: управление состоянием
 │   ├── ai_player_targeting.py      # Миксин: прицеливание
@@ -88,12 +88,12 @@ CURSOR_AI/
 │       └── analyze_performance_degradation.py # Анализ деградации
 │
 ├── 📁 game/                        # Основная логика игры
-│   ├── PyGameBall.py               # Главный файл игры (точка входа, 481 строка)
+│   ├── PyGameBall.py               # Главный файл игры (точка входа, 561 строка)
 │   ├── game_loop_initialization.py # Инициализация игры (323 строки)
-│   ├── game_loop_events.py         # Обработка событий (203 строки)
-│   ├── game_loop_physics.py        # Физика и столкновения (1966 строк)
+│   ├── game_loop_events.py         # Обработка событий (213 строк)
+│   ├── game_loop_physics.py        # Физика и столкновения (1949 строк)
 │   ├── game_loop_rendering.py      # Отрисовка игры (133 строки)
-│   ├── game_loop_ai.py             # Логика AI (376 строк)
+│   ├── game_loop_ai.py             # Логика AI (379 строк)
 │   ├── game_config.py              # Конфигурация игры
 │   ├── game_models.py              # Модели данных игры
 │   ├── game_utils.py               # Утилиты игры
@@ -127,6 +127,39 @@ CURSOR_AI/
 ├── 📄 pyproject.toml               # Конфигурация Poetry
 ├── 📄 poetry.lock                  # Зафиксированные зависимости
 ├── 📄 install_dependencies.bat     # Установка зависимостей
+├── 📁 tests/                       # Тесты проекта
+│   ├── conftest.py                # Общие фикстуры pytest
+│   ├── README.md                  # Документация по тестам
+│   ├── ai/                        # Тесты AI модулей (22 файла)
+│   │   ├── test_ai_player_basic.py
+│   │   ├── test_ai_player_cache.py
+│   │   ├── test_ai_player_init.py
+│   │   ├── test_ai_player_models.py
+│   │   ├── test_ai_player_movement.py
+│   │   ├── test_ai_player_positioning.py
+│   │   ├── test_ai_player_targeting.py
+│   │   ├── test_ai_player_utils.py
+│   │   ├── test_async_trajectory_predictor.py
+│   │   ├── test_config.py
+│   │   ├── test_exceptions.py
+│   │   ├── test_game_state.py
+│   │   ├── test_lazy_learning_system.py
+│   │   ├── test_learning_system.py
+│   │   ├── test_logging_config.py
+│   │   ├── test_performance_logger.py
+│   │   ├── test_performance_monitor.py
+│   │   ├── test_platform_utils.py
+│   │   ├── test_position_optimizer.py
+│   │   ├── test_rotating_file_handler.py
+│   │   └── test_trajectory_predictor.py
+│   ├── game/                      # Тесты game модулей (6 файлов)
+│   │   ├── test_game_config.py
+│   │   ├── test_game_models.py
+│   │   ├── test_game_models_extended.py
+│   │   ├── test_game_utils.py
+│   │   └── test_settings.py
+│   └── utils/                     # Тесты utils модулей
+│
 ├── 📁 utils/                       # Вспомогательные скрипты
 │   ├── analyze_file_sizes.py      # Анализ размеров файлов
 │   ├── cleanup_duplicate.py       # Очистка дубликатов
@@ -1005,7 +1038,7 @@ CURSOR_AI/
 #### `game/PyGameBall.py`
 **Назначение**: Главный файл игры - точка входа, координатор игрового цикла.
 
-**Размер**: 481 строка (было 2456 строк, уменьшено на 80%)
+**Размер**: 561 строка (было 2456 строк, уменьшено на 77%)
 
 **Основные функции**:
 - Координация работы модулей игрового цикла
@@ -1051,7 +1084,7 @@ CURSOR_AI/
 #### `game/game_loop_events.py`
 **Назначение**: Модуль обработки событий игры.
 
-**Размер**: 203 строки
+**Размер**: 213 строк
 
 **Основные функции**:
 - `process_keyboard_events()` - обработка событий клавиатуры
@@ -1070,7 +1103,7 @@ CURSOR_AI/
 #### `game/game_loop_physics.py`
 **Назначение**: Модуль физики и столкновений игры.
 
-**Размер**: 1966 строк
+**Размер**: 1949 строк
 
 **Основные функции**:
 - `update_ball_physics()` - обновление физики мяча
@@ -1108,7 +1141,7 @@ CURSOR_AI/
 #### `game/game_loop_ai.py`
 **Назначение**: Модуль логики AI для игрового цикла.
 
-**Размер**: 376 строк
+**Размер**: 379 строк
 
 **Основные функции**:
 - `update_ai_state()` - обновление состояния AI
@@ -1384,6 +1417,68 @@ CURSOR_AI/
 
 ---
 
+### Тесты `tests/`
+
+#### `tests/conftest.py`
+**Назначение**: Общие фикстуры pytest для всех тестов.
+
+**Содержит**:
+- Мокирование pygame
+- Фикстуры для создания тестовых объектов (GameState, Ball, Paddle, Bricks)
+- Настройки размеров экрана
+
+**Связан с**: Все тестовые файлы
+
+---
+
+#### `tests/README.md`
+**Назначение**: Документация по структуре тестов и инструкции по запуску.
+
+**Содержит**:
+- Описание структуры тестов
+- Инструкции по установке зависимостей
+- Команды для запуска тестов
+- Информацию о покрытии кода
+
+---
+
+#### `tests/ai/`
+**Назначение**: Тесты для всех модулей AI системы.
+
+**Размер**: Тесты AI модулей (входит в общий объем 5,645 строк тестов в 39 файлах)
+
+**Основные тесты**:
+- `test_ai_player_*.py` - тесты основных компонентов AIPlayer
+- `test_trajectory_predictor.py` - тесты предсказания траекторий
+- `test_learning_system.py` - тесты системы обучения
+- `test_performance_logger.py` - тесты логирования производительности
+- И другие тесты модулей AI
+
+---
+
+#### `tests/game/`
+**Назначение**: Тесты для модулей игры.
+
+**Размер**: Тесты game модулей (входит в общий объем 5,645 строк тестов в 39 файлах)
+
+**Основные тесты**:
+- `test_game_models.py` - тесты моделей данных игры
+- `test_game_config.py` - тесты конфигурации
+- `test_game_utils.py` - тесты утилит игры
+- `test_settings.py` - тесты настроек
+
+---
+
+#### `tests/utils/`
+**Назначение**: Тесты для утилит проекта.
+
+**Общая статистика тестов:**
+- **Всего тестовых файлов:** 39 файлов
+- **Всего строк тестового кода:** 5,645 строк
+- **Средний размер тестового файла:** ~145 строк
+
+---
+
 ### Вспомогательные скрипты `utils/`
 
 #### `utils/analyze_file_sizes.py`
@@ -1478,12 +1573,12 @@ game_loop_physics.py (применение движения к платформ�
 3. **Разделение логики**: Игровая логика (`game/`) отделена от AI логики (`ai/`), что упрощает тестирование и поддержку.
 
 4. **Рефакторинг PyGameBall.py**: Главный файл игры разбит на модули:
-   - `PyGameBall.py`: 481 строка (было 2456, уменьшено на 80%)
+   - `PyGameBall.py`: 561 строка (было 2456, уменьшено на 77%)
    - `game_loop_initialization.py`: 323 строки
-   - `game_loop_events.py`: 203 строки
-   - `game_loop_physics.py`: 1966 строк
+   - `game_loop_events.py`: 213 строк
+   - `game_loop_physics.py`: 1949 строк
    - `game_loop_rendering.py`: 133 строки
-   - `game_loop_ai.py`: 376 строк
+   - `game_loop_ai.py`: 379 строк
 
 5. **Централизованная конфигурация**: Конфигурация вынесена в отдельные файлы (`game_config.py`, `config.py`).
 
@@ -1493,8 +1588,9 @@ game_loop_physics.py (применение движения к платформ�
 
 8. **Статус рефакторинга**: 
    - ✅ `ai_player.py`: разбит на 25+ миксинов (525 строк, уменьшено на 92%)
-   - ✅ `PyGameBall.py`: разбит на 5 модулей игрового цикла (481 строка, уменьшено на 80%)
-   - ⚠️ `game/game_loop_physics.py`: требует дальнейшего разбиения (1966 строк)
+   - ✅ `PyGameBall.py`: разбит на 5 модулей игрового цикла (561 строка, уменьшено на 77%)
+   - ⚠️ `ai/ai_player_positioning.py`: 531 строка (незначительно превышает 500 строк)
+   - ⚠️ `game/game_loop_physics.py`: требует дальнейшего разбиения (1949 строк)
    - ⚠️ `ai/core/movement_engine.py`: требует дальнейшего разбиения (1617 строк)
    - ⚠️ `ai/core/decision_maker.py`: требует дальнейшего разбиения (1349 строк)
 
