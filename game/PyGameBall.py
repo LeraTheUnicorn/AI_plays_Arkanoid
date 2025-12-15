@@ -60,6 +60,7 @@ from .game_loop_physics import (
     handle_ball_out_of_bounds,
     handle_game_restart_manual,
     handle_victory_manual,
+    handle_all_lives_lost_after_ball_loss,
 )
 
 # Импортируем функции отрисовки
@@ -511,116 +512,71 @@ def main() -> None:
                             ball.reset(paddle.rect)
                             ball.vel_y = 0
                         else:
-                            # КРИТИЧНО: Логируем окончание жизней
-                            if training_mode:
-                                if not getattr(sys, "frozen", False):
-                                    print(f"[GAME END] Все жизни потрачены (ball.rect.bottom > paddle.rect.top)! lives_left={lives_left}, training_mode={training_mode}")
-                            game_over = True
-                            # Рассчитываем время игры и сохраняем результат
-                            game_time_seconds = int(time.time() - game_start_time)
-
-                            # Обучаем AI на результате игры (проигрыш)
-                            if training_mode:
-                                # В режиме обучения считаем кубики за весь матч (пока не потратятся все жизни)
-                                total_bricks_destroyed = (
-                                    BRICK_ROWS * BRICK_COLS
-                                ) - len(bricks)
-
-                                # Обновляем финальную статистику обучения
-                                if training_mode:
-                                    ai_player.update_training_stats(
-                                        total_bricks_destroyed,
+                            # Обрабатываем потерю всех жизней используя модуль game_loop_physics
+                            should_continue, new_paddle, new_ball, new_bricks, new_score, new_lives_left, new_game_over, new_game_started, new_game_start_time, new_ai_player = handle_all_lives_lost_after_ball_loss(
+                                ball,
+                                paddle,
+                                bricks,
+                                score,
+                                lives_left,
+                                game_start_time,
+                                frame_counter,
+                                training_mode,
+                                ai_player,
+                                logger,
+                                settings_manager,
+                            )
+                            if new_paddle is not None:
+                                paddle = new_paddle
+                                ball = new_ball
+                                bricks = new_bricks
+                                score = new_score
+                                lives_left = new_lives_left
+                                game_over = new_game_over
+                                game_started = new_game_started
+                                game_start_time = new_game_start_time
+                                ai_player = new_ai_player
+                            if not should_continue:
+                                continue  # Пропускаем остальную обработку кадра
+                            
+                            # В обычном режиме показываем экран результатов после потери всех жизней
+                            if new_game_over and not training_mode:
+                                game_time_seconds = int(time.time() - game_start_time)
+                                sound_enabled, restart_game, exit_game = (
+                                    show_game_results(
+                                        screen,
+                                        font,
+                                        big_font,
+                                        score,
+                                        player_name,
                                         game_time_seconds,
-                                        MAX_LIVES,  # Все жизни потрачены
-                                    )
-
-                                ai_result = {
-                                    "action_type": "game_end",
-                                    "success": False,  # Игра проиграна
-                                    "final_score": score,
-                                    "game_duration": game_time_seconds,
-                                    "bricks_remaining": len(bricks),
-                                    "bricks_destroyed": total_bricks_destroyed,
-                                    "lives_lost": MAX_LIVES,  # Все жизни потрачены
-                                }
-                                try:
-                                    ai_player.learn_from_result(ai_result)
-                                except Exception as e:
-                                    if not getattr(sys, "frozen", False):
-                                        print(f"[GAME RESTART ERROR] Ошибка в learn_from_result: {e}")
-                                        import traceback
-                                        traceback.print_exc()
-                                
-                                try:
-                                    if hasattr(ai_player, 'on_game_end'):
-                                        ai_player.on_game_end(
-                                            False, score, training_mode=training_mode
-                                        )
-                                except Exception as e:
-                                    if not getattr(sys, "frozen", False):
-                                        print(f"[GAME RESTART ERROR] Ошибка в on_game_end: {e}")
-                                        import traceback
-                                        traceback.print_exc()
-
-                            # В режиме обучения не показываем экран результатов, сразу перезапускаем
-                            if training_mode:
-                                # КРИТИЧНО: Логируем начало перезапуска
-                                if not getattr(sys, "frozen", False):
-                                    print(f"[GAME RESTART] Начинаем перезапуск игры в режиме обучения после потери всех жизней...")
-                                
-                                # КРИТИЧНО: Сбрасываем все трекеры состояния AI перед новой игрой
-                                ai_player._reset_game_state_trackers()
-                                
-                                # Автоматически перезапускаем игру в режиме обучения
-                                paddle = Paddle()
-                                ball = Ball()
-                                optimal_ball_speed = ai_player.get_optimal_ball_speed()
-                                if optimal_ball_speed > 10:
-                                    ball.current_speed = optimal_ball_speed
-                                else:
-                                    ball.set_speed(
-                                        optimal_ball_speed,
+                                        highscore_manager,
                                         settings_manager,
+                                        ball,
                                     )
-                                ball.reset(paddle.rect)
-                                ball.vel_y = 0
-                                bricks = build_bricks()
-                                score = 0
-                                lives_left = (
-                                    MAX_LIVES  # Восстанавливаем жизни для нового матча
                                 )
-                                game_over = False
-                                game_started = True  # Автоматически запускаем
-                                ball.vel_x = ball.get_speed()
-                                ball.vel_y = -ball.get_speed()
-                                game_start_time = time.time()
-                                
-                                # КРИТИЧНО: Сразу обновляем состояние игры для AI после перезапуска
-                                # Это гарантирует, что current_game_state будет установлен до первого вызова move_paddle_towards
-                                ai_player.update_game_state(
-                                    ball, paddle, bricks, score, int(game_start_time)
-                                )
-                                
-                                # КРИТИЧНО: Логируем перезапуск игры для диагностики
-                                if training_mode:
-                                    if not getattr(sys, "frozen", False):
-                                        print(f"[GAME RESTART] Игра перезапущена после потери всех жизней!")
-                                        print(f"[GAME RESTART] lives_left={lives_left}, game_over={game_over}, game_started={game_started}")
-                                        print(f"[GAME RESTART] ball.vel_x={ball.vel_x}, ball.vel_y={ball.vel_y}, paddle.x={paddle.rect.x}, bricks={len(bricks)}")
-                                    ai_player.performance_logger.log_ball_paddle_positions(
-                                        ball.rect.centerx,
-                                        ball.rect.centery,
-                                        ball.vel_x,
-                                        ball.vel_y,
-                                        paddle.rect.x,
-                                        paddle.rect.y,
-                                        paddle.rect.width,
-                                        paddle.rect.height,
-                                        "GAME_RESTART_AFTER_LOSS"
+
+                                # Если игрок хочет выйти из игры
+                                if exit_game:
+                                    pygame.quit()
+                                    return
+
+                                # Обработка перезапуска
+                                if restart_game:
+                                    # Перезапускаем игру используя модуль game_loop_physics
+                                    paddle, ball, bricks, score, lives_left, game_over, game_started, game_start_time, ai_player = handle_game_restart_manual(
+                                        paddle,
+                                        ball,
+                                        bricks,
+                                        score,
+                                        lives_left,
+                                        game_over,
+                                        game_started,
+                                        settings_manager,
+                                        SCREEN_WIDTH,
+                                        SCREEN_HEIGHT,
+                                        create_ai_player,
                                     )
-                                    # Логируем начало новой игры
-                                    if ai_player.current_game_state:
-                                        ai_player.performance_logger.log_game_start(ai_player.current_game_state)
                             else:
                                 # В ручном режиме показываем экран результатов
                                 sound_enabled, restart_game, exit_game = (

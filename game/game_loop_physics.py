@@ -1234,3 +1234,120 @@ def handle_victory_manual(
         return False, new_paddle, new_ball, new_bricks, new_score, new_lives_left, new_game_over, new_game_started, new_game_start_time, new_ai_player
     
     return False, None, None, None, None, None, new_game_over, None, None, None
+
+
+def handle_all_lives_lost_after_ball_loss(
+    ball: Ball,
+    paddle: Paddle,
+    bricks: list,
+    score: int,
+    lives_left: int,
+    game_start_time: float,
+    frame_counter: int,
+    training_mode: bool,
+    ai_player: Optional[AIPlayer],
+    logger: Any,
+    settings_manager: Any,
+) -> Tuple[bool, Optional[Paddle], Optional[Ball], Optional[list], Optional[int], Optional[int], Optional[bool], Optional[bool], Optional[float], Optional[AIPlayer]]:
+    """
+    Обрабатывает потерю всех жизней после потери мяча (ball.rect.bottom > paddle.rect.top).
+    
+    Args:
+        ball: Объект мяча
+        paddle: Объект платформы
+        bricks: Список кирпичей
+        score: Текущий счет
+        lives_left: Текущее количество жизней (должно быть 0)
+        game_start_time: Время начала игры
+        frame_counter: Счетчик кадров
+        training_mode: Режим обучения
+        ai_player: Объект AI игрока
+        logger: Логгер
+        settings_manager: Менеджер настроек
+        
+    Returns:
+        Tuple: (should_continue, new_paddle, new_ball, new_bricks, new_score, new_lives_left, new_game_over, new_game_started, new_game_start_time, new_ai_player)
+        should_continue: Продолжить обработку кадра (False если нужно пропустить)
+        new_paddle: Новая платформа (если перезапуск)
+        new_ball: Новый мяч (если перезапуск)
+        new_bricks: Новые кирпичи (если перезапуск)
+        new_score: Новый счет (если перезапуск)
+        new_lives_left: Новое количество жизней (если перезапуск)
+        new_game_over: Новый флаг окончания игры (если перезапуск)
+        new_game_started: Новый флаг запуска игры (если перезапуск)
+        new_game_start_time: Новое время начала игры (если перезапуск)
+        new_ai_player: Новый AI игрок (если перезапуск)
+    """
+    if lives_left > 0:
+        return True, None, None, None, None, None, None, None, None, None
+    
+    # КРИТИЧНО: Логируем окончание жизней
+    if training_mode:
+        if not getattr(sys, "frozen", False):
+            print(f"[GAME END] Все жизни потрачены (ball.rect.bottom > paddle.rect.top)! lives_left={lives_left}, training_mode={training_mode}")
+    new_game_over = True
+    # Рассчитываем время игры и сохраняем результат
+    game_time_seconds = int(time.time() - game_start_time)
+
+    # Обучаем AI на результате игры (проигрыш)
+    if training_mode and ai_player is not None:
+        # В режиме обучения считаем кубики за весь матч (пока не потратятся все жизни)
+        total_bricks_destroyed = (
+            BRICK_ROWS * BRICK_COLS
+        ) - len(bricks)
+
+        # Обновляем финальную статистику обучения
+        ai_player.update_training_stats(
+            total_bricks_destroyed,
+            game_time_seconds,
+            MAX_LIVES,  # Все жизни потрачены
+        )
+
+        ai_result = {
+            "action_type": "game_end",
+            "success": False,  # Игра проиграна
+            "final_score": score,
+            "game_duration": game_time_seconds,
+            "bricks_remaining": len(bricks),
+            "bricks_destroyed": total_bricks_destroyed,
+            "lives_lost": MAX_LIVES,  # Все жизни потрачены
+        }
+        try:
+            ai_player.learn_from_result(ai_result)
+        except Exception as e:
+            if not getattr(sys, "frozen", False):
+                print(f"[GAME RESTART ERROR] Ошибка в learn_from_result: {e}")
+                import traceback
+                traceback.print_exc()
+        
+        try:
+            if hasattr(ai_player, 'on_game_end'):
+                ai_player.on_game_end(
+                    False, score, training_mode=training_mode
+                )
+        except Exception as e:
+            if not getattr(sys, "frozen", False):
+                print(f"[GAME RESTART ERROR] Ошибка в on_game_end: {e}")
+                import traceback
+                traceback.print_exc()
+
+    # В режиме обучения не показываем экран результатов, сразу перезапускаем
+    if training_mode and ai_player is not None:
+        # Перезапускаем игру в режиме обучения используя модуль game_loop_physics
+        new_paddle, new_ball, new_bricks, new_score, new_lives_left, new_game_over, new_game_started, new_game_start_time = handle_game_restart_training(
+            ball,
+            paddle,
+            bricks,
+            score,
+            lives_left,
+            game_start_time,
+            training_mode,
+            ai_player,
+            settings_manager,
+            logger,
+            is_victory=False,
+        )
+        return False, new_paddle, new_ball, new_bricks, new_score, new_lives_left, new_game_over, new_game_started, new_game_start_time, ai_player
+    else:
+        # В обычном режиме возвращаем флаг для показа экрана результатов
+        return True, None, None, None, None, None, new_game_over, None, None, None
