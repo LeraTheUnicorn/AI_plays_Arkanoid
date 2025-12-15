@@ -621,6 +621,25 @@ class PaddleMovementStrategy:
             f"paddle_speed={paddle_speed}"
         )
 
+        # ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Рассчитываем время до приземления мяча
+        # Платформа должна продолжать движение, пока мяч не достигнет платформы
+        distance_to_paddle_y = paddle_y - ball_y if ball_y < paddle_y else 0
+        time_to_paddle = distance_to_paddle_y / ball_vel_y if ball_vel_y > 0 and distance_to_paddle_y > 0 else float('inf')
+        
+        # ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Проверяем, может ли платформа достичь цели за оставшееся время
+        # Если мяч очень близко к платформе (< 3 кадров), продолжаем движение даже при малом расстоянии
+        frames_available = max(1, int(time_to_paddle)) if time_to_paddle != float('inf') else 999
+        max_reachable_distance = paddle_speed * frames_available
+        
+        # ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Если мяч еще не достиг платформы, продолжаем движение
+        # Останавливаемся ТОЛЬКО если:
+        # 1. Мяч очень близко к платформе (менее 3 кадров) И мы близко к цели (distance <= tolerance)
+        # 2. ИЛИ мяч уже достиг платформы (ball_y >= paddle_y)
+        should_continue_moving = (
+            time_to_paddle > 3 or  # Мяч еще далеко от платформы
+            (time_to_paddle > 0 and distance_to_target > max_reachable_distance * 0.8)  # Платформа еще не достигла 80% от максимально достижимого расстояния
+        )
+        
         # КРИТИЧНО: Используем буферную зону для более плавной остановки
         if distance_to_target > tolerance + buffer_zone:
             # Достаточно далеко - двигаемся к цели
@@ -631,22 +650,43 @@ class PaddleMovementStrategy:
                 self._log_paddle_movement(current_x, target_pos, "moving_to_fixed_target", 1.0)
                 self._logger.debug(
                     f"[FIXED TARGET] Движение: {movement} (влево=-1, вправо=1, стоп=0), "
-                    f"distance={distance_to_target:.1f}px > tolerance+buffer={tolerance+buffer_zone:.1f}"
+                    f"distance={distance_to_target:.1f}px > tolerance+buffer={tolerance+buffer_zone:.1f}, "
+                    f"time_to_paddle={time_to_paddle:.1f} frames"
                 )
                 return movement
         elif distance_to_target <= tolerance:
-            # Достигли цели - останавливаемся
+            # ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Останавливаемся ТОЛЬКО если мяч очень близко И мы достигли цели
+            if should_continue_moving and time_to_paddle > 0:
+                # Мяч еще не достиг платформы - продолжаем движение даже при малом расстоянии
+                movement = 1 if target_pos > current_x else (-1 if target_pos < current_x else 0)
+                if movement != 0:
+                    self._logger.debug(
+                        f"[FIXED TARGET] Мяч еще не достиг платформы (time_to_paddle={time_to_paddle:.1f} frames), "
+                        f"продолжаем движение: {movement}, distance={distance_to_target:.1f}px"
+                    )
+                    return movement
+            # Достигли цели И мяч близко - останавливаемся
             self._logger.debug(
                 f"[FIXED TARGET] Достигли цели! distance={distance_to_target:.1f}px <= tolerance={tolerance}, "
-                f"возвращаем 0 (стоп)"
+                f"time_to_paddle={time_to_paddle:.1f} frames, возвращаем 0 (стоп)"
             )
             return 0
         else:
-            # В буферной зоне - останавливаемся раньше, чтобы избежать перелета
+            # В буферной зоне - проверяем, нужно ли продолжать движение
+            if should_continue_moving and time_to_paddle > 0:
+                # Мяч еще не достиг платформы - продолжаем движение
+                movement = 1 if target_pos > current_x else (-1 if target_pos < current_x else 0)
+                if movement != 0:
+                    self._logger.debug(
+                        f"[FIXED TARGET] В буферной зоне, но мяч еще не достиг платформы "
+                        f"(time_to_paddle={time_to_paddle:.1f} frames), продолжаем движение: {movement}"
+                    )
+                    return movement
+            # В буферной зоне И мяч близко - останавливаемся раньше, чтобы избежать перелета
             self._logger.debug(
                 f"[FIXED TARGET] В буферной зоне! distance={distance_to_target:.1f}px "
                 f"(tolerance={tolerance:.1f} < distance <= tolerance+buffer={tolerance+buffer_zone:.1f}), "
-                f"останавливаемся раньше для предотвращения перелета"
+                f"time_to_paddle={time_to_paddle:.1f} frames, останавливаемся раньше для предотвращения перелета"
             )
             return 0
 
