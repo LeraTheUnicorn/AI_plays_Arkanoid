@@ -63,6 +63,7 @@ from .game_loop_physics import (
     handle_game_restart_manual,
     handle_victory_manual,
     handle_all_lives_lost_after_ball_loss,
+    apply_restart_result,
 )
 
 # Импортируем функции отрисовки
@@ -349,16 +350,11 @@ def main() -> None:
                 logger
             )
             should_restart, new_paddle, new_ball, new_bricks, new_score, new_lives_left, new_game_over, new_game_started, new_ai_player, new_game_start_time = apply_game_restart(restart_result)
-            if should_restart and new_paddle is not None:
-                paddle = new_paddle
-                ball = new_ball
-                bricks = new_bricks
-                score = new_score
-                lives_left = new_lives_left
-                game_over = new_game_over
-                game_started = new_game_started
-                ai_player = new_ai_player
-                game_start_time = new_game_start_time
+            if should_restart:
+                paddle, ball, bricks, score, lives_left, game_over, game_started, game_start_time, ai_player = apply_restart_result(
+                    new_paddle, new_ball, new_bricks, new_score, new_lives_left, new_game_over, new_game_started, new_game_start_time, new_ai_player,
+                    paddle, ball, bricks, score, lives_left, game_over, game_started, game_start_time, ai_player,
+                )
 
             if not game_over:
                 # Отладочное сообщение только в первых 3 кадрах
@@ -460,12 +456,10 @@ def main() -> None:
                             settings_manager,
                         )
                         if new_paddle is not None:
-                            paddle = new_paddle
-                            ball = new_ball
-                            bricks = new_bricks
-                            score = new_score
-                            ai_player = new_ai_player
-                            game_start_time = new_game_start_time
+                            paddle, ball, bricks, score, lives_left, game_over, game_started, game_start_time, ai_player = apply_restart_result(
+                                new_paddle, new_ball, new_bricks, new_score, new_lives_left, new_game_over, new_game_started, new_game_start_time, new_ai_player,
+                                paddle, ball, bricks, score, lives_left, game_over, game_started, game_start_time, ai_player,
+                            )
                         if not should_continue:
                             continue  # Пропускаем остальную обработку кадра
                     
@@ -532,15 +526,10 @@ def main() -> None:
                                 settings_manager,
                             )
                             if new_paddle is not None:
-                                paddle = new_paddle
-                                ball = new_ball
-                                bricks = new_bricks
-                                score = new_score
-                                lives_left = new_lives_left
-                                game_over = new_game_over
-                                game_started = new_game_started
-                                game_start_time = new_game_start_time
-                                ai_player = new_ai_player
+                                paddle, ball, bricks, score, lives_left, game_over, game_started, game_start_time, ai_player = apply_restart_result(
+                                    new_paddle, new_ball, new_bricks, new_score, new_lives_left, new_game_over, new_game_started, new_game_start_time, new_ai_player,
+                                    paddle, ball, bricks, score, lives_left, game_over, game_started, game_start_time, ai_player,
+                                )
                             if not should_continue:
                                 continue  # Пропускаем остальную обработку кадра
                             
@@ -672,12 +661,10 @@ def main() -> None:
                         settings_manager,
                     )
                     if new_paddle is not None:
-                        paddle = new_paddle
-                        ball = new_ball
-                        bricks = new_bricks
-                        score = new_score
-                        ai_player = new_ai_player
-                        game_start_time = new_game_start_time
+                        paddle, ball, bricks, score, lives_left, game_over, game_started, game_start_time, ai_player = apply_restart_result(
+                            new_paddle, new_ball, new_bricks, new_score, new_lives_left, new_game_over, new_game_started, new_game_start_time, new_ai_player,
+                            paddle, ball, bricks, score, lives_left, game_over, game_started, game_start_time, ai_player,
+                        )
                     if not should_continue:
                         continue  # Пропускаем остальную обработку кадра
                     
@@ -767,15 +754,10 @@ def main() -> None:
                                 pygame.quit()
                                 return
                             if new_paddle is not None:
-                                paddle = new_paddle
-                                ball = new_ball
-                                bricks = new_bricks
-                                score = new_score
-                                lives_left = new_lives_left
-                                game_over = new_game_over
-                                game_started = new_game_started
-                                game_start_time = new_game_start_time
-                                ai_player = new_ai_player
+                                paddle, ball, bricks, score, lives_left, game_over, game_started, game_start_time, ai_player = apply_restart_result(
+                                    new_paddle, new_ball, new_bricks, new_score, new_lives_left, new_game_over, new_game_started, new_game_start_time, new_ai_player,
+                                    paddle, ball, bricks, score, lives_left, game_over, game_started, game_start_time, ai_player,
+                                )
 
             # Отрисовка игры используя модуль game_loop_rendering
             render_game_frame(

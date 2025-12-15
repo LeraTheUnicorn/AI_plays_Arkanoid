@@ -1351,3 +1351,64 @@ def handle_all_lives_lost_after_ball_loss(
     else:
         # В обычном режиме возвращаем флаг для показа экрана результатов
         return True, None, None, None, None, None, new_game_over, None, None, None
+
+
+def apply_restart_result(
+    new_paddle: Optional[Paddle],
+    new_ball: Optional[Ball],
+    new_bricks: Optional[list],
+    new_score: Optional[int],
+    new_lives_left: Optional[int],
+    new_game_over: Optional[bool],
+    new_game_started: Optional[bool],
+    new_game_start_time: Optional[float],
+    new_ai_player: Optional[AIPlayer],
+    paddle: Paddle,
+    ball: Ball,
+    bricks: list,
+    score: int,
+    lives_left: int,
+    game_over: bool,
+    game_started: bool,
+    game_start_time: float,
+    ai_player: Optional[AIPlayer],
+) -> Tuple[Paddle, Ball, list, int, int, bool, bool, float, Optional[AIPlayer]]:
+    """
+    Применяет результаты перезапуска игры.
+    
+    Args:
+        new_paddle: Новая платформа (если перезапуск)
+        new_ball: Новый мяч (если перезапуск)
+        new_bricks: Новые кирпичи (если перезапуск)
+        new_score: Новый счет (если перезапуск)
+        new_lives_left: Новое количество жизней (если перезапуск)
+        new_game_over: Новый флаг окончания игры (если перезапуск)
+        new_game_started: Новый флаг запуска игры (если перезапуск)
+        new_game_start_time: Новое время начала игры (если перезапуск)
+        new_ai_player: Новый AI игрок (если перезапуск)
+        paddle: Текущая платформа
+        ball: Текущий мяч
+        bricks: Текущие кирпичи
+        score: Текущий счет
+        lives_left: Текущее количество жизней
+        game_over: Текущий флаг окончания игры
+        game_started: Текущий флаг запуска игры
+        game_start_time: Текущее время начала игры
+        ai_player: Текущий AI игрок
+        
+    Returns:
+        Tuple: (paddle, ball, bricks, score, lives_left, game_over, game_started, game_start_time, ai_player)
+    """
+    if new_paddle is not None:
+        return (
+            new_paddle,
+            new_ball,
+            new_bricks,
+            new_score,
+            new_lives_left,
+            new_game_over,
+            new_game_started,
+            new_game_start_time,
+            new_ai_player,
+        )
+    return paddle, ball, bricks, score, lives_left, game_over, game_started, game_start_time, ai_player
