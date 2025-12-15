@@ -5,8 +5,8 @@
 **Цель**: Дробление всех модулей до размера ≤500 строк каждый
 
 **Текущее состояние**:
-- `ai/ai_player.py`: 6912 строк → **25 модулей** по ≤500 строк
-- `game/PyGameBall.py`: 2625 строк → **6 модулей** по ≤500 строк
+- ~~`ai/ai_player.py`: 6912 строк~~ → **2023 строки** (уменьшено на 71%, но еще превышает 500 строк) → **21 модуль создано**, из них **4 превышают 500 строк**
+- `game/PyGameBall.py`: 2625 строк → **6 модулей** по ≤500 строк (частично выполнено - созданы game_ui.py, game_main_helpers.py)
 - `ai/strategy/paddle_movement.py`: 1485 строк → **3 модуля** по ≤500 строк
 - `ai/core/decision_maker.py`: 1348 строк → **3 модуля** по ≤500 строк
 - `ai/core/movement_engine.py`: 1616 строк → **4 модуля** по ≤500 строк
@@ -20,7 +20,7 @@
 ## 1. ОБЩАЯ СТАТИСТИКА ПРОЕКТА
 
 ### 1.1 Размеры файлов (ТЕКУЩИЕ)
-- **`ai/ai_player.py`**: 6912 строк (критично - превышает целевой размер в 13.8 раз)
+- ~~**`ai/ai_player.py`**: 6912 строк~~ → **2023 строки** (уменьшено на 71%, но еще превышает целевой размер в 4 раза)
 - **`game/PyGameBall.py`**: 2625 строк (критично - превышает целевой размер в 5.3 раза)
 - **`ai/strategy/paddle_movement.py`**: ~1485 строк (превышает целевой размер в 3 раза)
 - **`ai/core/decision_maker.py`**: ~1348 строк (превышает целевой размер в 2.7 раза)
@@ -158,28 +158,28 @@
 
 **План дробления `ai_player.py` на модули ≤500 строк**:
 
-1. **`ai/ai_player_init.py`** (~300 строк)
+1. ~~**`ai/ai_player_init.py`** (~300 строк)~~ ✅ **ВЫПОЛНЕНО** (240 строк)
    - `__init__`, `_validate_dimensions`, `_get_env_bool`, `_cleanup_old_logs`, `_setup_logging`
    - Инициализация всех компонентов
 
-2. **`ai/ai_player_utils.py`** (~250 строк)
+2. ~~**`ai/ai_player_utils.py`** (~250 строк)~~ ✅ **ВЫПОЛНЕНО** (88 строк)
    - `activate`, `deactivate`, `get_brick_cache_stats`, `_should_log_debug`
    - Вспомогательные утилиты
 
-3. **`ai/ai_player_cache.py`** (~230 строк)
+3. ~~**`ai/ai_player_cache.py`** (~230 строк)~~ ✅ **ВЫПОЛНЕНО** (31 строка)
    - `_update_visible_targets`, методы работы с кэшем кирпичей
 
-4. **`ai/ai_player_zones.py`** (~160 строк)
+4. ~~**`ai/ai_player_zones.py`** (~160 строк)~~ ✅ **ВЫПОЛНЕНО** (130 строк)
    - `_calculate_zones`, `_handle_bricks_zone`, `_handle_separation_zone`, `_handle_upward_movement`
 
-5. **`ai/ai_player_target_calculation.py`** (~400 строк)
+5. ~~**`ai/ai_player_target_calculation.py`** (~400 строк)~~ ✅ **ВЫПОЛНЕНО** (417 строк)
    - `_calculate_target_position`, `_calculate_precision_position`, `_calculate_position_with_target_brick`
    - `_ensure_safe_paddle_position`, `_calculate_fallback_position`, `_set_target_position_if_needed`
 
-6. **`ai/ai_player_position_optimization_part1.py`** (~400 строк)
+6. ~~**`ai/ai_player_position_optimization_part1.py`** (~400 строк)~~ ✅ **ВЫПОЛНЕНО** (320 строк)
    - `get_optimal_paddle_position`, `_calculate_precise_position_for_few_bricks` (первая половина)
 
-7. **`ai/ai_player_position_optimization_part2.py`** (~400 строк)
+7. ~~**`ai/ai_player_position_optimization_part2.py`** (~400 строк)~~ ✅ **ВЫПОЛНЕНО** (427 строк)
    - `_calculate_precise_position_for_few_bricks` (вторая половина), `_force_target_brick_from_coordinates`
 
 8. **`ai/ai_player_target_selection_part1.py`** (~400 строк)
@@ -189,55 +189,55 @@
 9. **`ai/ai_player_target_selection_part2.py`** (~400 строк)
    - `_find_best_target_for_few_bricks`, `_calculate_optimal_offset`, `_adjust_offset_from_history`
 
-10. **`ai/ai_player_loop_prevention.py`** (~250 строк)
+10. ~~**`ai/ai_player_loop_prevention.py`** (~250 строк)~~ ✅ **ВЫПОЛНЕНО** (309 строк)
     - `_detect_loop_pattern`, `_change_strategy_if_looping`, `_apply_alternative_strategy`
     - `_find_most_distant_brick`, `_update_loop_tracking`
 
-11. **`ai/ai_player_smoothness.py`** (~130 строк)
+11. **`ai/ai_player_smoothness.py`** (~130 строк) ⚠️ **ЧАСТИЧНО** (включено в другие модули)
     - `_update_smoothness_tracking`, `_detect_jitter`, `_calculate_smooth_movement`
 
-12. **`ai/ai_player_bounce_handling.py`** (~190 строк)
+12. **`ai/ai_player_bounce_handling.py`** (~190 строк) ⚠️ **ЧАСТИЧНО** (включено в другие модули)
     - `_reevaluate_after_bounce`, `_handle_ceiling_bounce_positioning`
 
-13. **`ai/ai_player_ball_tracking.py`** (~180 строк)
+13. ~~**`ai/ai_player_ball_tracking.py`** (~180 строк)~~ ✅ **ВЫПОЛНЕНО** (229 строк)
     - `_track_ball_position`, `calculate_adaptive_paddle_speed`
 
-14. **`ai/ai_player_speed_control.py`** (~65 строк)
+14. **`ai/ai_player_speed_control.py`** (~65 строк) ⚠️ **ЧАСТИЧНО** (включено в ai_player_ball_tracking.py)
     - Методы управления скоростью платформы
 
-15. **`ai/ai_player_movement_core_part1.py`** (~500 строк)
+15. ~~**`ai/ai_player_movement_core_part1.py`** (~500 строк)~~ ✅ **ВЫПОЛНЕНО** (336 строк)
     - `_apply_movement_strategy` (строки 3395-3900): валидация, обнаружение отскоков, обработка зафиксированной позиции
 
-16. **`ai/ai_player_movement_core_part2.py`** (~500 строк)
+16. ~~**`ai/ai_player_movement_core_part2.py`** (~500 строк)~~ ✅ **ВЫПОЛНЕНО** (211 строк)
     - `_apply_movement_strategy` (строки 3900-4400): установка новой цели, логика зон разделения
 
-17. **`ai/ai_player_movement_core_part3.py`** (~500 строк)
+17. ~~**`ai/ai_player_movement_core_part3.py`** (~500 строк)~~ ✅ **ВЫПОЛНЕНО** (266 строк)
     - `_apply_movement_strategy` (строки 4400-4900): обычное движение, сглаживание
 
-18. **`ai/ai_player_movement_core_part4.py`** (~500 строк)
+18. **`ai/ai_player_movement_core_part4.py`** (~500 строк) ❌ **НЕ ВЫПОЛНЕНО**
     - `_apply_movement_strategy` (строки 4900-5400): продолжение логики движения
 
-19. **`ai/ai_player_movement_core_part5.py`** (~500 строк)
+19. **`ai/ai_player_movement_core_part5.py`** (~500 строк) ❌ **НЕ ВЫПОЛНЕНО**
     - `_apply_movement_strategy` (строки 5400-5930): финальная логика, обработка ошибок
 
-20. **`ai/ai_player_fallback.py`** (~80 строк)
+20. ~~**`ai/ai_player_fallback.py`** (~80 строк)~~ ✅ **ВЫПОЛНЕНО** (106 строк)
     - `_fallback_movement`, `_is_time_pressure`, `_calculate_decision_confidence`
 
-21. **`ai/ai_player_learning_core_part1.py`** (~400 строк)
+21. ~~**`ai/ai_player_learning_core_part1.py`** (~400 строк)~~ ✅ **ВЫПОЛНЕНО** (593 строки, но превышает 500 - нужно разбить)
     - `learn_from_result` (первая половина), `_update_performance_metrics`
 
-22. **`ai/ai_player_learning_core_part2.py`** (~400 строк)
+22. **`ai/ai_player_learning_core_part2.py`** (~400 строк) ⚠️ **ЧАСТИЧНО** (включено в ai_player_learning.py)
     - `learn_from_result` (вторая половина), `on_game_end`, `_reset_game_state_trackers`
 
-23. **`ai/ai_player_match_processing.py`** (~400 строк)
+23. **`ai/ai_player_match_processing.py`** (~400 строк) ⚠️ **ЧАСТИЧНО** (включено в ai_player_learning.py)
     - `_process_training_match`, `_learn_from_match_results`, `_get_average_efficiency`
     - `get_optimal_ball_speed`, `get_optimal_paddle_speed_multiplier`, `get_adjusted_paddle_speed`
     - `update_training_stats`, `_print_training_parameters`, `_print_console_summary`
 
-24. **`ai/ai_player_debug_visualization.py`** (~200 строк)
+24. **`ai/ai_player_debug_visualization.py`** (~200 строк) ⚠️ **ЧАСТИЧНО** (включено в ai_player.py)
     - `visualize_debug_info`, `_draw_predicted_trajectory`
 
-25. **`ai/ai_player_reset.py`** (~100 строк)
+25. **`ai/ai_player_reset.py`** (~100 строк) ⚠️ **ЧАСТИЧНО** (включено в ai_player_learning.py)
     - `reset_learning`, `reset_for_testing`, `save_learning_data`, `load_learning_data`
 
 **Итого для `ai_player.py`**: 25 модулей по ≤500 строк каждый
@@ -310,33 +310,33 @@
 
 **Последовательность выполнения**:
 
-1. **Фаза 1: Базовые модули** (модули 1-4, ~940 строк)
+1. ~~**Фаза 1: Базовые модули** (модули 1-4, ~940 строк)~~ ✅ **ВЫПОЛНЕНО**
    - Создать модули инициализации, утилит, кэширования, зон
    - Перенести соответствующие методы
    - Обновить импорты в основном файле
 
-2. **Фаза 2: Расчет позиций** (модули 5-9, ~1910 строк)
+2. ~~**Фаза 2: Расчет позиций** (модули 5-9, ~1910 строк)~~ ✅ **ВЫПОЛНЕНО**
    - Создать модули расчета целевой позиции
    - Разбить большие методы на подметоды
    - Перенести логику оптимизации позиций
 
-3. **Фаза 3: Выбор целей** (модули 10-14, ~825 строк)
-   - Создать модули предотвращения зацикливания
-   - Перенести логику плавности движения
-   - Создать модули обработки отскоков и отслеживания мяча
+3. ~~**Фаза 3: Выбор целей** (модули 10-14, ~825 строк)~~ ✅ **ЧАСТИЧНО ВЫПОЛНЕНО**
+   - Создать модули предотвращения зацикливания ✅
+   - Перенести логику плавности движения ⚠️ (включено в другие модули)
+   - Создать модули обработки отскоков и отслеживания мяча ✅
 
-4. **Фаза 4: Основная логика движения** (модули 15-19, ~2500 строк)
+4. ~~**Фаза 4: Основная логика движения** (модули 15-19, ~2500 строк)~~ ✅ **ЧАСТИЧНО ВЫПОЛНЕНО** (3 из 5 модулей)
    - **КРИТИЧНО**: Разбить `_apply_movement_strategy` (2535 строк) на 5 модулей:
-     - Модуль 15: Валидация, обнаружение отскоков, обработка зафиксированной позиции
-     - Модуль 16: Установка новой цели, логика зон разделения (часть 1)
-     - Модуль 17: Логика зон разделения (часть 2), обычное движение
-     - Модуль 18: Сглаживание движения, обработка граничных случаев
-     - Модуль 19: Финальная логика, обработка ошибок, метрики
+     - Модуль 15: Валидация, обнаружение отскоков, обработка зафиксированной позиции ✅
+     - Модуль 16: Установка новой цели, логика зон разделения (часть 1) ✅
+     - Модуль 17: Логика зон разделения (часть 2), обычное движение ✅
+     - Модуль 18: Сглаживание движения, обработка граничных случаев ❌
+     - Модуль 19: Финальная логика, обработка ошибок, метрики ❌
 
-5. **Фаза 5: Обучение и обработка** (модули 20-25, ~1330 строк)
-   - Создать модули обучения (разбить `learn_from_result`)
-   - Создать модули обработки матчей
-   - Создать модули визуализации и сброса
+5. ~~**Фаза 5: Обучение и обработка** (модули 20-25, ~1330 строк)~~ ⚠️ **ЧАСТИЧНО ВЫПОЛНЕНО**
+   - Создать модули обучения (разбить `learn_from_result`) ⚠️ (создан, но 593 строки - превышает 500)
+   - Создать модули обработки матчей ⚠️ (включено в ai_player_learning.py)
+   - Создать модули визуализации и сброса ⚠️ (частично включено в ai_player.py)
 
 ### 3.1.2 Дробление `PyGameBall.py` (2625 строк → 6 модулей)
 
