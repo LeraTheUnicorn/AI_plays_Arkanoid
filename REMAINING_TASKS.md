@@ -19,7 +19,14 @@
 
 ### ЭТАП 2: Дробление на модули ≤500 строк
 
-#### 1. Дробление `ai_player.py` (1759 строк → ≤500 строк)
+#### 1. Дробление `ai_player.py` (1887 строк → 525 строк) ✅ **ЗАВЕРШЕНО**
+
+**Выполнено:**
+- ✅ Модуль 8-9: Выбор целей (ai_player_target_selection_part1.py, ai_player_target_selection_part2.py)
+- ✅ Модуль 21: Разбиение ai_player_learning.py (ai_player_learning_core_part1.py, ai_player_learning_core_part2.py)
+- ✅ Модуль 22-25: Дополнительные модули (ai_player_match_processing.py, ai_player_debug_visualization.py, ai_player_reset.py, ai_player_metrics.py)
+- ✅ Удалены дубликаты методов из ai_player.py
+- ✅ ai_player.py уменьшен с 1887 до 525 строк (уменьшено на 1362 строки, ~72%)
 
 **Осталось выполнить:**
 
