@@ -41,6 +41,7 @@ from .ai_player_models import BrickInfo, TargetingSystem, SeparationZoneTracker
 from .ai_player_state import AIPlayerStateMixin
 from .ai_player_targeting import AIPlayerTargetingMixin
 from .ai_player_target_selection_part1 import AIPlayerTargetSelectionPart1Mixin
+from .ai_player_target_selection_part2 import AIPlayerTargetSelectionPart2Mixin
 from .ai_player_positioning import AIPlayerPositioningMixin
 from .ai_player_movement import AIPlayerMovementMixin
 from .ai_player_learning import AIPlayerLearningMixin
@@ -78,6 +79,7 @@ class AIPlayer(
     AIPlayerStateMixin,
     AIPlayerTargetingMixin,
     AIPlayerTargetSelectionPart1Mixin,
+    AIPlayerTargetSelectionPart2Mixin,
     AIPlayerPositioningMixin,
     AIPlayerMovementMixin,
     AIPlayerLearningMixin,
@@ -515,37 +517,7 @@ class AIPlayer(
     # ==========================
     # Метод _calculate_optimal_offset теперь в ai_player_position_optimization.py
 
-    # Метод _calculate_optimal_offset теперь в ai_player_position_optimization.py
-
-    def _adjust_offset_from_history(self, offset: float, target_brick: Any) -> float:
-        """
-        Корректирует смещение на основе истории успешных ударов по данному кубику.
-        """
-        brick_x = float(getattr(target_brick, "x", 0))
-        brick_y = float(getattr(target_brick, "y", 0))
-        brick_key = f"{int(brick_x / 60)}_{int(brick_y / 30)}"
-
-        pattern = self.targeting_system.hit_patterns.get(brick_key)
-        if not pattern:
-            return offset
-
-        successful_offsets = pattern.get("successful_offsets", [])
-        if not successful_offsets:
-            return offset
-
-        # Type narrowing: ensure successful_offsets is a list of numbers
-        if not isinstance(successful_offsets, list):
-            return offset
-        
-        # Convert to list of floats for type safety
-        offset_values = [float(x) for x in successful_offsets if isinstance(x, (int, float))]
-        if not offset_values:
-            return offset
-
-        avg_successful_offset = sum(offset_values) / len(offset_values)
-
-        # Смешиваем текущее и историческое смещение
-        return float(offset * 0.7 + avg_successful_offset * 0.3)
+    # Методы _calculate_optimal_offset, _adjust_offset_from_history теперь в ai_player_target_selection_part2.py
 
     # ==========================
     # Предотвращение зацикливания
