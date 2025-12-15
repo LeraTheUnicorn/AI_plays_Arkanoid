@@ -71,6 +71,7 @@ from .game_loop_rendering import (
 from .game_loop_ai import (
     update_ai_logic,
     update_ai_paddle_movement,
+    calculate_paddle_speed_with_bricks,
 )
 
 os.environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "1"  # Скрыть сообщение поддержки pygame
@@ -370,24 +371,12 @@ def main() -> None:
                         logger,
                     )
                     
-                    # КРИТИЧНО: При малом количестве блоков увеличиваем скорость платформы
-                    # Но ограничиваем разумными пределами (35-60)
-                    try:
-                        bricks_remaining = len(bricks) if bricks is not None else 50
-                    except (NameError, TypeError):
-                        bricks_remaining = 50
-                    
-                    # Вычисляем базовую скорость с учетом количества блоков
-                    ball_speed = ball.get_speed()
-                    base_speed = max(35, min(int(ball_speed * 2.5), 60))
-                    paddle_speed_multiplier = ai_player.get_optimal_paddle_speed_multiplier()
-                    base_speed = int(base_speed * paddle_speed_multiplier)
-                    base_speed = max(35, min(base_speed, 60))
-                    
-                    if bricks_remaining <= 5:
-                        base_speed = min(int(base_speed * 1.2), 60)
-                    if bricks_remaining == 1:
-                        base_speed = 60
+                    # Вычисляем скорость платформы с учетом количества блоков используя модуль game_loop_ai
+                    base_speed = calculate_paddle_speed_with_bricks(
+                        ball,
+                        bricks,
+                        ai_player,
+                    )
                     
                     # Обновляем движение платформы используя модуль game_loop_ai
                     movement, adjusted_speed = update_ai_paddle_movement(
