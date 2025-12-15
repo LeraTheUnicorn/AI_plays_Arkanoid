@@ -25,13 +25,8 @@ from .game_ui import (
     show_settings_window,
 )
 
-# Импортируем вспомогательные функции для main()
-from .game_main_helpers import (
-    handle_game_events,
-    update_game_state,
-    update_ball_physics,
-    render_game_frame,
-)
+# Примечание: функции из game_main_helpers больше не используются,
+# так как они заменены на модули game_loop_*
 
 # Импортируем функции инициализации игры
 from .game_loop_initialization import (
@@ -197,143 +192,10 @@ except ImportError:
 
 
 
-# show_highscores, trigger_instant_victory, show_victory_splash, show_settings_window теперь в game_ui.py
-
-def show_game_results(
-    screen: pygame.Surface,
-    font: pygame.font.Font,
-    big_font: pygame.font.Font,
-    score: int,
-    player_name: str,
-    game_time_seconds: int,
-    highscore_manager: HighScoreManager,
-    settings_manager: SettingsManager,
-    ball: "Ball",
-) -> tuple[bool, bool, bool]:
-    """
-    Отображает экран с результатами игры и таблицей рекордов.
-    
-    Показывает финальный счет, время игры, таблицу рекордов и позволяет
-    игроку перезапустить игру или выйти.
-    
-    Args:
-        screen: Поверхность pygame для отрисовки
-        font: Шрифт для обычного текста
-        big_font: Шрифт для заголовков
-        score: Финальный счет игрока
-        player_name: Имя игрока
-        game_time_seconds: Время игры в секундах
-        highscore_manager: Менеджер рекордов для сохранения и отображения
-        settings_manager: Менеджер настроек игры
-        ball: Объект мяча для доступа к настройкам
-        
-    Returns:
-        Кортеж из 3 элементов:
-        - Состояние звука (bool)
-        - Флаг перезапуска игры (bool)
-        - Флаг выхода из игры (bool)
-    """
-    game_time_formatted = f"{game_time_seconds // 60}:{game_time_seconds % 60:02d}"
-
-    # Добавляем результат в рекорды и проверяем, попал ли он в топ-10
-    score_saved = highscore_manager.add_score(player_name, score, game_time_seconds)
-
-    # Состояние звука
-    sound_enabled = True
-    restart_game = False
-    exit_game = False
-
-    waiting = True
-    while waiting:
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                exit_game = True
-                return sound_enabled, False, exit_game  # Выход из игры по крестику
-            elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_ESCAPE:
-                    # ESC выходит из игры
-                    exit_game = True
-                    return sound_enabled, False, exit_game
-                elif event.key == pygame.K_RETURN:
-                    waiting = False
-                    restart_game = True
-                elif event.key == pygame.K_h:
-                    # Показываем таблицу рекордов (ESC выходит из игры)
-                    sound_enabled, exit_game = show_highscores(
-                        screen, font, highscore_manager, exit_on_esc=True
-                    )
-                    if exit_game:
-                        exit_game = True
-                        return sound_enabled, False, exit_game  # Выход из игры
-                elif event.key == pygame.K_m:
-                    # Переключение всех звуков
-                    if sound_enabled:
-                        pygame.mixer.music.stop()
-                        sound_enabled = False
-                    else:
-                        pygame.mixer.music.play(-1)
-                        sound_enabled = True
-                elif event.key == pygame.K_UP:
-                    # Открытие окна настроек
-                    sound_enabled = show_settings_window(
-                        screen,
-                        font,
-                        big_font,
-                        settings_manager,
-                        ball,
-                        sound_enabled,
-                    )
-
-        # Отрисовка экрана результатов
-        screen.fill((10, 10, 30))
-
-        # Заголовок
-        if score > 0:
-            title = big_font.render("Игра окончена!", True, (255, 255, 255))
-        else:
-            title = big_font.render("Игра окончена", True, (255, 255, 255))
-        title_rect = title.get_rect(center=(SCREEN_WIDTH // 2, 100))
-        screen.blit(title, title_rect)
-
-        # Результаты игрока
-        result_text = f"Игрок: {player_name}"
-        score_text = f"Очки: {score}"
-        time_text = f"Время игры: {game_time_formatted}"
-
-        surf1 = font.render(result_text, True, (255, 255, 255))
-        surf2 = font.render(score_text, True, (255, 255, 255))
-        surf3 = font.render(time_text, True, (255, 255, 255))
-
-        screen.blit(surf1, (SCREEN_WIDTH // 2 - 100, 200))
-        screen.blit(surf2, (SCREEN_WIDTH // 2 - 100, 250))
-        screen.blit(surf3, (SCREEN_WIDTH // 2 - 100, 300))
-
-        # Сообщение о топ-10
-        if not score_saved:
-            warning_text = "Результат не попал в топ-10, таблица рекордов не обновлена"
-            warning_surface = font.render(warning_text, True, (255, 200, 100))
-            warning_rect = warning_surface.get_rect(center=(SCREEN_WIDTH // 2, 360))
-            screen.blit(warning_surface, warning_rect)
-
-        # Подсказки
-        render_colored_hint(
-            screen,
-            font,
-            "Enter - новая игра, H - рекорды",
-            (SCREEN_WIDTH // 2 - 150, 400),
-        )
-        render_colored_hint(
-            screen, font, "ESC - выход из игры", (SCREEN_WIDTH // 2 - 150, 430)
-        )
-
-        pygame.display.flip()
-
-    return sound_enabled, restart_game, exit_game
-
+# show_game_results импортируется из game_ui.py
 
 # КРИТИЧНО: Классы Paddle и Ball импортируются из game_models.py
 # для устранения дубликатов кода (см. docs/DUPLICATE_ANALYSIS.md)
-
 
 # build_bricks импортируется из game_utils
 
@@ -344,9 +206,6 @@ from .game_rendering import (
     render_colored_hint,
     draw_start_hint,
 )
-
-
-# draw_hud, render_colored_hint, draw_start_hint импортируются из game_rendering
 
 
 # show_settings_window теперь в game_ui.py
