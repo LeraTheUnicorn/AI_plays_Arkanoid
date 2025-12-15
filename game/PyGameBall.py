@@ -39,6 +39,7 @@ from .game_loop_initialization import (
     setup_ai_player_for_training,
     start_background_music,
     save_training_data_on_exit,
+    finalize_game_setup,
 )
 
 # Импортируем функции обработки событий
@@ -259,18 +260,20 @@ def main() -> None:
     # Запускаем музыку (если звук включен)
     start_background_music(sound_enabled)
     
-    # Настраиваем AI-систему для режима обучения
-    if training_mode and ai_player is not None:
-        setup_ai_player_for_training(ai_player, ball, settings_manager, logger)
-    
-    game_started = True  # Игра начинается сразу
-    ball.vel_x = ball.get_speed()  # Направление вправо
-    ball.vel_y = -ball.get_speed()
-    # Логируем настройку игры (только в файл, не в консоль)
-    logger.debug(f"[AI DEBUG] Игра настроена, game_started={game_started}, ball.vel_x={ball.vel_x}, ball.vel_y={ball.vel_y}")
-
     # Отсчет времени игры
     game_start_time = time.time()
+    
+    # Завершаем настройку игры перед входом в основной цикл используя модуль game_loop_initialization
+    game_started = True  # Игра начинается сразу
+    finalize_game_setup(
+        ball,
+        paddle,
+        training_mode,
+        ai_player,
+        settings_manager,
+        logger,
+        game_start_time,
+    )
 
     # Счетчик кадров для обновления скорости в режиме обучения
     frame_counter = 0

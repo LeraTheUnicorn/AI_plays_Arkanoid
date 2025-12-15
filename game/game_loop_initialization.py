@@ -286,3 +286,35 @@ def save_training_data_on_exit(
         except Exception as e:
             if not getattr(sys, "frozen", False):
                 print(f"[AI] Предупреждение: не удалось сохранить данные обучения: {e}")
+
+
+def finalize_game_setup(
+    ball: Ball,
+    paddle: Paddle,
+    training_mode: bool,
+    ai_player: Optional[Any],
+    settings_manager: Any,
+    logger: Any,
+    game_start_time: float,
+) -> None:
+    """
+    Завершает настройку игры перед входом в основной цикл.
+    
+    Args:
+        ball: Объект мяча
+        paddle: Объект платформы
+        training_mode: Режим обучения
+        ai_player: Объект AI игрока
+        settings_manager: Менеджер настроек
+        logger: Логгер
+        game_start_time: Время начала игры
+    """
+    # Настраиваем AI-систему для режима обучения
+    if training_mode and ai_player is not None:
+        setup_ai_player_for_training(ai_player, ball, settings_manager, logger)
+    
+    # Игра начинается сразу
+    ball.vel_x = ball.get_speed()  # Направление вправо
+    ball.vel_y = -ball.get_speed()
+    # Логируем настройку игры (только в файл, не в консоль)
+    logger.debug(f"[AI DEBUG] Игра настроена, game_started=True, ball.vel_x={ball.vel_x}, ball.vel_y={ball.vel_y}")
