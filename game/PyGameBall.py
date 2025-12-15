@@ -79,6 +79,7 @@ from .game_loop_ai import (
     update_ai_paddle_movement,
     calculate_paddle_speed_with_bricks,
     initialize_ai_before_game_loop,
+    apply_paddle_movement,
 )
 
 os.environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "1"  # Скрыть сообщение поддержки pygame
@@ -394,15 +395,8 @@ def main() -> None:
                         logger,
                     )
                     
-                    if movement != 0:
-                        # Применяем движение с адаптивной скоростью
-                        new_center_x = paddle.rect.centerx + movement * adjusted_speed
-                        paddle_half_width = PADDLE_WIDTH // 2
-                        min_center_x = paddle_half_width
-                        max_center_x = SCREEN_WIDTH - paddle_half_width
-                        paddle.rect.centerx = max(
-                            min_center_x, min(max_center_x, new_center_x)
-                        )
+                    # Применяем движение платформы используя модуль game_loop_ai
+                    apply_paddle_movement(paddle, movement, adjusted_speed)
                     
                     # Отладочная информация (выводим периодически)
                     if pygame.time.get_ticks() % 1000 < 16:

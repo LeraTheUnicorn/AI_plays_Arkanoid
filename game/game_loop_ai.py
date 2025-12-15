@@ -296,3 +296,27 @@ def initialize_ai_before_game_loop(
     )
     # Логируем обновление состояния (только в файл, не в консоль)
     logger.debug(f"[AI DEBUG] Состояние игры обновлено для AI перед входом в цикл")
+
+
+def apply_paddle_movement(
+    paddle: Paddle,
+    movement: int,
+    adjusted_speed: int,
+) -> None:
+    """
+    Применяет движение платформы с учетом границ экрана.
+    
+    Args:
+        paddle: Объект платформы
+        movement: Направление движения (-1, 0, 1)
+        adjusted_speed: Скорректированная скорость платформы
+    """
+    if movement != 0:
+        # Применяем движение с адаптивной скоростью
+        new_center_x = paddle.rect.centerx + movement * adjusted_speed
+        paddle_half_width = PADDLE_WIDTH // 2
+        min_center_x = paddle_half_width
+        max_center_x = SCREEN_WIDTH - paddle_half_width
+        paddle.rect.centerx = max(
+            min_center_x, min(max_center_x, new_center_x)
+        )
