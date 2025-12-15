@@ -26,26 +26,26 @@ def resource_path(relative_path: str) -> str:
     Использует os.path.join для корректной работы на разных ОС.
     
     Args:
-        relative_path: Относительный путь к ресурсу (например, "audio/file.ogg" или "images/d2.gif")
-                      Путь должен быть относительно src/resources/
+        relative_path: Относительный путь к ресурсу (например, "FVCK_AI.mp3" или "images/d2.gif")
+                      Путь должен быть относительно resources/
         
     Returns:
         Абсолютный путь к ресурсу, нормализованный для текущей ОС
         
     Note:
-        В режиме разработки использует директорию src/resources/.
-        В скомпилированном exe (PyInstaller) ресурсы находятся в _MEIPASS/src/resources/.
+        В режиме разработки использует директорию resources/ в корне проекта.
+        В скомпилированном exe (PyInstaller) ресурсы находятся в _MEIPASS/resources/.
     """
     try:
         # PyInstaller создает временную папку и сохраняет путь в _MEIPASS
         base_path = sys._MEIPASS  # type: ignore[attr-defined]
-        # В exe ресурсы находятся в src/resources/ (как указано в --add-data)
-        resources_path = os.path.join(base_path, "src", "resources")
+        # В exe ресурсы находятся в resources/ (как указано в --add-data)
+        resources_path = os.path.join(base_path, "resources")
     except AttributeError:
-        # В режиме разработки файл находится в src/game/, нужно подняться на уровень вверх и войти в src/resources/
-        current_dir = os.path.dirname(os.path.abspath(__file__))  # src/game/
-        src_dir = os.path.dirname(current_dir)  # src/
-        resources_path = os.path.join(src_dir, "resources")  # src/resources/
+        # В режиме разработки файл находится в game/, нужно подняться на уровень вверх и войти в resources/
+        current_dir = os.path.dirname(os.path.abspath(__file__))  # game/
+        project_root = os.path.dirname(current_dir)  # корень проекта
+        resources_path = os.path.join(project_root, "resources")  # resources/
 
     # Используем os.path.join для кросс-платформенной совместимости
     # и нормализуем путь для корректной работы на всех ОС
