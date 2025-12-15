@@ -1964,7 +1964,6 @@ def process_ball_physics_and_collisions(
 
 
 # Удалена неиспользуемая функция _process_game_logic_frame_unused - заменена на process_ball_physics_and_collisions
-# def _process_game_logic_frame_unused(
     ball: Ball,
     paddle: Paddle,
     bricks: list,
