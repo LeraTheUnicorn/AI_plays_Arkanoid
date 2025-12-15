@@ -54,6 +54,9 @@ from .ai_player_loop_prevention import AIPlayerLoopPreventionMixin
 from .ai_player_ball_tracking import AIPlayerBallTrackingMixin
 from .ai_player_fallback import AIPlayerFallbackMixin
 from .ai_player_movement_helpers import AIPlayerMovementHelpersMixin
+from .ai_player_movement_core_part1 import AIPlayerMovementCorePart1Mixin
+from .ai_player_movement_core_part2 import AIPlayerMovementCorePart2Mixin
+from .ai_player_movement_core_part3 import AIPlayerMovementCorePart3Mixin
 
 
 class AIPlayer(
@@ -68,6 +71,9 @@ class AIPlayer(
     AIPlayerBallTrackingMixin,
     AIPlayerFallbackMixin,
     AIPlayerMovementHelpersMixin,
+    AIPlayerMovementCorePart1Mixin,
+    AIPlayerMovementCorePart2Mixin,
+    AIPlayerMovementCorePart3Mixin,
     AIPlayerStateMixin,
     AIPlayerTargetingMixin,
     AIPlayerPositioningMixin,
@@ -694,169 +700,59 @@ class AIPlayer(
         import time
         start_time_monitor = time.time() if self.performance_monitor else None
         
-        # Определяем переменные состояния мяча и зон
-        if not self.current_game_state:
+        try:
+            # Вызываем первую часть метода (начальная валидация и ПРАВИЛО 3)
+            result = self._apply_movement_strategy_part1(current_x, optimal_x, paddle_speed)
+            if result is not None:
+                return result
+            
+            # Если первая часть вернула None, продолжаем обработку
+            # Определяем переменные для следующих частей
+            if not self.current_game_state:
+                return self._fallback_movement(current_x)
+            
+            ball_y = self.current_game_state.ball_position.y if self.current_game_state else 0
+            ball_vel_y = (
+                self.current_game_state.ball_velocity.y
+                if (self.current_game_state and hasattr(self.current_game_state, "ball_velocity"))
+                else 0
+            )
+            separation_zone_start = self.separation_zone_tracker.separation_zone_start
+            paddle_zone_start = self.separation_zone_tracker.paddle_zone_start
+            paddle_y = self.current_game_state.paddle_position.y if self.current_game_state else paddle_zone_start
+            ball_lost = ball_y > paddle_y
+            in_separation_zone = separation_zone_start <= ball_y < paddle_y and ball_vel_y > 0
+            
+            # Вызываем вторую часть метода (ПРАВИЛО 4)
+            result = self._apply_movement_strategy_part2(
+                current_x, optimal_x, paddle_speed,
+                ball_y, ball_vel_y, separation_zone_start, paddle_zone_start,
+                paddle_y, ball_lost, in_separation_zone, start_time_monitor
+            )
+            if result is not None:
+                return result
+            
+            # Если вторая часть вернула None, вызываем третью часть (ПРАВИЛО 5)
+            return self._apply_movement_strategy_part3(
+                current_x, optimal_x, paddle_speed, ball_lost, start_time_monitor
+            )
+        
+        except (AttributeError, TypeError) as e:
+            self._logger.error(f"Ошибка типов при движении платформы: {e}", exc_info=True)
             return self._fallback_movement(current_x)
-        
-        ball_y = self.current_game_state.ball_position.y if self.current_game_state else 0
-        ball_vel_y = (
-            self.current_game_state.ball_velocity.y
-            if (self.current_game_state and hasattr(self.current_game_state, "ball_velocity"))
-            else 0
-        )
-        separation_zone_start = self.separation_zone_tracker.separation_zone_start
-        paddle_zone_start = self.separation_zone_tracker.paddle_zone_start
-        
-        # КРИТИЧНО: УБРАНО ПРАВИЛО 1 - платформа ДОЛЖНА двигаться к точке падения мяча
-        # даже когда мяч летит вверх, чтобы успеть к моменту падения
-        # Продолжаем расчет оптимальной позиции независимо от направления мяча
-        
-        if ball_vel_y == 0:
-            # КРИТИЧНО: Если vel_y == 0, это ошибка состояния (должно быть исправлено в PyGameBall.py)
-            # Но на всякий случай продолжаем движение к оптимальной позиции, а не используем fallback
-            # Это предотвращает ситуацию, когда платформа перестает двигаться из-за временного vel_y=0
-            # Логируем для диагностики, но продолжаем нормальную логику
-            self._log_paddle_movement(current_x, current_x, "ball_vel_y_zero_warning", 0.5)
-            # Продолжаем обработку с обычной логикой - НЕ возвращаем fallback!
-        
-        # ПРАВИЛО 2: Если мяч в зоне кубиков - платформа НЕ двигается
-        # КРИТИЧНО: ИСКЛЮЧЕНИЕ - при 1 кирпиче разрешаем упреждающее движение
-        bricks_count = len(self.current_game_state.remaining_bricks) if self.current_game_state else 50
-        is_last_brick = bricks_count == 1
-        
-        if ball_y < separation_zone_start and not is_last_brick:
-            # Для нормальных случаев - не двигаемся в зоне кубиков
-            # Фильтрация по уровню выполняется автоматически системой логирования Python
-            self._logger.debug(f"[PADDLE DEBUG] ПРАВИЛО 2: Мяч в зоне кубиков (ball_y={ball_y:.1f} < {separation_zone_start}), платформа не двигается")
-            self._log_paddle_movement(current_x, current_x, "ball_in_bricks_zone", 1.0)
-            return 0
-        elif ball_y < separation_zone_start and is_last_brick:
-            # КРИТИЧНО: При 1 кирпиче разрешаем упреждающее движение
-            # Это позволяет платформе подготовиться к попаданию в последний кирпич
-            # Фильтрация по уровню выполняется автоматически системой логирования Python
-            self._logger.debug(f"[PADDLE DEBUG] ПРАВИЛО 2 EXCEPTION: Последний кирпич! Разрешаем движение в зоне кубиков")
-            # Продолжаем обработку - не возвращаем 0
-        
-        # КРИТИЧНО: Проверяем, не потерян ли мяч (ниже верхней границы платформы)
-        # Если мяч ниже верхней границы платформы - он считается потерянным, платформа НЕ двигается
-        paddle_y = self.current_game_state.paddle_position.y if self.current_game_state else paddle_zone_start
-        ball_lost = ball_y > paddle_y  # Мяч ниже верхней границы платформы
-        
-        if ball_lost:
-            # Мяч потерян - платформа НЕ двигается
-            # КРИТИЧНО: Логируем для диагностики (периодически)
-            # Фильтрация по уровню выполняется автоматически системой логирования Python
-            self._logger.debug(f"[PADDLE DEBUG] Мяч потерян (ball_y={ball_y:.1f} > paddle_y={paddle_y:.1f}), платформа не двигается")
-            self._log_paddle_movement(current_x, current_x, "ball_lost_below_paddle", 1.0)
-            return 0
-        
-        # Проверяем, находится ли мяч в зоне разделения
-        # КРИТИЧНО: Мяч должен быть выше верхней границы платформы и в разрешенной зоне
-        # Зона разделения: от separation_zone_start до верхней границы платформы
-        in_separation_zone = separation_zone_start <= ball_y < paddle_y and ball_vel_y > 0
-        
-        # КРИТИЧНО: Логируем состояние зоны разделения для диагностики
-        # Логируем всегда когда мяч в зоне разделения или близко к платформе
-        should_log = in_separation_zone or (ball_y > paddle_y - 100 and ball_vel_y > 0)
-        # КРИТИЧНО: Логируем всегда (100% кадров) для диагностики
-        if should_log:  # Всегда логируем когда мяч близко
-            ball_x = self.current_game_state.ball_position.x if self.current_game_state else 0
-            ball_vel_x = self.current_game_state.ball_velocity.x if (self.current_game_state and hasattr(self.current_game_state, "ball_velocity")) else 0
-            ball_speed = self.current_game_state.ball_speed if self.current_game_state else 0
-            distance_to_paddle = paddle_y - ball_y if ball_y < paddle_y else 0
-            time_to_paddle = distance_to_paddle / ball_vel_y if ball_vel_y > 0 and distance_to_paddle > 0 else float('inf')
-            # КРИТИЧНО: НЕ вызываем get_optimal_paddle_position() если позиция уже зафиксирована
-            # Это может вызвать пересчет и дергание
-            if self.separation_zone_tracker.target_position_set:
-                target_pos = self.separation_zone_tracker.target_position
-                if target_pos is not None:
-                    optimal_x = int(target_pos)
-                else:
-                    optimal_x = self.get_optimal_paddle_position()
-                    
-                    # Записываем метрику производительности
-                    if self.performance_monitor and start_time_monitor:
-                        duration = time.time() - start_time_monitor
-                        self.performance_monitor.record_metric("get_optimal_paddle_position", duration)
-            else:
-                optimal_x = self.get_optimal_paddle_position()
-            distance_to_target = abs(current_x - optimal_x) if optimal_x is not None else 0
-            self._logger.debug(f"[BALL TRACKING] ball=({ball_x:.1f},{ball_y:.1f}) vel=({ball_vel_x:.1f},{ball_vel_y:.1f}) speed={ball_speed:.1f} | "
-                               f"paddle_x={current_x:.1f} optimal_x={optimal_x:.1f} dist_to_target={distance_to_target:.1f} | "
-                               f"zone: sep_start={separation_zone_start} paddle_y={paddle_y:.1f} in_zone={in_separation_zone} | "
-                               f"time_to_paddle={time_to_paddle:.2f} frames")
-        
-        # КРИТИЧНО: Обнаружение отскоков от кирпичей по резкому изменению позиции мяча ИЛИ изменению направления
-        ball_x = self.current_game_state.ball_position.x if self.current_game_state else 0
-        current_vel_x = self.current_game_state.ball_velocity.x if (self.current_game_state and hasattr(self.current_game_state, "ball_velocity")) else 0
-        current_vel_y = self.current_game_state.ball_velocity.y if (self.current_game_state and hasattr(self.current_game_state, "ball_velocity")) else 0
-        
-        brick_bounce_detected = False
-        if self._last_ball_position is not None and self._last_ball_velocity is not None and self.current_game_state:
-            # Проверяем резкое изменение позиции мяча (более 50 пикселей за кадр)
-            position_change = abs(ball_x - self._last_ball_position.x)
-            # Также проверяем изменение Y координаты вверх (мяч отскочил)
-            y_change = ball_y - self._last_ball_position.y
-            
-            # КРИТИЧНО: Проверяем изменение направления ball_vel_y (мяч отскочил вверх после движения вниз)
-            # Это самый надежный способ обнаружения отскока от кирпича
-            last_vel_y = self._last_ball_velocity.y
-            vel_y_direction_change = (last_vel_y > 0 and current_vel_y < 0)  # Мяч двигался вниз, теперь вверх
-            
-            # Отскок от кирпича: 
-            # 1. Резкое изменение позиции X (>50px) И vel_x не изменилась сильно
-            # 2. ИЛИ изменение направления Y координаты вверх (y_change < -10)
-            # 3. ИЛИ изменение направления ball_vel_y (мяч отскочил вверх)
-            if position_change > 50 or (y_change < -10 and ball_y < separation_zone_start) or vel_y_direction_change:
-                # Проверяем, что это не отскок от стены (vel_x должен был измениться, но это уже отслеживается)
-                vel_x_change = abs(current_vel_x - self._last_ball_velocity.x)
-                
-                # Если скорость vel_x не изменилась сильно, но позиция изменилась резко - это отскок от кирпича
-                # ИЛИ если изменилось направление ball_vel_y (мяч отскочил вверх)
-                if (vel_x_change < 5 and position_change > 50) or vel_y_direction_change:
-                    brick_bounce_detected = True
-                    bounce_reason = "vel_y direction change" if vel_y_direction_change else f"position change {position_change:.1f}px"
-                    self._logger.debug(f"[BRICK BOUNCE DETECTED] {bounce_reason}, "
-                                     f"ball=({ball_x:.1f},{ball_y:.1f}) prev=({self._last_ball_position.x:.1f},{self._last_ball_position.y:.1f}), "
-                                     f"vel_y: {last_vel_y:.1f} -> {current_vel_y:.1f}")
-        
-        # Обновляем предыдущую позицию мяча
-        if self.current_game_state:
-            self._last_ball_position = Point(ball_x, ball_y)
-            self._last_ball_velocity = Point(current_vel_x, current_vel_y)
-        
-        # ПРАВИЛО 3: Если целевая позиция установлена - используем её БЕЗ пересчета
-        # КРИТИЧЕСКОЕ ПРАВИЛО: позиция фиксируется один раз при входе мяча в зону разделения
-        # и не меняется до следующего отскока от стены ИЛИ отскока от кирпича
-        if self.separation_zone_tracker.target_position_set:
-            # КРИТИЧНО: Проверяем отскоки от стены И от кирпичей
-            current_target = self.separation_zone_tracker.target_position
-            if current_target is not None and in_separation_zone:
-                # КРИТИЧНО: Проверяем изменение vel_x - это признак отскока от стены
-                # ИЛИ обнаружение отскока от кирпича
-                saved_vel_x = self.separation_zone_tracker.saved_ball_vel_x
-                
-                # Если vel_x изменился (мяч отскочил от стены) ИЛИ обнаружен отскок от кирпича - сбрасываем цель
-                if (saved_vel_x is not None and abs(current_vel_x - saved_vel_x) > 0.1) or brick_bounce_detected:
-                    # Мяч отскочил от стены или от кирпича - траектория изменилась, нужно пересчитать цель
-                    if brick_bounce_detected:
-                        self._logger.debug(f"[TARGET RESET] Мяч отскочил от кирпича! Траектория изменилась, пересчитываем цель")
-                    else:
-                        self._logger.debug(f"[TARGET RESET] Мяч отскочил от стены! Старая vel_x={saved_vel_x:.1f}, Новая vel_x={current_vel_x:.1f}")
-                    
-                    # ИСПРАВЛЕНИЕ: Проверяем расстояние до новой потенциальной цели перед сбросом
-                    # Рассчитываем новую потенциальную цель для проверки расстояния
-                    ball_x = self.current_game_state.ball_position.x if self.current_game_state else 0
-                    ball_y = self.current_game_state.ball_position.y if self.current_game_state else 0
-                    ball_vel_y = self.current_game_state.ball_velocity.y if (self.current_game_state and hasattr(self.current_game_state, "ball_velocity")) else 0
-                    paddle_y = self.current_game_state.paddle_position.y if self.current_game_state else 0
-                    
-                    # Рассчитываем время до приземления мяча
-                    distance_to_paddle_y = paddle_y - ball_y if ball_y < paddle_y else 0
-                    time_to_paddle = distance_to_paddle_y / ball_vel_y if ball_vel_y > 0 and distance_to_paddle_y > 0 else float('inf')
-                    
-                    # Предсказываем новую позицию приземления
-                    if time_to_paddle != float('inf') and time_to_paddle > 0:
+        except InvalidStateError as e:
+            self._logger.error(f"Недопустимое состояние при движении платформы: {e}", exc_info=True)
+            return self._fallback_movement(current_x)
+        except PredictionError as e:
+            self._logger.error(f"Ошибка предсказания при движении платформы: {e}", exc_info=True)
+            return self._fallback_movement(current_x)
+
+    # Методы _fallback_movement, _is_time_pressure, _calculate_decision_confidence
+    # теперь в ai_player_fallback.py
+
+    # ==========================
+    # Обучение по результату действия
+    # ==========================
                         predicted_new_x = ball_x + current_vel_x * time_to_paddle
                         # Применяем зоны
                         zone_size = self.config.paddle.zone_size
@@ -2963,261 +2859,13 @@ class AIPlayer(
                 self._update_smoothness_tracking(movement, current_x)
                 self._log_paddle_movement(current_x, target_pos, "moving_to_new_target", 0.9)
                 # Записываем метрику производительности
-            if self.performance_monitor and start_time_monitor:
-                duration = time.time() - start_time_monitor
-                self.performance_monitor.record_metric("move_paddle_towards", duration)
-            return movement
-            
-            # ПРАВИЛО 5: Если мяч НЕ в зоне разделения и целевая позиция НЕ установлена
-            # - используем обычную логику (мяч еще в зоне кубиков или выше)
-            # КРИТИЧНО: Но только если мяч НЕ потерян и движется вниз
-            # Если мяч потерян или движется вверх - не двигаемся
-            if ball_lost:
-                self._log_paddle_movement(current_x, current_x, "ball_lost_below_paddle_rule5", 1.0)
-                return 0
-            
-            # КРИТИЧНО: УБРАНО правило "не двигаться когда мяч летит вверх"
-            # Платформа ДОЛЖНА двигаться к точке падения мяча даже когда мяч летит вверх,
-            # чтобы успеть к моменту падения. Продолжаем расчет оптимальной позиции.
-            
-            # КРИТИЧНО: Если мяч в разрешенной зоне (ниже кубиков, но выше платформы) и движется вниз
-            # - платформа ДОЛЖНА двигаться к точке падения мяча
-            optimal_x = self.get_optimal_paddle_position()
-            # get_optimal_paddle_position() всегда возвращает int, не None
-
-            # Проверяем зацикливание и при необходимости меняем стратегию
-            # НО ТОЛЬКО если целевая позиция НЕ установлена
-            if not self.separation_zone_tracker.target_position_set:
-                self._change_strategy_if_looping()
-                if self.loop_prevention_system["strategy_change_cooldown"] == 0:
-                    optimal_x = self._apply_alternative_strategy(optimal_x)
-                    # Проверяем, что альтернативная стратегия тоже валидна
-                    if optimal_x is None:
-                        return self._fallback_movement(current_x)
-
-            # Допуск по точности позиционирования
-            precision_tolerance = 2
-            # Проверяем дрожание и применяем штрафы
-            jitter_detected = self._detect_jitter()
-            if jitter_detected:
-                # Увеличиваем допуск для уменьшения дрожания
-                precision_tolerance = max(5, precision_tolerance + 2)
-                # Увеличиваем штраф за дрожание
-                self.smoothness_system["smoothness_penalty"] = min(
-                    1.0, self.smoothness_system["smoothness_penalty"] + 0.1
-                )
-            else:
-                # Уменьшаем штраф при плавном движении
-                self.smoothness_system["smoothness_penalty"] = max(
-                    0.0, self.smoothness_system["smoothness_penalty"] - 0.05
-                )
-
-            # Допуск по точности позиционирования (учитываем штраф за дрожание)
-            base_precision_tolerance = 2
-            precision_tolerance = base_precision_tolerance + int(
-                self.smoothness_system["smoothness_penalty"] * 3
-            )
-
-            # Увеличиваем допуск, когда мяч движется вниз и траектория известна
-            if self.current_game_state:
-                ball_vel_y = (
-                    self.current_game_state.ball_velocity.y
-                    if hasattr(self.current_game_state, "ball_velocity")
-                    else 0
-                )
-                ball_y = self.current_game_state.ball_position.y
-                paddle_zone_start = self.screen_height - 60
-                separation_zone_start = self.separation_zone_tracker.separation_zone_start
-                in_separation_zone = separation_zone_start <= ball_y < paddle_zone_start and ball_vel_y > 0
-
-                # КРИТИЧНО: НЕ увеличиваем допуск слишком сильно, иначе платформа не будет двигаться
-                # Если мяч движется вниз и уже ниже кубиков - используем умеренный допуск
-                if ball_vel_y > 0 and ball_y > 250:  # Мяч движется вниз и ниже кубиков
-                    # Используем умеренный допуск (5-10 пикселей), чтобы платформа могла двигаться
-                    # Только если платформа УЖЕ очень близко к цели (менее 5 пикселей) - не двигаемся
-                    if abs(optimal_x - current_x) < 5:
-                        precision_tolerance = max(precision_tolerance, 5)  # Очень близко - не двигаемся
-                    else:
-                        # Платформа еще не достигла цели - используем минимальный допуск для движения
-                        precision_tolerance = max(precision_tolerance, 2)  # Минимальный допуск
-
-            distance_to_optimal = abs(optimal_x - current_x)
-
-            # Поощряем минимальные движения - если расстояние очень мало, не двигаемся
-            min_movement_distance = self.smoothness_system["min_movement_distance"]
-            
-            # КРИТИЧНО: Убрана проверка ball_approaching_quickly - она вызывала дергание
-            # В зоне разделения с установленной целевой позицией платформа просто движется к цели и останавливается
-            
-            if distance_to_optimal < min_movement_distance:
-                # Если расстояние меньше минимального, проверяем, стоит ли двигаться
-                if distance_to_optimal <= precision_tolerance:
-                    movement = 0
-                    # Поощряем точное позиционирование
-                    self.smoothness_system["consecutive_stops"] += 1
-                    if self.smoothness_system["consecutive_stops"] > 3:
-                        # Уменьшаем штраф за хорошее позиционирование
-                        self.smoothness_system["smoothness_penalty"] = max(
-                            0.0, self.smoothness_system["smoothness_penalty"] - 0.1
-                        )
-                    # Сохраняем базовую скорость, так как не двигаемся
-                    self._last_adjusted_paddle_speed = paddle_speed
-                else:
-                    # Двигаемся только если действительно нужно
-                    movement = self._calculate_smooth_movement(
-                        current_x, optimal_x, distance_to_optimal
-                    )
-                    # Сохраняем базовую скорость для этого случая
-                    self._last_adjusted_paddle_speed = paddle_speed
-            elif distance_to_optimal <= precision_tolerance:
-                movement = 0
-                self.smoothness_system["consecutive_stops"] += 1
-                # Сохраняем базовую скорость, так как не двигаемся
-                self._last_adjusted_paddle_speed = paddle_speed
-            else:
-                self.smoothness_system["consecutive_stops"] = 0
-                # Адаптивная скорость от системы обучения
-                if self.current_game_state:
-                    ball_speed = self.current_game_state.ball_speed
-                    distance_to_target = distance_to_optimal
-
-                    # Рассчитываем время до встречи с мячом для более агрессивного увеличения скорости
-                    time_to_meeting = float("inf")
-                    ball_vel_y = (
-                        self.current_game_state.ball_velocity.y
-                        if hasattr(self.current_game_state, "ball_velocity")
-                        else 0
-                    )
-                    if ball_vel_y > 0:  # Мяч движется вниз
-                        ball_y = self.current_game_state.ball_position.y
-                        paddle_y = self.current_game_state.paddle_position.y
-                        distance_y = paddle_y - ball_y
-                        if distance_y > 0:
-                            time_to_meeting = distance_y / ball_vel_y
-
-                    speed_multiplier = self.learning_system.get_adaptive_paddle_speed(
-                        ball_speed, distance_to_target
-                    )
-
-                    # Если мяч быстро приближается, агрессивно увеличиваем скорость
-                    if time_to_meeting != float("inf") and time_to_meeting > 0:
-                        # Чем меньше времени до встречи, тем выше должна быть скорость
-                        if time_to_meeting < 30:  # Менее 30 кадров (0.5 сек при 60 FPS)
-                            urgency_factor = 30.0 / max(time_to_meeting, 1)
-                            speed_multiplier *= min(
-                                urgency_factor, 3.0
-                            )  # До 3x дополнительного ускорения
-                        elif time_to_meeting < 60:  # Менее 60 кадров (1 сек)
-                            urgency_factor = 60.0 / max(time_to_meeting, 1)
-                            speed_multiplier *= min(
-                                urgency_factor, 2.0
-                            )  # До 2x дополнительного ускорения
-
-                    # ИСПРАВЛЕНИЕ: Адаптивная базовая скорость в зависимости от расстояния
-                    # При больших расстояниях (>150px) увеличиваем базовую скорость дополнительно
-                    base_speed_multiplier = 10.0  # Базовая скорость в 10 раз
-                    
-                    # ИСПРАВЛЕНИЕ: При расстоянии >150px увеличиваем скорость еще больше
-                    if distance_to_target > 150:
-                        # Для больших расстояний используем более агрессивную скорость
-                        base_speed_multiplier = 15.0  # Увеличиваем до 15x для больших расстояний
-                    elif distance_to_target > 100:
-                        base_speed_multiplier = 12.0  # 12x для средних расстояний
-                    
-                    # ИСПРАВЛЕНИЕ: При экстренных ситуациях (мало времени до встречи) еще больше увеличиваем
-                    if time_to_meeting != float('inf') and time_to_meeting < 20:  # Менее 20 кадров
-                        base_speed_multiplier *= 1.5  # Дополнительно увеличиваем на 50%
-                    
-                    # Ограничиваем минимальный множитель скорости, чтобы платформа не двигалась слишком медленно
-                    # AI может увеличивать скорость до 10x для достижения цели (в дополнение к базовому 10-15x)
-                    max_multiplier = 10.0  # Дополнительный множитель до 10x
-                    speed_multiplier = max(0.8, min(max_multiplier, speed_multiplier))
-                    adjusted_paddle_speed = int(paddle_speed * base_speed_multiplier)  # ИСПРАВЛЕНО: убрано двойное умножение
-                    # Гарантируем минимальную скорость платформы
-                    adjusted_paddle_speed = max(
-                        int(paddle_speed * 0.8), adjusted_paddle_speed
-                    )
-                    self._last_paddle_speed_multiplier = speed_multiplier
-                    # Сохраняем для использования в PyGameBall.py
-                    self._last_adjusted_paddle_speed = adjusted_paddle_speed
-                else:
-                    adjusted_paddle_speed = paddle_speed
-
-                # Сохраняем для использования в PyGameBall.py
-                self._last_adjusted_paddle_speed = adjusted_paddle_speed
-
-                movement = self.position_optimizer.calculate_paddle_movement(
-                    current_x, optimal_x, adjusted_paddle_speed
-                )
-
-                # Если расчёт не даёт движения, но мы не на месте — fallback
-                if movement == 0 and optimal_x != current_x:
-                    movement = self._fallback_movement(current_x)
-
-            # Обновляем данные по зацикливанию
-            self._update_loop_tracking(movement, current_x, optimal_x)
-            
-            # Обновляем данные по плавности движения
-            self._update_smoothness_tracking(movement, current_x)
-
-            # Логирование движения
-            if movement != 0:
-                reason = (
-                    "ball_tracking"
-                    if not self.is_ball_moving_towards_paddle()
-                    else "trajectory_optimization"
-                )
-                confidence = self._calculate_decision_confidence(optimal_x)
-                self.performance_logger.log_paddle_movement(
-                    from_x=current_x,
-                    to_x=current_x + movement * paddle_speed,
-                    reason=reason,
-                    confidence=confidence,
-                )
-
-            # Статистика по ходам
-            self.current_game_stats["total_moves"] += 1
-            if abs(optimal_x - current_x) < 10:
-                self.current_game_stats["optimal_moves"] += 1
-
-            # Учитываем плавность движения в обучении
-            if movement != 0:
-                # Штрафуем за дрожание при обучении
-                if self.smoothness_system["smoothness_penalty"] > 0.5:
-                    # Высокий штраф за дрожание - это плохое поведение
-                    jitter_penalty = {
-                        "action_type": "movement_jitter",
-                        "success": False,
-                        "penalty": self.smoothness_system["smoothness_penalty"],
-                        "movement_distance": abs(optimal_x - current_x),
-                    }
-                    # Можно добавить в систему обучения для улучшения поведения
-                    # self.learning_system.update_strategy(jitter_penalty)
-
-            # Записываем метрику производительности
-            if self.performance_monitor and start_time_monitor:
-                duration = time.time() - start_time_monitor
-                self.performance_monitor.record_metric("move_paddle_towards", duration)
-            return movement
-
-        except (AttributeError, TypeError) as e:
-            self._logger.error(f"Ошибка типов при движении платформы: {e}", exc_info=True)
-            return self._fallback_movement(current_x)
-        except InvalidStateError as e:
-            self._logger.error(f"Недопустимое состояние при движении платформы: {e}", exc_info=True)
-            return self._fallback_movement(current_x)
-        except PredictionError as e:
-            self._logger.error(f"Ошибка предсказания при движении платформы: {e}", exc_info=True)
-            return self._fallback_movement(current_x)
-
+                if self.performance_monitor and start_time_monitor:
+                    duration = time.time() - start_time_monitor
+                    self.performance_monitor.record_metric("move_paddle_towards", duration)
+                return movement
+        
     # Методы _fallback_movement, _is_time_pressure, _calculate_decision_confidence
     # теперь в ai_player_fallback.py
-        if ball_speed >= 8:
-            confidence -= 0.1
-        elif ball_speed <= 3:
-            confidence += 0.1
-
-        return max(0.1, min(1.0, confidence))
 
     # ==========================
     # Обучение по результату действия
