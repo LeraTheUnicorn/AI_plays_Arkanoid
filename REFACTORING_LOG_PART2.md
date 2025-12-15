@@ -75,16 +75,17 @@
 
 ### Задача: Разбить `ai_player_learning.py` (529 строк → 2 модуля по ≤400 строк)
 
-**Модуль 21.1: `ai/ai_player_learning_core_part1.py`** (~400 строк)
-- [ ] Проанализировать `ai_player_learning.py`
-- [ ] Определить границы первой половины
-- [ ] Создать файл `ai/ai_player_learning_core_part1.py`
-- [ ] Создать миксин `AIPlayerLearningCorePart1Mixin`
-- [ ] Перенести первую половину `learn_from_result` и `_update_performance_metrics`
-- [ ] Обновить `ai_player_learning.py` - использовать миксин
-- [ ] Проверить синтаксис
-- [ ] Проверить линтер
-- [ ] Выполнить коммит
+**Модуль 21.1: `ai/ai_player_learning_core_part1.py`** (~400 строк) ✅ **ВЫПОЛНЕНО**
+- [x] Проанализировать `ai_player_learning.py` (529 строк)
+- [x] Определить границы первой половины (методы learn_from_result и _update_performance_metrics)
+- [x] Создать файл `ai/ai_player_learning_core_part1.py` (создан, 139 строк)
+- [x] Создать миксин `AIPlayerLearningCorePart1Mixin`
+- [x] Перенести методы `learn_from_result` и `_update_performance_metrics`
+- [x] Обновить `ai_player_learning.py` - использовать миксин через наследование
+- [x] Удалить перенесенные методы из `ai_player_learning.py` (заменены комментарием)
+- [x] Проверить синтаксис (успешно)
+- [x] Проверить линтер
+- [x] Выполнить коммит
 
 **Модуль 21.2: `ai/ai_player_learning_core_part2.py`** (~400 строк)
 - [ ] Определить границы второй половины
