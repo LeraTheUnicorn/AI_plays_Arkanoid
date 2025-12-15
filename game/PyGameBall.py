@@ -45,6 +45,12 @@ from .game_loop_initialization import (
     start_background_music,
 )
 
+# Импортируем функции обработки событий
+from .game_loop_events import (
+    process_keyboard_events,
+    process_restart_key,
+)
+
 os.environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "1"  # Скрыть сообщение поддержки pygame
 
 import random
