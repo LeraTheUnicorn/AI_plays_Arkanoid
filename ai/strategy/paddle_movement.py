@@ -586,6 +586,38 @@ class PaddleMovementStrategy:
         # Двигаемся к зафиксированной позиции
         target_pos = int(current_target)
         
+        # ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Динамическая корректировка позиции при приближении мяча
+        # Если мяч очень близко к платформе, пересчитываем целевую позицию для учета изменений траектории
+        distance_to_paddle_y = paddle_y - ball_y if ball_y < paddle_y else 0
+        time_to_paddle = distance_to_paddle_y / ball_vel_y if ball_vel_y > 0 and distance_to_paddle_y > 0 else float('inf')
+        
+        # ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Если мяч очень близко к платформе (< 15px по Y), пересчитываем цель
+        # Это позволяет платформе адаптироваться к последним изменениям траектории
+        if (time_to_paddle != float('inf') and 
+            time_to_paddle > 0 and 
+            distance_to_paddle_y < 15 and 
+            self.current_game_state):
+            # Мяч очень близко - пересчитываем целевую позицию
+            new_optimal_x = self.get_optimal_paddle_position()
+            if new_optimal_x is not None:
+                new_target_pos = int(new_optimal_x)
+                new_target_pos = self._clamp_paddle_position(new_target_pos)
+                distance_to_old_target = abs(current_x - target_pos)
+                distance_to_new_target = abs(current_x - new_target_pos)
+                
+                # ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Обновляем цель, если новая позиция значительно лучше
+                # (разница более 10px) ИЛИ новая позиция ближе к текущей позиции платформы
+                if (abs(new_target_pos - target_pos) > 10 or 
+                    distance_to_new_target < distance_to_old_target - 5):
+                    self._logger.debug(
+                        f"[FIXED TARGET] Динамическая корректировка: мяч близко (distance_to_paddle={distance_to_paddle_y:.1f}px), "
+                        f"старая цель={target_pos:.1f}px, новая цель={new_target_pos:.1f}px, "
+                        f"distance_to_old={distance_to_old_target:.1f}px, distance_to_new={distance_to_new_target:.1f}px"
+                    )
+                    target_pos = new_target_pos
+                    # Обновляем зафиксированную позицию
+                    self.target_tracker.set_target_position(target_pos, "dynamic_correction", self._logger, current_x)
+        
         # КРИТИЧНО: Ограничиваем целевую позицию границами экрана
         target_pos = self._clamp_paddle_position(target_pos)
         
