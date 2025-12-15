@@ -38,6 +38,7 @@ from .game_loop_initialization import (
     create_ai_player_system,
     setup_ai_player_for_training,
     start_background_music,
+    save_training_data_on_exit,
 )
 
 # Импортируем функции обработки событий
@@ -843,23 +844,13 @@ def main() -> None:
             # В режиме обучения игра продолжается до завершения
             
 
-    # В режиме обучения выводим статистику перед выходом
-    if training_mode:
-        # Сохраняем данные обучения
-        try:
-            if ai_player and ai_player.performance_metrics.get("games_played", 0) > 0:
-                ai_player.save_learning_data()
-                if not getattr(sys, "frozen", False):
-                    print(
-                        f"[AI] Режим обучения завершен. Сыграно матчей: {training_rounds}"
-                    )
-                    print("[AI] Данные обучения сохранены.")
-            else:
-                # КРИТИЧНО: Не сохраняем данные, если не было сыграно ни одной игры (только в файл, не в консоль)
-                logger.debug(f"[AI DEBUG] Данные обучения не сохранены - не было сыграно игр (games_played={ai_player.performance_metrics.get('games_played', 0) if ai_player else 0})")
-        except Exception as e:
-            if not getattr(sys, "frozen", False):
-                print(f"[AI] Предупреждение: не удалось сохранить данные обучения: {e}")
+    # Сохраняем данные обучения перед выходом используя модуль game_loop_initialization
+    save_training_data_on_exit(
+        training_mode,
+        ai_player,
+        training_rounds,
+        logger,
+    )
     
     # Закрываем игру
     pygame.quit()

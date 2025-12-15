@@ -253,3 +253,36 @@ def start_background_music(sound_enabled: bool) -> None:
             # Не выводим в exe файле
             if not getattr(sys, "frozen", False):
                 print("Не удалось запустить фоновую музыку")
+
+
+def save_training_data_on_exit(
+    training_mode: bool,
+    ai_player: Optional[Any],
+    training_rounds: int,
+    logger: Any,
+) -> None:
+    """
+    Сохраняет данные обучения перед выходом из игры.
+    
+    Args:
+        training_mode: Режим обучения
+        ai_player: Объект AI игрока
+        training_rounds: Количество раундов обучения
+        logger: Логгер
+    """
+    if training_mode:
+        # Сохраняем данные обучения
+        try:
+            if ai_player and ai_player.performance_metrics.get("games_played", 0) > 0:
+                ai_player.save_learning_data()
+                if not getattr(sys, "frozen", False):
+                    print(
+                        f"[AI] Режим обучения завершен. Сыграно матчей: {training_rounds}"
+                    )
+                    print("[AI] Данные обучения сохранены.")
+            else:
+                # КРИТИЧНО: Не сохраняем данные, если не было сыграно ни одной игры (только в файл, не в консоль)
+                logger.debug(f"[AI DEBUG] Данные обучения не сохранены - не было сыграно игр (games_played={ai_player.performance_metrics.get('games_played', 0) if ai_player else 0})")
+        except Exception as e:
+            if not getattr(sys, "frozen", False):
+                print(f"[AI] Предупреждение: не удалось сохранить данные обучения: {e}")
