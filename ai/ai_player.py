@@ -753,7 +753,8 @@ class AIPlayer(
     # ==========================
     # Обучение по результату действия
     # ==========================
-                        predicted_new_x = ball_x + current_vel_x * time_to_paddle
+
+    def learn_from_result(self, action_result: Dict[str, Any]) -> None:
                         # Применяем зоны
                         zone_size = self.config.paddle.zone_size
                         screen_center = self.screen_width / 2
