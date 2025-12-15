@@ -894,31 +894,64 @@ class PaddleMovementStrategy:
                         )
                         optimal_x = min_left_x
 
-        # ✅ УПРОЩЕНО: Одна проверка достижимости вместо двух
-        # Учитываем запас на ошибки, но не слишком агрессивно
+        # ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Улучшенная проверка достижимости цели
+        # Учитываем время движения платформы и корректируем цель, если она недостижима
         distance_to_target = abs(current_x - optimal_x)
         MAX_TARGET_DISTANCE = 250  # ✅ ИСПРАВЛЕНО: Увеличено до 250px для большей гибкости
 
-        # Проверяем достижимость только если мяч действительно летит к платформе
+        # ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Проверяем достижимость только если мяч действительно летит к платформе
         if time_to_paddle != float('inf') and time_to_paddle > 0 and distance_to_target > 0:
             # КРИТИЧНО: paddle_speed уже в px/кадр
             frames_available = max(1, int(time_to_paddle))
             
-            # ✅ УПРОЩЕНО: Более агрессивное ограничение - используем 95% от доступного времени
-            # Это позволяет платформе двигаться быстрее и достигать целей
-            max_reachable_distance = paddle_speed * frames_available * 0.95
+            # ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Используем 90% от доступного времени для учета погрешностей
+            # Это более консервативный подход, который гарантирует, что платформа успеет добраться
+            # Учитываем также, что платформа может начать движение не сразу
+            safety_factor = 0.90  # 90% от доступного времени
+            max_reachable_distance = paddle_speed * frames_available * safety_factor
             
-            # Если цель слишком далеко, ограничиваем её
+            # ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Если цель слишком далеко, корректируем её
+            # НО стараемся сохранить направление к оптимальной позиции
             if distance_to_target > max_reachable_distance:
                 self._logger.debug(
-                    f"[NEW TARGET] Ограничиваем цель: distance={distance_to_target:.1f}px > "
-                    f"reachable={max_reachable_distance:.1f}px (time={time_to_paddle:.1f} frames)"
+                    f"[NEW TARGET] Цель недостижима! distance={distance_to_target:.1f}px > "
+                    f"reachable={max_reachable_distance:.1f}px (time={time_to_paddle:.1f} frames, "
+                    f"frames_available={frames_available}, paddle_speed={paddle_speed})"
                 )
+                
+                # ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Корректируем цель, сохраняя направление
+                # Если оптимальная позиция справа - двигаемся максимально вправо, но не дальше достижимого
+                # Если оптимальная позиция слева - двигаемся максимально влево, но не дальше достижимого
                 if optimal_x > current_x:
+                    # Цель справа - ограничиваем максимальным достижимым расстоянием вправо
                     optimal_x = current_x + int(max_reachable_distance)
+                    self._logger.debug(
+                        f"[NEW TARGET] Скорректирована цель вправо: {optimal_x:.1f}px "
+                        f"(было дальше, теперь достижимо за {frames_available} кадров)"
+                    )
                 else:
+                    # Цель слева - ограничиваем максимальным достижимым расстоянием влево
                     optimal_x = current_x - int(max_reachable_distance)
+                    self._logger.debug(
+                        f"[NEW TARGET] Скорректирована цель влево: {optimal_x:.1f}px "
+                        f"(было дальше, теперь достижимо за {frames_available} кадров)"
+                    )
                 distance_to_target = abs(current_x - optimal_x)
+                
+                # ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Если после коррекции цель все еще слишком далеко,
+                # используем более агрессивную коррекцию (80% от времени)
+                if distance_to_target > max_reachable_distance * 1.1:
+                    safety_factor_aggressive = 0.80
+                    max_reachable_distance_aggressive = paddle_speed * frames_available * safety_factor_aggressive
+                    if optimal_x > current_x:
+                        optimal_x = current_x + int(max_reachable_distance_aggressive)
+                    else:
+                        optimal_x = current_x - int(max_reachable_distance_aggressive)
+                    distance_to_target = abs(current_x - optimal_x)
+                    self._logger.debug(
+                        f"[NEW TARGET] Применена агрессивная коррекция: {optimal_x:.1f}px "
+                        f"(max_reachable={max_reachable_distance_aggressive:.1f}px)"
+                    )
         
         # Жесткое ограничение максимального расстояния (200px согласно анализу)
         if distance_to_target > MAX_TARGET_DISTANCE:
