@@ -18,7 +18,7 @@ class AIPlayerUtilsMixin:
         Активирует AIPlayer для управления игрой.
         """
         self.is_active = True
-        
+
         # Инициализируем PaddleMovementStrategy при активации
         if self.paddle_movement_strategy is None:
             self.paddle_movement_strategy = PaddleMovementStrategy(
@@ -41,7 +41,7 @@ class AIPlayerUtilsMixin:
                 predict_exact_landing_position_func=self._predict_exact_landing_position,  # ✅ ДОБАВЛЕНО: Передаем функцию предсказания
                 current_game_state=self.current_game_state,
             )
-        
+
         self._logger.info("AIPlayer активирован. Начинаем управление игрой...")
 
     def deactivate(self) -> None:
@@ -54,35 +54,35 @@ class AIPlayerUtilsMixin:
     def _should_log_debug(self, interval_multiplier: int = 1) -> bool:
         """
         Проверяет, нужно ли логировать отладочную информацию в текущем кадре.
-        
+
         Проверяет уровень логирования логгера (не зависит от debug_mode).
         Логирование настраивается ТОЛЬКО в logging_config.py.
-        
-        ВАЖНО: Если уровень логгера DEBUG или ниже, возвращает True всегда 
-        (без интервального ограничения), так как пользователь явно установил 
+
+        ВАЖНО: Если уровень логгера DEBUG или ниже, возвращает True всегда
+        (без интервального ограничения), так как пользователь явно установил
         DEBUG уровень и хочет видеть все сообщения.
-        
+
         Args:
             interval_multiplier: Множитель интервала (для более редкого логирования).
                                 Используется только если уровень > DEBUG.
                                 Например, 10 означает логирование в 10 раз реже.
-        
+
         Returns:
             True, если нужно логировать, False иначе
         """
         # Получаем эффективный уровень логгера (с учетом родительских логгеров)
         effective_level = self._logger.getEffectiveLevel()
-        
+
         # Проверяем уровень логирования логгера, а не debug_mode
         # Если эффективный уровень выше DEBUG - не логируем DEBUG сообщения
         if effective_level > logging.DEBUG:
             return False
-        
-        # Если эффективный уровень DEBUG или ниже - логируем ВСЕ сообщения 
+
+        # Если эффективный уровень DEBUG или ниже - логируем ВСЕ сообщения
         # (без интервального ограничения)
         # Пользователь явно установил DEBUG уровень и хочет видеть все DEBUG сообщения
         return True
-    
+
     def is_ball_moving_towards_paddle(self) -> bool:
         """Проверяет, движется ли мяч к платформе (вниз)."""
         if not self.current_game_state:

@@ -41,7 +41,7 @@ class Paddle:
     def move(self, direction: int) -> None:
         """
         Перемещает платформу в указанном направлении.
-        
+
         Args:
             direction: -1 (влево) или 1 (вправо)
         """
@@ -123,6 +123,7 @@ class Ball:
     def reset(self, paddle_rect: pygame.Rect) -> None:
         """Сбрасывает мяч на платформу с текущей скоростью."""
         from .game_config import RANDOM_BALL_START_DIRECTION
+
         ball_radius: int = BALL_SIZE // 2
         self.rect.centerx = paddle_rect.centerx
         self.rect.centery = paddle_rect.top - ball_radius - 5
@@ -132,17 +133,17 @@ class Ball:
             # Сектор 1: от -60° до -30° (влево)
             # Сектор 2: от +30° до +60° (вправо)
             # Исключен: от -30° до +30° (почти вертикально)
-            
+
             # Выбираем случайно левый или правый сектор
             use_left_sector = random.choice([True, False])
-            
+
             if use_left_sector:
                 # Левый сектор: от -60° до -30°
                 angle_degrees = random.uniform(-60, -30)
             else:
                 # Правый сектор: от +30° до +60°
                 angle_degrees = random.uniform(30, 60)
-            
+
             angle_radians = math.radians(angle_degrees)
             speed = self.current_speed
             # Вычисляем компоненты скорости
@@ -166,6 +167,7 @@ class Ball:
     ) -> None:
         """Устанавливает скорость мяча и обновляет настройки."""
         from .game_config import BALL_SPEED_MAX
+
         max_speed: int = BALL_SPEED_MAX
         if 1 <= speed <= max_speed:
             old_speed: int = self.current_speed
@@ -185,6 +187,7 @@ class Ball:
     ) -> None:
         """Увеличивает скорость на 1."""
         from .game_config import BALL_SPEED_MAX
+
         max_speed: int = BALL_SPEED_MAX
         if self.current_speed < max_speed:
             self.set_speed(self.current_speed + 1, settings_manager)

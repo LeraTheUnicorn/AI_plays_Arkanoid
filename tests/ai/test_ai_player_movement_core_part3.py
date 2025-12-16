@@ -10,10 +10,10 @@ from ai.game_state import GameState, Point
 
 class TestAIPlayerMovementCorePart3Mixin:
     """Тесты для миксина AIPlayerMovementCorePart3Mixin."""
-    
+
     def _create_mock_player(self):
         """Создает мок AIPlayer с необходимыми атрибутами."""
-        player = type('TestPlayer', (AIPlayerMovementCorePart3Mixin,), {})()
+        player = type("TestPlayer", (AIPlayerMovementCorePart3Mixin,), {})()
         player.screen_width = 800
         player.screen_height = 600
         player.paddle_width = 120
@@ -38,41 +38,41 @@ class TestAIPlayerMovementCorePart3Mixin:
         player.performance_logger = Mock()
         player.current_game_stats = {"total_moves": 0, "optimal_moves": 0}
         player._last_adjusted_paddle_speed = 15
-        
+
         # Separation zone tracker
         player.separation_zone_tracker = Mock()
         player.separation_zone_tracker.separation_zone_start = 250.0
         player.separation_zone_tracker.paddle_zone_start = 540.0
         player.separation_zone_tracker.target_position_set = False
-        
+
         # Loop prevention system
         player.loop_prevention_system = {"strategy_change_cooldown": 0}
-        
+
         # Smoothness system
         player.smoothness_system = {
             "smoothness_penalty": 0.0,
             "min_movement_distance": 5,
             "consecutive_stops": 0,
         }
-        
+
         # Config
         player.config = Mock()
-        
+
         return player
-    
+
     def test_apply_movement_strategy_part3_ball_lost(self):
         """Тест когда мяч потерян."""
         player = self._create_mock_player()
         ball_lost = True
         start_time_monitor = None
-        
+
         result = player._apply_movement_strategy_part3(
             400, 400, 15, ball_lost, start_time_monitor
         )
-        
+
         assert result == 0
         player._log_paddle_movement.assert_called()
-    
+
     def test_apply_movement_strategy_part3_close_to_optimal(self):
         """Тест когда платформа близко к оптимальной позиции."""
         player = self._create_mock_player()
@@ -89,13 +89,13 @@ class TestAIPlayerMovementCorePart3Mixin:
         player.get_optimal_paddle_position.return_value = 402
         ball_lost = False
         start_time_monitor = None
-        
+
         result = player._apply_movement_strategy_part3(
             400, 402, 15, ball_lost, start_time_monitor
         )
-        
+
         assert result in [0, -1, 1]
-    
+
     def test_apply_movement_strategy_part3_far_from_optimal(self):
         """Тест когда платформа далеко от оптимальной позиции."""
         player = self._create_mock_player()
@@ -113,15 +113,15 @@ class TestAIPlayerMovementCorePart3Mixin:
         player.smoothness_system["min_movement_distance"] = 5
         ball_lost = False
         start_time_monitor = None
-        
+
         result = player._apply_movement_strategy_part3(
             400, 600, 15, ball_lost, start_time_monitor
         )
-        
+
         assert result in [-1, 0, 1]
         # Метод может быть вызван или нет в зависимости от условий
         # Проверяем только что результат валиден
-    
+
     def test_apply_movement_strategy_part3_jitter_detected(self):
         """Тест когда обнаружено дрожание."""
         player = self._create_mock_player()
@@ -139,14 +139,14 @@ class TestAIPlayerMovementCorePart3Mixin:
         player.get_optimal_paddle_position.return_value = 450
         ball_lost = False
         start_time_monitor = None
-        
+
         result = player._apply_movement_strategy_part3(
             400, 450, 15, ball_lost, start_time_monitor
         )
-        
+
         assert result in [-1, 0, 1]
         assert player.smoothness_system["smoothness_penalty"] > 0
-    
+
     def test_apply_movement_strategy_part3_alternative_strategy(self):
         """Тест применения альтернативной стратегии."""
         player = self._create_mock_player()
@@ -165,10 +165,9 @@ class TestAIPlayerMovementCorePart3Mixin:
         player._apply_alternative_strategy.return_value = 500
         ball_lost = False
         start_time_monitor = None
-        
+
         result = player._apply_movement_strategy_part3(
             400, 450, 15, ball_lost, start_time_monitor
         )
-        
-        assert result in [-1, 0, 1]
 
+        assert result in [-1, 0, 1]

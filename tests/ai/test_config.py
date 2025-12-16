@@ -8,7 +8,7 @@ from ai.config import AIConfig, GameZones, PaddleConfig, BrickConfig, BallConfig
 
 class TestGameZones:
     """Тесты для класса GameZones."""
-    
+
     def test_game_zones_creation(self):
         """Тест создания конфигурации зон."""
         zones = GameZones()
@@ -16,13 +16,13 @@ class TestGameZones:
         assert zones.ball_diameter == 16
         assert zones.paddle_zone_offset == 60
         assert zones.ball_reset_height == 50
-    
+
     def test_separation_zone_start(self):
         """Тест вычисления начала зоны разделения."""
         zones = GameZones()
         expected = zones.bricks_zone_end + zones.ball_diameter
         assert zones.separation_zone_start == expected
-    
+
     def test_paddle_zone_start(self):
         """Тест вычисления начала зоны платформы."""
         zones = GameZones()
@@ -33,7 +33,7 @@ class TestGameZones:
 
 class TestPaddleConfig:
     """Тесты для класса PaddleConfig."""
-    
+
     def test_paddle_config_creation(self):
         """Тест создания конфигурации платформы."""
         config = PaddleConfig()
@@ -47,7 +47,7 @@ class TestPaddleConfig:
 
 class TestBrickConfig:
     """Тесты для класса BrickConfig."""
-    
+
     def test_brick_config_creation(self):
         """Тест создания конфигурации кирпичей."""
         config = BrickConfig()
@@ -58,7 +58,7 @@ class TestBrickConfig:
 
 class TestBallConfig:
     """Тесты для класса BallConfig."""
-    
+
     def test_ball_config_creation(self):
         """Тест создания конфигурации мяча."""
         config = BallConfig()
@@ -70,7 +70,7 @@ class TestBallConfig:
 
 class TestAIConfig:
     """Тесты для класса AIConfig."""
-    
+
     def test_ai_config_creation(self):
         """Тест создания основной конфигурации AI."""
         config = AIConfig()
@@ -89,10 +89,9 @@ class TestAIConfig:
         assert config.recent_targets_max == 5
         assert config.successful_hits_max == 100
         assert config.successful_hits_keep == 50
-    
+
     def test_ai_config_immutability(self):
         """Тест неизменяемости конфигурации (frozen dataclass)."""
         config = AIConfig()
         with pytest.raises(Exception):  # frozen dataclass не позволяет изменять поля
             config.debug_log_interval = 200
-

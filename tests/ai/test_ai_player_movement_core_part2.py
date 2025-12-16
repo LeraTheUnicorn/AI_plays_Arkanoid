@@ -10,10 +10,10 @@ from ai.game_state import GameState, Point
 
 class TestAIPlayerMovementCorePart2Mixin:
     """Тесты для миксина AIPlayerMovementCorePart2Mixin."""
-    
+
     def _create_mock_player(self):
         """Создает мок AIPlayer с необходимыми атрибутами."""
-        player = type('TestPlayer', (AIPlayerMovementCorePart2Mixin,), {})()
+        player = type("TestPlayer", (AIPlayerMovementCorePart2Mixin,), {})()
         player.screen_width = 800
         player.screen_height = 600
         player.paddle_width = 120
@@ -28,7 +28,7 @@ class TestAIPlayerMovementCorePart2Mixin:
         player.config = Mock()
         player.config.paddle = Mock()
         player.config.paddle.zone_size = 30
-        
+
         # Separation zone tracker
         player.separation_zone_tracker = Mock()
         player.separation_zone_tracker.separation_zone_start = 250.0
@@ -39,9 +39,9 @@ class TestAIPlayerMovementCorePart2Mixin:
         player.separation_zone_tracker.paddle_moved_after_set = False
         player.separation_zone_tracker.paddle_reached_target = False
         player.separation_zone_tracker.frames_since_target_set = 0
-        
+
         return player
-    
+
     def test_apply_movement_strategy_part2_set_target_position(self):
         """Тест установки целевой позиции (ПРАВИЛО 4)."""
         player = self._create_mock_player()
@@ -56,7 +56,7 @@ class TestAIPlayerMovementCorePart2Mixin:
             ball_speed=5,
         )
         player.get_optimal_paddle_position.return_value = 450
-        
+
         ball_y = 400.0
         ball_vel_y = 5.0
         separation_zone_start = 250.0
@@ -65,16 +65,24 @@ class TestAIPlayerMovementCorePart2Mixin:
         ball_lost = False
         in_separation_zone = True
         start_time_monitor = None
-        
+
         result = player._apply_movement_strategy_part2(
-            400, 450, 15, ball_y, ball_vel_y,
-            separation_zone_start, paddle_zone_start, paddle_y,
-            ball_lost, in_separation_zone, start_time_monitor
+            400,
+            450,
+            15,
+            ball_y,
+            ball_vel_y,
+            separation_zone_start,
+            paddle_zone_start,
+            paddle_y,
+            ball_lost,
+            in_separation_zone,
+            start_time_monitor,
         )
-        
+
         assert player.separation_zone_tracker.target_position_set is True
         assert result in [-1, 0, 1]
-    
+
     def test_apply_movement_strategy_part2_target_unreachable(self):
         """Тест когда цель недостижима."""
         player = self._create_mock_player()
@@ -89,7 +97,7 @@ class TestAIPlayerMovementCorePart2Mixin:
             ball_speed=5,
         )
         player.get_optimal_paddle_position.return_value = 700
-        
+
         ball_y = 540.0
         ball_vel_y = 10.0
         separation_zone_start = 250.0
@@ -98,16 +106,24 @@ class TestAIPlayerMovementCorePart2Mixin:
         ball_lost = False
         in_separation_zone = True
         start_time_monitor = None
-        
+
         result = player._apply_movement_strategy_part2(
-            100, 700, 15, ball_y, ball_vel_y,
-            separation_zone_start, paddle_zone_start, paddle_y,
-            ball_lost, in_separation_zone, start_time_monitor
+            100,
+            700,
+            15,
+            ball_y,
+            ball_vel_y,
+            separation_zone_start,
+            paddle_zone_start,
+            paddle_y,
+            ball_lost,
+            in_separation_zone,
+            start_time_monitor,
         )
-        
+
         # Должно использовать промежуточную цель
         assert result in [-1, 0, 1]
-    
+
     def test_apply_movement_strategy_part2_target_at_current_position(self):
         """Тест когда цель совпадает с текущей позицией."""
         player = self._create_mock_player()
@@ -122,7 +138,7 @@ class TestAIPlayerMovementCorePart2Mixin:
             ball_speed=5,
         )
         player.get_optimal_paddle_position.return_value = 400
-        
+
         ball_y = 400.0
         ball_vel_y = 5.0
         separation_zone_start = 250.0
@@ -131,20 +147,28 @@ class TestAIPlayerMovementCorePart2Mixin:
         ball_lost = False
         in_separation_zone = True
         start_time_monitor = None
-        
+
         result = player._apply_movement_strategy_part2(
-            400, 400, 15, ball_y, ball_vel_y,
-            separation_zone_start, paddle_zone_start, paddle_y,
-            ball_lost, in_separation_zone, start_time_monitor
+            400,
+            400,
+            15,
+            ball_y,
+            ball_vel_y,
+            separation_zone_start,
+            paddle_zone_start,
+            paddle_y,
+            ball_lost,
+            in_separation_zone,
+            start_time_monitor,
         )
-        
+
         assert result == 0
         assert player.separation_zone_tracker.paddle_reached_target is True
-    
+
     def test_apply_movement_strategy_part2_not_in_separation_zone(self):
         """Тест когда мяч не в зоне разделения."""
         player = self._create_mock_player()
-        
+
         ball_y = 200.0
         ball_vel_y = -5.0
         separation_zone_start = 250.0
@@ -153,12 +177,19 @@ class TestAIPlayerMovementCorePart2Mixin:
         ball_lost = False
         in_separation_zone = False
         start_time_monitor = None
-        
-        result = player._apply_movement_strategy_part2(
-            400, 450, 15, ball_y, ball_vel_y,
-            separation_zone_start, paddle_zone_start, paddle_y,
-            ball_lost, in_separation_zone, start_time_monitor
-        )
-        
-        assert result is None
 
+        result = player._apply_movement_strategy_part2(
+            400,
+            450,
+            15,
+            ball_y,
+            ball_vel_y,
+            separation_zone_start,
+            paddle_zone_start,
+            paddle_y,
+            ball_lost,
+            in_separation_zone,
+            start_time_monitor,
+        )
+
+        assert result is None

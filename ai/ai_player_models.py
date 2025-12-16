@@ -9,6 +9,7 @@ from dataclasses import dataclass, field
 @dataclass
 class BrickInfo:
     """Информация о кирпиче."""
+
     x: float
     y: float
     width: int
@@ -17,7 +18,7 @@ class BrickInfo:
     center_y: float
     row: int
     col: int
-    
+
     @property
     def key(self) -> str:
         """Возвращает ключ для карты кирпичей."""
@@ -27,6 +28,7 @@ class BrickInfo:
 @dataclass
 class TargetingSystem:
     """Система прицельного отбивания."""
+
     target_brick: Optional[Any] = None
     optimal_offset: float = 0.0
     successful_hits: List[Dict[str, Any]] = field(default_factory=list)
@@ -36,7 +38,7 @@ class TargetingSystem:
     brick_coordinates: List[Dict[str, Any]] = field(default_factory=list)
     visible_targets: List[Dict[str, Any]] = field(default_factory=list)
     recent_target_positions: List[float] = field(default_factory=list)
-    
+
     def reset(self) -> None:
         """Сбрасывает состояние системы."""
         self.target_brick = None
@@ -53,6 +55,7 @@ class TargetingSystem:
 @dataclass
 class SeparationZoneTracker:
     """Отслеживание зоны разделения."""
+
     ball_entered_separation_zone: bool = False
     target_position_set: bool = False
     target_position: Optional[float] = None
@@ -64,9 +67,13 @@ class SeparationZoneTracker:
     frames_since_target_set: int = 0
     saved_ball_vel_x: Optional[float] = None
     game_restart_required: bool = False
-    last_ball_vel_y: Optional[float] = None  # КРИТИЧНО: Отслеживание предыдущего направления мяча
-    ball_moving_downward_last_frame: bool = False  # КРИТИЧНО: Флаг движения мяча вниз на предыдущем кадре
-    
+    last_ball_vel_y: Optional[float] = (
+        None  # КРИТИЧНО: Отслеживание предыдущего направления мяча
+    )
+    ball_moving_downward_last_frame: bool = (
+        False  # КРИТИЧНО: Флаг движения мяча вниз на предыдущем кадре
+    )
+
     def reset(self) -> None:
         """Сбрасывает состояние."""
         self.ball_entered_separation_zone = False

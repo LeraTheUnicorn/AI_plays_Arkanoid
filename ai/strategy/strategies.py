@@ -70,7 +70,9 @@ class AggressiveStrategy(PaddleMovementStrategy):
         # Если мяч движется вверх, готовимся к следующему удару
         elif ball_vel_y < 0:
             # Двигаемся к центру для лучшей подготовки
-            screen_center = 400  # Примерное значение, должно быть передано в конструктор
+            screen_center = (
+                400  # Примерное значение, должно быть передано в конструктор
+            )
             if paddle_x < screen_center - 20:
                 return 1
             elif paddle_x > screen_center + 20:

@@ -5,7 +5,7 @@
 вместо полной перерисовки всего экрана каждый кадр.
 """
 
-from typing import List, Set
+from typing import Any, List, Set
 import pygame  # pyright: ignore[reportMissingImports]
 
 from .game_config import DIRTY_RECT_BUFFER, USE_DIRTY_RECTS
@@ -17,7 +17,7 @@ class DirtyRectManager:
     def __init__(self, screen_width: int, screen_height: int) -> None:
         """
         Инициализирует менеджер грязных прямоугольников.
-        
+
         Args:
             screen_width: Ширина экрана
             screen_height: Высота экрана
@@ -30,7 +30,7 @@ class DirtyRectManager:
     def add(self, rect: pygame.Rect) -> None:
         """
         Добавляет прямоугольник в список измененных областей.
-        
+
         Args:
             rect: Прямоугольник, который нужно перерисовать
         """
@@ -39,16 +39,16 @@ class DirtyRectManager:
 
         # Добавляем буфер вокруг прямоугольника для корректной отрисовки
         expanded_rect = rect.inflate(DIRTY_RECT_BUFFER * 2, DIRTY_RECT_BUFFER * 2)
-        
+
         # Ограничиваем прямоугольник границами экрана
         expanded_rect.clamp_ip(pygame.Rect(0, 0, self.screen_width, self.screen_height))
-        
+
         self.dirty_rects.append(expanded_rect)
 
     def add_point(self, x: int, y: int, width: int = 1, height: int = 1) -> None:
         """
         Добавляет точку как прямоугольник в список измененных областей.
-        
+
         Args:
             x: Координата X
             y: Координата Y
@@ -64,7 +64,7 @@ class DirtyRectManager:
     def get_dirty_rects(self) -> List[pygame.Rect]:
         """
         Возвращает список измененных прямоугольников и очищает его.
-        
+
         Returns:
             Список прямоугольников для перерисовки
         """
@@ -75,7 +75,7 @@ class DirtyRectManager:
     def optimize(self) -> List[pygame.Rect]:
         """
         Оптимизирует список прямоугольников, объединяя перекрывающиеся.
-        
+
         Returns:
             Оптимизированный список прямоугольников
         """
@@ -90,7 +90,7 @@ class DirtyRectManager:
         optimized: List[pygame.Rect] = []
         used: Set[int] = set()
 
-        for i, rect1 in enumerate(self.dirty_rects):
+        for i, rect1 in enumerate[Any](self.dirty_rects):
             if i in used:
                 continue
 
@@ -98,7 +98,7 @@ class DirtyRectManager:
             used.add(i)
 
             # Ищем перекрывающиеся прямоугольники
-            for j, rect2 in enumerate(self.dirty_rects[i + 1:], start=i + 1):
+            for j, rect2 in enumerate(self.dirty_rects[i + 1 :], start=i + 1):
                 if j in used:
                     continue
 
@@ -114,7 +114,7 @@ class DirtyRectManager:
     def update_display(self, screen: pygame.Surface, full_update: bool = False) -> None:
         """
         Обновляет отображение, перерисовывая только измененные области.
-        
+
         Args:
             screen: Поверхность экрана
             full_update: Если True, обновляет весь экран

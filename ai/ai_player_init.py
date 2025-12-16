@@ -21,11 +21,11 @@ class AIPlayerInitMixin:
     def _validate_dimensions(self, screen_width: int, screen_height: int) -> None:
         """
         Валидирует размеры экрана.
-        
+
         Args:
             screen_width: Ширина экрана для валидации.
             screen_height: Высота экрана для валидации.
-        
+
         Raises:
             TypeError: Если типы данных некорректны.
             ValueError: Если размеры некорректны.
@@ -55,11 +55,11 @@ class AIPlayerInitMixin:
     def _get_env_bool(key: str, default: bool = True) -> bool:
         """
         Безопасно получает булево значение из переменной окружения.
-        
+
         Args:
             key: Имя переменной окружения
             default: Значение по умолчанию
-        
+
         Returns:
             Булево значение
         """
@@ -74,7 +74,9 @@ class AIPlayerInitMixin:
             # Root logger уже настроен через setup_root_logger(), используем его
             logger = logging.getLogger(__name__)
             logger.setLevel(get_log_level())  # Убеждаемся что уровень установлен
-            logger.debug(f"Ошибка при чтении переменной окружения {key}: {e}", exc_info=True)
+            logger.debug(
+                f"Ошибка при чтении переменной окружения {key}: {e}", exc_info=True
+            )
             return default
 
     @classmethod
@@ -82,7 +84,7 @@ class AIPlayerInitMixin:
         """
         Очищает старые логи при запуске программы.
         Удаляет папки с датами, если в настройках установлен флаг delete_ai_logs_on_start.
-        
+
         Args:
             logs_dir: Базовая директория с логами (logs/)
         """
@@ -91,25 +93,29 @@ class AIPlayerInitMixin:
             should_delete = True  # По умолчанию удаляем
             try:
                 from game.settings import SettingsManager
+
                 settings_manager = SettingsManager(lazy_load=False)
                 should_delete = settings_manager.get_delete_ai_logs_on_start()
             except Exception as e:
                 # Если не удалось загрузить настройки, используем значение по умолчанию
                 if not is_frozen():
-                    print(f"[LOG] Не удалось загрузить настройки для очистки логов: {e}, используем значение по умолчанию (удалять)")
-            
+                    print(
+                        f"[LOG] Не удалось загрузить настройки для очистки логов: {e}, используем значение по умолчанию (удалять)"
+                    )
+
             if not should_delete:
                 if not is_frozen():
                     print("[LOG] Удаление логов при старте отключено в настройках")
                 return
-            
+
             if not os.path.exists(logs_dir):
                 return
-            
+
             # Удаляем все папки с датами (формат: YYYY-MM-DD_HH-MM-SS)
             import re
-            date_pattern = re.compile(r'^\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}$')
-            
+
+            date_pattern = re.compile(r"^\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}$")
+
             deleted_count = 0
             for item in os.listdir(logs_dir):
                 item_path = os.path.join(logs_dir, item)
@@ -117,6 +123,7 @@ class AIPlayerInitMixin:
                 if os.path.isdir(item_path) and date_pattern.match(item):
                     try:
                         import shutil
+
                         shutil.rmtree(item_path)
                         deleted_count += 1
                         if not is_frozen():
@@ -124,23 +131,23 @@ class AIPlayerInitMixin:
                     except Exception as e:
                         if not is_frozen():
                             print(f"[LOG] Не удалось удалить папку {item_path}: {e}")
-            
+
             if deleted_count > 0 and not is_frozen():
                 print(f"[LOG] Удалено папок с логами: {deleted_count}")
         except Exception as e:
             # Не блокируем выполнение при ошибке очистки
             if not is_frozen():
                 print(f"[LOG] Ошибка при очистке старых логов: {e}")
-    
+
     @classmethod
     def _setup_logging(cls) -> logging.Logger:
         """
         Настраивает и возвращает логгер для экземпляра AIPlayer.
         Логи записываются в файл с ротацией по 500 строк в папке с полной датой.
-        
+
         Уровень логирования определяется ТОЛЬКО в logging_config.py через LOG_LEVEL.
         НЕ зависит от параметра debug_mode при создании AIPlayer.
-        
+
         Returns:
             Настроенный логгер для этого экземпляра
         """
@@ -148,7 +155,7 @@ class AIPlayerInitMixin:
         cls._instance_counter += 1
         logger_name = f"{__name__}.instance_{cls._instance_counter}"
         logger = logging.getLogger(logger_name)
-        
+
         # Настраиваем handler только если еще не настроен
         if not logger.handlers:
             # Создаем базовую директорию для логов если её нет
@@ -157,24 +164,27 @@ class AIPlayerInitMixin:
             try:
                 os.makedirs(base_logs_dir, exist_ok=True)
             except (OSError, PermissionError):
-                base_logs_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "logs")
+                base_logs_dir = os.path.join(
+                    os.path.dirname(os.path.abspath(__file__)), "logs"
+                )
                 os.makedirs(base_logs_dir, exist_ok=True)
-            
+
             # Очищаем старые логи при первом запуске (когда создается первый экземпляр)
             if cls._instance_counter == 1:
                 cls._cleanup_old_logs(base_logs_dir)
-            
+
             # Создаем папку с полной датой для текущей сессии
             # Если папка с такой датой уже существует, добавляем 4-значный номер
             from datetime import datetime
             import re
+
             base_date_folder = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
             logs_dir = os.path.join(base_logs_dir, base_date_folder)
-            
+
             # Проверяем, существует ли папка с такой датой
             if os.path.exists(logs_dir):
                 # Ищем все папки с таким же префиксом даты
-                pattern = re.compile(r'^' + re.escape(base_date_folder) + r'_(\d{4})$')
+                pattern = re.compile(r"^" + re.escape(base_date_folder) + r"_(\d{4})$")
                 max_number = 0
                 try:
                     for item in os.listdir(base_logs_dir):
@@ -186,17 +196,17 @@ class AIPlayerInitMixin:
                                 max_number = max(max_number, number)
                 except Exception:
                     pass
-                
+
                 # Создаем папку с увеличенным номером
                 date_folder = f"{base_date_folder}_{max_number + 1:04d}"
                 logs_dir = os.path.join(base_logs_dir, date_folder)
-            
+
             try:
                 os.makedirs(logs_dir, exist_ok=True)
             except (OSError, PermissionError):
                 # Fallback: используем базовую директорию
                 logs_dir = base_logs_dir
-            
+
             # Создаем ротирующий handler с инкрементными номерами файлов
             # ✅ ИСПРАВЛЕНО: Увеличено max_lines до 5000 для уменьшения частоты ротации
             # и предотвращения фризов из-за синхронной ротации файлов
@@ -204,43 +214,44 @@ class AIPlayerInitMixin:
             file_handler = RotatingLinesFileHandler(
                 base_log_file,
                 max_lines=5000,  # Увеличено с 500 до 5000 для уменьшения частоты ротации
-                encoding='utf-8'
+                encoding="utf-8",
             )
             formatter = logging.Formatter(
-                '%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-                datefmt='%Y-%m-%d %H:%M:%S'
+                "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+                datefmt="%Y-%m-%d %H:%M:%S",
             )
             file_handler.setFormatter(formatter)
-            
+
             # Получаем уровень логирования из централизованной конфигурации
             # ВАЖНО: уровень логирования настраивается ТОЛЬКО в logging_config.py
             log_level = get_log_level()
-            
+
             # ✅ НОВОЕ: Используем асинхронное логирование для предотвращения фризов
             # Логи записываются в очередь и обрабатываются в отдельном потоке
             from .async_logging_handler import get_async_logging_setup
+
             async_setup = get_async_logging_setup()
             # Настраиваем асинхронное логирование (QueueHandler будет добавлен к logger)
             async_setup.setup_async_logging(file_handler, log_level, logger)
-            
+
             # НЕ добавляем file_handler напрямую к logger - он используется через QueueListener
             # QueueHandler уже добавлен в setup_async_logging
             # Предотвращаем дублирование сообщений через родительские логгеры
             logger.propagate = False
-        
+
         # Устанавливаем уровень логирования для этого экземпляра и handler
         # Используем централизованную конфигурацию из logging_config.py
         # ВАЖНО: уровень логирования настраивается ТОЛЬКО в logging_config.py
         log_level = get_log_level()
-        
+
         # КРИТИЧНО: Устанавливаем уровень для логгера
         logger.setLevel(log_level)
-        
+
         # КРИТИЧНО: Устанавливаем уровень для всех handlers этого логгера
         # Это обязательно - handler может иметь свой собственный уровень
         for handler in logger.handlers:  # type: ignore[assignment]
             handler.setLevel(log_level)
-        
+
         # КРИТИЧНО: Убеждаемся, что root logger тоже настроен правильно
         root_logger = logging.getLogger()
         if root_logger.level > log_level:
@@ -248,8 +259,10 @@ class AIPlayerInitMixin:
             for root_handler in root_logger.handlers:
                 if root_handler.level > log_level:
                     root_handler.setLevel(log_level)
-        
+
         # Логируем установленный уровень для диагностики (только один раз при создании)
-        logger.info(f"[LOGGING CONFIG] Уровень логирования установлен: {logging.getLevelName(log_level)} ({log_level}), logger.level={logger.level}, handler.level={[h.level for h in logger.handlers]}")
-        
+        logger.info(
+            f"[LOGGING CONFIG] Уровень логирования установлен: {logging.getLevelName(log_level)} ({log_level}), logger.level={logger.level}, handler.level={[h.level for h in logger.handlers]}"
+        )
+
         return logger

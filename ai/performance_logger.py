@@ -102,7 +102,7 @@ class PerformanceLogger:
             )
         else:
             self.session_log_file = None
-        
+
         # КРИТИЧНО: Очищаем старые session логи при старте (оставляем только последний)
         self._cleanup_old_session_logs()
 
@@ -114,7 +114,7 @@ class PerformanceLogger:
         try:
             if not os.path.exists(self.logs_dir):
                 return
-            
+
             session_files = []
             for file in os.listdir(self.logs_dir):
                 if file.startswith("session_") and file.endswith(".json"):
@@ -124,25 +124,29 @@ class PerformanceLogger:
                         session_files.append((mtime, file_path))
                     except Exception:
                         session_files.append((0, file_path))
-            
+
             # Сортируем по времени модификации (самый новый последний)
             session_files.sort(key=lambda x: x[0])
-            
+
             # Удаляем все session файлы, кроме последнего (самого нового)
             if len(session_files) > 1:
                 for mtime, file_path in session_files[:-1]:
                     try:
                         os.remove(file_path)
                         if not is_frozen():
-                            print(f"[LOG] Удален старый session лог при старте: {os.path.basename(file_path)}")
+                            print(
+                                f"[LOG] Удален старый session лог при старте: {os.path.basename(file_path)}"
+                            )
                     except Exception as e:
                         if not is_frozen():
-                            print(f"[LOG] Не удалось удалить старый лог {file_path}: {e}")
+                            print(
+                                f"[LOG] Не удалось удалить старый лог {file_path}: {e}"
+                            )
         except Exception as e:
             # Не блокируем выполнение при ошибке очистки
             if not is_frozen():
                 print(f"[LOG] Ошибка при очистке старых session логов: {e}")
-    
+
     def _generate_session_id(self) -> str:
         """Генерирует уникальный ID сессии"""
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -200,7 +204,7 @@ class PerformanceLogger:
             bricks_remaining = 0
         else:
             bricks_remaining = len(game_state.remaining_bricks)
-        
+
         end_data = {
             "type": "game_end",
             "success": success,
@@ -230,23 +234,23 @@ class PerformanceLogger:
         }
 
         self.log_action(movement_data)
-    
+
     def log_ball_paddle_positions(
-        self, 
-        ball_x: float, 
-        ball_y: float, 
-        ball_vel_x: float, 
+        self,
+        ball_x: float,
+        ball_y: float,
+        ball_vel_x: float,
         ball_vel_y: float,
-        paddle_x: float, 
+        paddle_x: float,
         paddle_y: float,
         paddle_width: float,
         paddle_height: float,
-        event_type: str = "frame_update"
+        event_type: str = "frame_update",
     ):
         """
         Логирует координаты мяча и платформы для диагностики
         Включает автоматическую детекцию прилипания мяча к платформе
-        
+
         Args:
             ball_x, ball_y: Координаты центра мяча
             ball_vel_x, ball_vel_y: Скорость мяча
@@ -256,30 +260,33 @@ class PerformanceLogger:
         """
         paddle_centerx = paddle_x + paddle_width / 2
         paddle_centery = paddle_y + paddle_height / 2
-        
+
         # КРИТИЧНО: Детекция прилипания мяча к платформе
         # Признаки прилипания:
         # 1. Горизонтальные координаты мяча синхронизируются с платформой (разница < 5px)
         # 2. Мяч не двигается по вертикали (vel_y == 0 или очень мал)
         # 3. Мяч находится внутри или очень близко к платформе
-        horizontal_sync = abs(ball_x - paddle_centerx) < 5  # Мяч по горизонтали синхронизирован с платформой
+        horizontal_sync = (
+            abs(ball_x - paddle_centerx) < 5
+        )  # Мяч по горизонтали синхронизирован с платформой
         vertical_stationary = abs(ball_vel_y) < 0.1  # Мяч не двигается по вертикали
         ball_inside_paddle = (
-            paddle_x <= ball_x <= paddle_x + paddle_width and
-            paddle_y <= ball_y <= paddle_y + paddle_height
+            paddle_x <= ball_x <= paddle_x + paddle_width
+            and paddle_y <= ball_y <= paddle_y + paddle_height
         )
         ball_very_close = (
-            abs(ball_x - paddle_centerx) < paddle_width / 2 + 10 and
-            abs(ball_y - paddle_y) < 20  # Мяч очень близко к верхней части платформы
+            abs(ball_x - paddle_centerx) < paddle_width / 2 + 10
+            and abs(ball_y - paddle_y)
+            < 20  # Мяч очень близко к верхней части платформы
         )
-        
+
         # Детектируем прилипание
         sticking_detected = (
-            (horizontal_sync or ball_inside_paddle or ball_very_close) and
-            vertical_stationary and
-            event_type != "BALL_STUCK_FIXED"  # Не детектируем, если уже исправлено
+            (horizontal_sync or ball_inside_paddle or ball_very_close)
+            and vertical_stationary
+            and event_type != "BALL_STUCK_FIXED"  # Не детектируем, если уже исправлено
         )
-        
+
         position_data = {
             "type": "ball_paddle_positions",
             "event_type": event_type,
@@ -302,7 +309,9 @@ class PerformanceLogger:
                 "right": paddle_x + paddle_width,
             },
             "distance": {
-                "ball_to_paddle_top": ball_y - paddle_y if ball_y > paddle_y else paddle_y - ball_y,
+                "ball_to_paddle_top": (
+                    ball_y - paddle_y if ball_y > paddle_y else paddle_y - ball_y
+                ),
                 "ball_above_paddle": ball_y < paddle_y,
                 "ball_below_paddle": ball_y > paddle_y + paddle_height,
                 "horizontal_distance": abs(ball_x - paddle_centerx),
@@ -316,13 +325,13 @@ class PerformanceLogger:
                 "ball_very_close": ball_very_close,
                 "horizontal_diff": ball_x - paddle_centerx,
                 "vertical_diff": ball_y - paddle_y,
-            }
+            },
         }
-        
+
         # Если детектировано прилипание, меняем тип события для лучшей видимости в логах
         if sticking_detected and event_type == "frame_update":
             position_data["event_type"] = "BALL_STICKING_DETECTED"
-        
+
         self.log_action(position_data)
 
     def log_trajectory_prediction(
@@ -426,7 +435,11 @@ class PerformanceLogger:
             try:
                 with open(self.session_log_file, "w", encoding="utf-8") as f:
                     json.dump(
-                        session_data, f, cls=CustomJSONEncoder, ensure_ascii=False, indent=2
+                        session_data,
+                        f,
+                        cls=CustomJSONEncoder,
+                        ensure_ascii=False,
+                        indent=2,
                     )
             except (PermissionError, OSError) as e:
                 # Файл заблокирован или нет прав доступа - пропускаем сохранение
@@ -448,23 +461,25 @@ class PerformanceLogger:
         """
         if not self.enable_session_logging:
             return
-        
+
         # Сохраняем финальный лог сессии
         self.save_session_log()
-        
+
         # Запускаем анализатор логов
         try:
             from .log_analyzer import LogAnalyzer
-            
+
             analyzer = LogAnalyzer()
             analyzer.load_logs(self.logs_dir)
             analysis_result = analyzer.analyze_movement_patterns()
-            
+
             # Сохраняем результат анализа
-            analysis_file = os.path.join(self.logs_dir, f"analysis_{self.session_id}.json")
+            analysis_file = os.path.join(
+                self.logs_dir, f"analysis_{self.session_id}.json"
+            )
             with open(analysis_file, "w", encoding="utf-8") as f:
                 json.dump(analysis_result, f, ensure_ascii=False, indent=2)
-            
+
             # КРИТИЧНО: Удаляем старые session логи, оставляя только последний (самый новый)
             try:
                 session_files = []
@@ -478,10 +493,10 @@ class PerformanceLogger:
                         except Exception:
                             # Если не удается получить время, добавляем с минимальным временем
                             session_files.append((0, file_path))
-                
+
                 # Сортируем по времени модификации (самый новый последний)
                 session_files.sort(key=lambda x: x[0])
-                
+
                 # Удаляем все session файлы, кроме последнего (самого нового)
                 if len(session_files) > 1:
                     # Удаляем все кроме последнего
@@ -489,11 +504,13 @@ class PerformanceLogger:
                         try:
                             os.remove(file_path)
                             if not is_frozen():
-                                print(f"[LOG] Удален старый session лог: {os.path.basename(file_path)}")
+                                print(
+                                    f"[LOG] Удален старый session лог: {os.path.basename(file_path)}"
+                                )
                         except Exception as e:
                             if not is_frozen():
                                 print(f"[LOG] Не удалось удалить лог {file_path}: {e}")
-                
+
                 # КРИТИЧНО: После обработки удаляем все session файлы (включая последний)
                 # Они больше не нужны, так как анализ уже выполнен
                 for mtime, file_path in session_files:
@@ -501,14 +518,16 @@ class PerformanceLogger:
                         if os.path.exists(file_path):
                             os.remove(file_path)
                             if not is_frozen():
-                                print(f"[LOG] Удален session лог после обработки: {os.path.basename(file_path)}")
+                                print(
+                                    f"[LOG] Удален session лог после обработки: {os.path.basename(file_path)}"
+                                )
                     except Exception as e:
                         if not is_frozen():
                             print(f"[LOG] Не удалось удалить лог {file_path}: {e}")
             except Exception as e:
                 if not is_frozen():
                     print(f"[LOG] Ошибка при очистке session логов: {e}")
-            
+
             # КРИТИЧНО: Удаляем старые analysis файлы, оставляя только последний (самый новый)
             try:
                 analysis_files = []
@@ -520,24 +539,28 @@ class PerformanceLogger:
                             analysis_files.append((mtime, file_path))
                         except Exception:
                             analysis_files.append((0, file_path))
-                
+
                 # Сортируем по времени модификации (самый новый последний)
                 analysis_files.sort(key=lambda x: x[0])
-                
+
                 # Удаляем все analysis файлы, кроме последнего (самого нового)
                 if len(analysis_files) > 1:
                     for mtime, file_path in analysis_files[:-1]:
                         try:
                             os.remove(file_path)
                             if not is_frozen():
-                                print(f"[LOG] Удален старый analysis файл: {os.path.basename(file_path)}")
+                                print(
+                                    f"[LOG] Удален старый analysis файл: {os.path.basename(file_path)}"
+                                )
                         except Exception as e:
                             if not is_frozen():
-                                print(f"[LOG] Не удалось удалить analysis файл {file_path}: {e}")
+                                print(
+                                    f"[LOG] Не удалось удалить analysis файл {file_path}: {e}"
+                                )
             except Exception as e:
                 if not is_frozen():
                     print(f"[LOG] Ошибка при очистке analysis файлов: {e}")
-                
+
         except Exception as e:
             if not is_frozen():
                 print(f"[LOG] Ошибка при анализе логов: {e}")
@@ -551,7 +574,9 @@ class PerformanceLogger:
             os.makedirs(analysis_dir, exist_ok=True)
         except (OSError, PermissionError):
             # Fallback: используем каталог рядом с performance_logger.py
-            analysis_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "analysis")
+            analysis_dir = os.path.join(
+                os.path.dirname(os.path.abspath(__file__)), "analysis"
+            )
             os.makedirs(analysis_dir, exist_ok=True)
         results_file = os.path.join(analysis_dir, "all_game_results.json")
 

@@ -37,16 +37,22 @@ def show_highscores(
     Если exit_on_esc=True, то ESC выходит из игры полностью, иначе возвращает False.
     """
     # Создаем моноширинный шрифт для правильного отображения таблицы
-    mono_font_names = ["consolas", "courier new", "courier", "monospace", "liberation mono"]
+    mono_font_names = [
+        "consolas",
+        "courier new",
+        "courier",
+        "monospace",
+        "liberation mono",
+    ]
     mono_font = None
-    
+
     for font_name in mono_font_names:
         try:
             mono_font = pygame.font.SysFont(font_name, 18)
             break
         except (OSError, ValueError):
             continue
-    
+
     if mono_font is None:
         try:
             mono_font = pygame.font.Font(pygame.font.get_default_font(), 18)
@@ -168,8 +174,9 @@ def trigger_instant_victory(
         if not getattr(sys, "frozen", False):
             print(f"[TRIGGER VICTORY] ОШИБКА в show_victory_splash: {e}")
             import traceback
+
             traceback.print_exc()
-    
+
     return show_game_results(
         screen,
         font,
@@ -190,70 +197,78 @@ def show_victory_splash(screen: pygame.Surface, duration_seconds: float = 5.0) -
     """
     initial_screen_size = screen.get_size()
     if not getattr(sys, "frozen", False):
-        print(f"[VICTORY SPLASH] Начальный размер экрана при входе в функцию: {initial_screen_size}")
-    
+        print(
+            f"[VICTORY SPLASH] Начальный размер экрана при входе в функцию: {initial_screen_size}"
+        )
+
     image_path = resource_path("images/d2.gif")
-    
+
     if not getattr(sys, "frozen", False):
         print(f"[VICTORY SPLASH] Путь к изображению: {image_path}")
-    
+
     try:
         try:
             from PIL import Image, ImageSequence  # type: ignore[import-untyped]
-            
+
             screen_width, screen_height = screen.get_size()
             if not getattr(sys, "frozen", False):
-                print(f"[VICTORY SPLASH] Размер экрана: {screen_width}x{screen_height} (НЕ МЕНЯЕМ!)")
-            
-            if hasattr(Image, 'Resampling'):
+                print(
+                    f"[VICTORY SPLASH] Размер экрана: {screen_width}x{screen_height} (НЕ МЕНЯЕМ!)"
+                )
+
+            if hasattr(Image, "Resampling"):
                 lanczos_filter = Image.Resampling.LANCZOS
             else:
-                lanczos_filter: Any = getattr(Image, 'LANCZOS', 1)
-            
+                lanczos_filter: Any = getattr(Image, "LANCZOS", 1)
+
             with Image.open(image_path) as im:
                 default_duration = im.info.get("duration", 100)
-                
+
                 frames = []
                 frame_durations = []
-                
+
                 for i, frame in enumerate(ImageSequence.Iterator(im)):
-                    resized_frame = frame.copy().resize((screen_width, screen_height), lanczos_filter)
-                    
+                    resized_frame = frame.copy().resize(
+                        (screen_width, screen_height), lanczos_filter
+                    )
+
                     duration = frame.info.get("duration", default_duration)
                     frame_durations.append(duration)
-                    
-                    if resized_frame.mode != 'RGBA':
-                        resized_frame = resized_frame.convert('RGBA')
-                    
+
+                    if resized_frame.mode != "RGBA":
+                        resized_frame = resized_frame.convert("RGBA")
+
                     img_data = resized_frame.tobytes()
-                    
+
                     try:
                         frame_surface = pygame.image.fromstring(
-                            img_data, (screen_width, screen_height), 'RGBA'
+                            img_data, (screen_width, screen_height), "RGBA"
                         )
                     except (AttributeError, TypeError):
                         frame_surface = pygame.image.frombuffer(
-                            img_data, (screen_width, screen_height), 'RGBA'
+                            img_data, (screen_width, screen_height), "RGBA"
                         )
                     frame_surface = frame_surface.convert_alpha()
-                    
+
                     frames.append(frame_surface)
-            
+
             if len(frames) == 0:
                 raise ValueError("Не удалось загрузить кадры анимации")
-            
+
             x = 0
             y = 0
-            
+
             if not getattr(sys, "frozen", False):
-                print(f"[VICTORY SPLASH] Загружено кадров: {len(frames)}, размер каждого: {screen_width}x{screen_height}")
-            
+                print(
+                    f"[VICTORY SPLASH] Загружено кадров: {len(frames)}, размер каждого: {screen_width}x{screen_height}"
+                )
+
             start_time = time.time()
             clock = pygame.time.Clock()
             frame_index = 0
             frame_accumulator = 0.0
             last_frame_time = time.time()
-            
+
             if len(frames) == 1:
                 while time.time() - start_time < duration_seconds:
                     for event in pygame.event.get():
@@ -268,50 +283,58 @@ def show_victory_splash(screen: pygame.Surface, duration_seconds: float = 5.0) -
                     for event in pygame.event.get():
                         if event.type == pygame.QUIT:
                             return
-                    
+
                     current_frame_time = time.time()
                     delta_time = current_frame_time - last_frame_time
                     last_frame_time = current_frame_time
                     frame_accumulator += delta_time
-                    
+
                     frame_duration_sec = frame_durations[frame_index] / 1000.0
                     if frame_duration_sec < 0.033:
                         frame_duration_sec = 0.033
-                    
+
                     if frame_accumulator >= frame_duration_sec:
                         old_index = frame_index
                         frame_index = (frame_index + 1) % len(frames)
                         frame_accumulator -= frame_duration_sec
-                        
+
                         if old_index < 5 and not getattr(sys, "frozen", False):
-                            print(f"[VICTORY SPLASH] Кадр изменен: {old_index} -> {frame_index}")
-                    
+                            print(
+                                f"[VICTORY SPLASH] Кадр изменен: {old_index} -> {frame_index}"
+                            )
+
                     screen.fill((0, 0, 0))
                     screen.blit(frames[frame_index], (x, y))
                     pygame.display.flip()
                     clock.tick(30)
-                    
+
         except (ImportError, Exception) as e:
             if not getattr(sys, "frozen", False):
-                print(f"[VICTORY SPLASH] Ошибка при загрузке через PIL: {e}, используем pygame для статического изображения")
+                print(
+                    f"[VICTORY SPLASH] Ошибка при загрузке через PIL: {e}, используем pygame для статического изображения"
+                )
             try:
                 image = pygame.image.load(image_path)
                 if not getattr(sys, "frozen", False):
-                    print(f"[VICTORY SPLASH] Изображение загружено через pygame, размер: {image.get_size()}")
-                
+                    print(
+                        f"[VICTORY SPLASH] Изображение загружено через pygame, размер: {image.get_size()}"
+                    )
+
                 screen_width, screen_height = screen.get_size()
-                
+
                 if image.get_bitsize() not in (24, 32):
                     image = image.convert()
-                
+
                 try:
-                    image = pygame.transform.smoothscale(image, (screen_width, screen_height))
+                    image = pygame.transform.smoothscale(
+                        image, (screen_width, screen_height)
+                    )
                 except ValueError:
                     image = pygame.transform.scale(image, (screen_width, screen_height))
-                
+
                 x = 0
                 y = 0
-                
+
                 start_time = time.time()
                 while time.time() - start_time < duration_seconds:
                     for event in pygame.event.get():
@@ -328,6 +351,7 @@ def show_victory_splash(screen: pygame.Surface, duration_seconds: float = 5.0) -
         if not getattr(sys, "frozen", False):
             print(f"[VICTORY SPLASH] Критическая ошибка: {e}")
             import traceback
+
             traceback.print_exc()
 
 
@@ -350,10 +374,10 @@ def show_game_results(
     restart_game = False
     exit_game = False
     waiting = True
-    
+
     # Проверяем, является ли результат рекордом
     is_new_record = highscore_manager.is_new_record(score, game_time_seconds)
-    
+
     while waiting:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -383,7 +407,7 @@ def show_game_results(
         else:
             title_text = "ИГРА ОКОНЧЕНА"
             title_color = (255, 255, 255)
-        
+
         title = big_font.render(title_text, True, title_color)
         title_rect = title.get_rect(center=(SCREEN_WIDTH // 2, 100))
         screen.blit(title, title_rect)
@@ -393,7 +417,9 @@ def show_game_results(
         score_rect = score_text.get_rect(center=(SCREEN_WIDTH // 2, 200))
         screen.blit(score_text, score_rect)
 
-        time_text = font.render(f"Время: {game_time_seconds} сек", True, (255, 255, 255))
+        time_text = font.render(
+            f"Время: {game_time_seconds} сек", True, (255, 255, 255)
+        )
         time_rect = time_text.get_rect(center=(SCREEN_WIDTH // 2, 240))
         screen.blit(time_text, time_rect)
 
@@ -412,4 +438,3 @@ def show_game_results(
         pygame.display.flip()
 
     return sound_enabled, restart_game, exit_game
-

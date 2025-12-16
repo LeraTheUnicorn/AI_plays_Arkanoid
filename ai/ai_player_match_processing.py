@@ -30,21 +30,25 @@ class AIPlayerMatchProcessingMixin:
             "time": time_taken,
             "lives_lost": lives_lost,
             "ball_speed": self.training_parameters["ball_speed"],
-            "paddle_speed_multiplier": self.training_parameters["paddle_speed_multiplier"],
+            "paddle_speed_multiplier": self.training_parameters[
+                "paddle_speed_multiplier"
+            ],
         }
 
         self.training_parameters["match_history"].append(match_data)
         if len(self.training_parameters["match_history"]) > 10:
-            self.training_parameters["match_history"] = self.training_parameters["match_history"][-10:]
+            self.training_parameters["match_history"] = self.training_parameters[
+                "match_history"
+            ][-10:]
 
         all_bricks_destroyed = bricks_destroyed >= 50
-        
+
         # ✅ Обновляем лучшее время для матча с 50 блоками
         if success and all_bricks_destroyed and time_taken > 0:
             current_best = self.performance_metrics.get("best_time_50_bricks")
             if current_best is None or time_taken < current_best:
                 self.performance_metrics["best_time_50_bricks"] = time_taken
-        
+
         time_penalty = 1.0 + (lives_lost * 0.2)
         # Исправление деления на ноль: если time_taken = 0, используем минимальное значение
         if time_taken > 0:
@@ -55,55 +59,77 @@ class AIPlayerMatchProcessingMixin:
 
         current_ball_speed = self.training_parameters["ball_speed"]
         current_paddle_mult = self.training_parameters["paddle_speed_multiplier"]
-        
-        if not hasattr(self, '_best_performance_params'):
+
+        if not hasattr(self, "_best_performance_params"):
             self._best_performance_params = {
-                'bricks_destroyed': bricks_destroyed,
-                'ball_speed': current_ball_speed,
-                'paddle_speed_multiplier': current_paddle_mult
+                "bricks_destroyed": bricks_destroyed,
+                "ball_speed": current_ball_speed,
+                "paddle_speed_multiplier": current_paddle_mult,
             }
-        
-        if bricks_destroyed > self._best_performance_params['bricks_destroyed']:
+
+        if bricks_destroyed > self._best_performance_params["bricks_destroyed"]:
             self._best_performance_params = {
-                'bricks_destroyed': bricks_destroyed,
-                'ball_speed': current_ball_speed,
-                'paddle_speed_multiplier': current_paddle_mult
+                "bricks_destroyed": bricks_destroyed,
+                "ball_speed": current_ball_speed,
+                "paddle_speed_multiplier": current_paddle_mult,
             }
-        
+
         if len(self.training_parameters["match_history"]) >= 2:
             recent_games = self.training_parameters["match_history"][-2:]
-            recent_avg_bricks = sum(g["bricks_destroyed"] for g in recent_games) / len(recent_games)
-            best_bricks = self._best_performance_params['bricks_destroyed']
-            
+            recent_avg_bricks = sum(g["bricks_destroyed"] for g in recent_games) / len(
+                recent_games
+            )
+            best_bricks = self._best_performance_params["bricks_destroyed"]
+
             if best_bricks > 0 and recent_avg_bricks < best_bricks * 0.5:
-                self._logger.warning(f"[PERFORMANCE PROTECTION] Обнаружена деградация производительности!")
-                self.training_parameters["ball_speed"] = self._best_performance_params['ball_speed']
-                self.training_parameters["paddle_speed_multiplier"] = self._best_performance_params['paddle_speed_multiplier']
+                self._logger.warning(
+                    f"[PERFORMANCE PROTECTION] Обнаружена деградация производительности!"
+                )
+                self.training_parameters["ball_speed"] = self._best_performance_params[
+                    "ball_speed"
+                ]
+                self.training_parameters["paddle_speed_multiplier"] = (
+                    self._best_performance_params["paddle_speed_multiplier"]
+                )
                 current_ball_speed = self.training_parameters["ball_speed"]
-                current_paddle_mult = self.training_parameters["paddle_speed_multiplier"]
+                current_paddle_mult = self.training_parameters[
+                    "paddle_speed_multiplier"
+                ]
 
         target_time = 5.0
         time_ratio = time_taken / target_time if target_time > 0 else 1.0
 
         if not all_bricks_destroyed:
             bricks_remaining = 50 - bricks_destroyed
-            
+
             if bricks_destroyed < 20 or (lives_lost >= 3 and bricks_destroyed < 30):
                 speed_reduction = min(3, bricks_remaining // 10)
                 if current_ball_speed > 15:
                     min_speed = 15
-                    if hasattr(self, '_best_performance_params') and self._best_performance_params['bricks_destroyed'] >= 40:
-                        min_speed = max(15, self._best_performance_params['ball_speed'] - 5)
-                    
+                    if (
+                        hasattr(self, "_best_performance_params")
+                        and self._best_performance_params["bricks_destroyed"] >= 40
+                    ):
+                        min_speed = max(
+                            15, self._best_performance_params["ball_speed"] - 5
+                        )
+
                     self.training_parameters["ball_speed"] = max(
                         min_speed, current_ball_speed - speed_reduction
                     )
-                
+
                 if lives_lost >= 3 and bricks_destroyed < 20:
                     min_paddle_mult = 1.5
-                    if hasattr(self, '_best_performance_params') and self._best_performance_params['bricks_destroyed'] >= 40:
-                        min_paddle_mult = max(1.5, self._best_performance_params['paddle_speed_multiplier'] - 0.5)
-                    
+                    if (
+                        hasattr(self, "_best_performance_params")
+                        and self._best_performance_params["bricks_destroyed"] >= 40
+                    ):
+                        min_paddle_mult = max(
+                            1.5,
+                            self._best_performance_params["paddle_speed_multiplier"]
+                            - 0.5,
+                        )
+
                     if current_paddle_mult > min_paddle_mult:
                         self.training_parameters["paddle_speed_multiplier"] = max(
                             min_paddle_mult, current_paddle_mult - 0.2
@@ -206,12 +232,14 @@ class AIPlayerMatchProcessingMixin:
             self._logger.info("\n" + "=" * 70)
             self._logger.info("МЕТРИКИ ОЦЕНКИ РАБОТЫ СИСТЕМЫ AI (scikit-learn)")
             self._logger.info("=" * 70)
-            
+
             self._logger.info(f"\n[РЕЗУЛЬТАТЫ] Результаты игры:")
             result_text = "[+] ПОБЕДА" if success else "[-] ПОРАЖЕНИЕ"
             self._logger.info(f"   Результат: {result_text}")
             self._logger.info(f"   Финальный счёт: {final_score}")
-            self._logger.info(f"   Всего игр: {self.performance_metrics['games_played']}")
+            self._logger.info(
+                f"   Всего игр: {self.performance_metrics['games_played']}"
+            )
             self._logger.info(f"   Побед: {self.performance_metrics['games_won']}")
             if self.performance_metrics["games_played"] > 0:
                 win_rate = (
@@ -219,7 +247,7 @@ class AIPlayerMatchProcessingMixin:
                     / self.performance_metrics["games_played"]
                 ) * 100
                 self._logger.info(f"   Процент побед: {win_rate:.1f}%")
-            
+
             self._logger.info(f"\n[МЕТРИКИ] Метрики текущей игры:")
             self._logger.info(
                 f"   Уничтожено кубиков: {self.current_game_stats['bricks_destroyed']}"
@@ -232,10 +260,12 @@ class AIPlayerMatchProcessingMixin:
                     self.current_game_stats["successful_predictions"]
                     / self.current_game_stats["total_predictions"]
                 ) * 100
-                self._logger.info(f"   Точность предсказаний: {prediction_accuracy:.1f}%")
-            
+                self._logger.info(
+                    f"   Точность предсказаний: {prediction_accuracy:.1f}%"
+                )
+
             learning_progress = self.learning_system.get_learning_progress()
-            
+
             if (
                 isinstance(learning_progress, dict)
                 and learning_progress.get("total_iterations", 0) > 0
@@ -247,10 +277,12 @@ class AIPlayerMatchProcessingMixin:
                 self._logger.info(
                     f"   Успешность адаптаций: {learning_progress.get('success_rate', 0.0):.2%}"
                 )
-            
+
             self._logger.info("=" * 70 + "\n")
         except Exception as e:
-            self._logger.error(f"\n[ОШИБКА] Ошибка при выводе метрик: {e}\n", exc_info=True)
+            self._logger.error(
+                f"\n[ОШИБКА] Ошибка при выводе метрик: {e}\n", exc_info=True
+            )
 
     def _save_session_metrics(self, success: bool, final_score: int) -> None:
         """Сохраняет агрегированные метрики по завершённой игре в список сессий."""
@@ -313,7 +345,7 @@ class AIPlayerMatchProcessingMixin:
         self._logger.info(
             f"   Множитель скорости платформы: {self.training_parameters['paddle_speed_multiplier']:.2f}"
         )
-    
+
     def _print_console_summary(self, success: bool, final_score: int) -> None:
         """Выводит краткую сводку после матча в консоль."""
         try:
@@ -323,25 +355,27 @@ class AIPlayerMatchProcessingMixin:
                     self.performance_metrics["games_won"]
                     / self.performance_metrics["games_played"]
                 ) * 100
-            
+
             result_icon = "[OK]" if success else "[FAIL]"
             result_text = "ПОБЕДА" if success else "ПОРАЖЕНИЕ"
-            ball_speed = self.training_parameters.get('ball_speed', 0)
-            
+            ball_speed = self.training_parameters.get("ball_speed", 0)
+
             # Получаем время матча из последнего матча в истории
             game_time = 0
             if self.training_parameters.get("match_history"):
                 last_match = self.training_parameters["match_history"][-1]
                 game_time = int(last_match.get("time", 0))
-            
+
             print("\n" + "=" * 60)
             print(f"{result_icon} {result_text} | Счет: {final_score}/50")
-            print(f" Игр: {self.performance_metrics['games_played']} | Побед: {self.performance_metrics['games_won']} | Винрейт: {win_rate:.1f}%")
+            print(
+                f" Игр: {self.performance_metrics['games_played']} | Побед: {self.performance_metrics['games_won']} | Винрейт: {win_rate:.1f}%"
+            )
             print(f" Время матча: {game_time}с")
             print(f" Скорость мяча: {ball_speed}")
             print("=" * 60)
-            
-            if hasattr(self._logger, 'handlers') and self._logger.handlers:
+
+            if hasattr(self._logger, "handlers") and self._logger.handlers:
                 for handler in self._logger.handlers:
                     if isinstance(handler, logging.FileHandler):
                         log_file = handler.baseFilename

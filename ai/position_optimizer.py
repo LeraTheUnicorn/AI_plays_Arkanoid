@@ -16,7 +16,9 @@ class PositionOptimizer:
         self.screen_height = screen_height
         self.paddle_safety_margin = 20  # Безопасный отступ от краев экрана
 
-    def find_optimal_position(self, game_state: GameState, trajectory_predictor: Any) -> int:
+    def find_optimal_position(
+        self, game_state: GameState, trajectory_predictor: Any
+    ) -> int:
         """
         Находит оптимальную позицию платформы
 

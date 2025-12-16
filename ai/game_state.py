@@ -53,7 +53,12 @@ class GameState:
 
     @classmethod
     def create_from_game_objects(
-        cls, ball: Any, paddle: Any, bricks: List[pygame.Rect], score: int, start_time: int
+        cls,
+        ball: Any,
+        paddle: Any,
+        bricks: List[pygame.Rect],
+        score: int,
+        start_time: int,
     ) -> "GameState":
         """Создает состояние игры на основе объектов pygame"""
         ball_point = Point(ball.rect.centerx, ball.rect.centery)

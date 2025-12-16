@@ -67,7 +67,9 @@ class TargetSelector:
 
         # На поздних этапах используем стратегию максимизации разрушений
         if bricks_count <= 15:
-            return self.find_optimal_angle_for_max_destruction(game_state, paddle_y, ball_x)
+            return self.find_optimal_angle_for_max_destruction(
+                game_state, paddle_y, ball_x
+            )
 
         visible_targets = self.targeting_system.visible_targets
 
@@ -131,14 +133,22 @@ class TargetSelector:
                 # Сохраняем позицию выбранной цели
                 selected_brick_x = (
                     getattr(best_visible_brick, "x", 0)
-                    + getattr(best_visible_brick, "width", self.config.brick.default_width) / 2
+                    + getattr(
+                        best_visible_brick, "width", self.config.brick.default_width
+                    )
+                    / 2
                 )
                 if not self.targeting_system.recent_target_positions:
                     self.targeting_system.recent_target_positions = []
                 self.targeting_system.recent_target_positions.append(selected_brick_x)
-                if len(self.targeting_system.recent_target_positions) > self.config.recent_targets_max:
+                if (
+                    len(self.targeting_system.recent_target_positions)
+                    > self.config.recent_targets_max
+                ):
                     self.targeting_system.recent_target_positions = (
-                        self.targeting_system.recent_target_positions[-self.config.recent_targets_max:]
+                        self.targeting_system.recent_target_positions[
+                            -self.config.recent_targets_max :
+                        ]
                     )
                 return best_visible_brick
 
@@ -148,7 +158,9 @@ class TargetSelector:
 
         # Если кубиков мало — отдельная логика
         if len(bricks) <= 5:
-            return self.find_best_target_for_few_bricks(bricks, paddle_y, ball_x, game_state)
+            return self.find_best_target_for_few_bricks(
+                bricks, paddle_y, ball_x, game_state
+            )
 
         # Проверяем, отбивается ли мяч от потолка
         is_ceiling_bounce = ball_y < 100 and game_state.ball_velocity.y > 0
@@ -215,9 +227,14 @@ class TargetSelector:
             if not self.targeting_system.recent_target_positions:
                 self.targeting_system.recent_target_positions = []
             self.targeting_system.recent_target_positions.append(selected_brick_x)
-            if len(self.targeting_system.recent_target_positions) > self.config.recent_targets_max:
+            if (
+                len(self.targeting_system.recent_target_positions)
+                > self.config.recent_targets_max
+            ):
                 self.targeting_system.recent_target_positions = (
-                    self.targeting_system.recent_target_positions[-self.config.recent_targets_max:]
+                    self.targeting_system.recent_target_positions[
+                        -self.config.recent_targets_max :
+                    ]
                 )
 
         return best_brick
@@ -467,8 +484,13 @@ class TargetSelector:
                 brick_x = getattr(brick, "x", 0) + getattr(brick, "width", 60) / 2
                 brick_y = getattr(brick, "y", 0)
 
-                if abs(brick_x - ball_x) < 150 and brick_y <= getattr(bottom_brick, "y", 0) + 30:
-                    if (vel_x > 0 and brick_x > ball_x) or (vel_x < 0 and brick_x < ball_x):
+                if (
+                    abs(brick_x - ball_x) < 150
+                    and brick_y <= getattr(bottom_brick, "y", 0) + 30
+                ):
+                    if (vel_x > 0 and brick_x > ball_x) or (
+                        vel_x < 0 and brick_x < ball_x
+                    ):
                         return brick
 
             return bottom_brick
@@ -534,7 +556,9 @@ class TargetSelector:
 
         # Учитываем отскоки от стен
         ball_radius = self.config.ball.radius
-        while predicted_x < ball_radius or predicted_x > self.screen_width - ball_radius:
+        while (
+            predicted_x < ball_radius or predicted_x > self.screen_width - ball_radius
+        ):
             if predicted_x < ball_radius:
                 predicted_x = 2 * ball_radius - predicted_x
                 vel_x = abs(vel_x)

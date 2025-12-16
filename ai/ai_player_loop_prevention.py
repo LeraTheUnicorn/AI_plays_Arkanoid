@@ -72,7 +72,7 @@ class AIPlayerLoopPreventionMixin:
             # 2 из 3 почти вертикальные — считаем зацикливанием (раньше было 4 из 5)
             if vertical_count >= 2:
                 return True
-        
+
         # ✅ ИСПРАВЛЕНО: Добавлена проверка счетчика отскоков от потолка
         # Если было 2+ отскока от потолка без попадания в кубики - это зацикливание
         ceiling_bounces = self.empty_bounce_tracker.get("ceiling_bounces", 0) or 0
@@ -80,7 +80,7 @@ class AIPlayerLoopPreventionMixin:
             return True
 
         return False
-    
+
     def _change_strategy_if_looping(self) -> None:
         """Меняет стратегию при обнаружении зацикливания."""
         if not self._detect_loop_pattern():
@@ -101,7 +101,7 @@ class AIPlayerLoopPreventionMixin:
 
         # ✅ ИСПРАВЛЕНО: Добавлено логирование при срабатывании защиты от зацикливания
         ceiling_bounces = self.empty_bounce_tracker.get("ceiling_bounces", 0) or 0
-        if hasattr(self, '_logger'):
+        if hasattr(self, "_logger"):
             self._logger.warning(
                 f"[LOOP PREVENTION] Обнаружено зацикливание! Меняем стратегию на: {new_strategy}, "
                 f"ceiling_bounces={ceiling_bounces}"
@@ -109,11 +109,11 @@ class AIPlayerLoopPreventionMixin:
 
         # Кулдаун и сброс истории
         self.loop_prevention_system["strategy_change_cooldown"] = 10
-        
+
         self.loop_prevention_system["movement_history"] = []
         self.loop_prevention_system["position_history"] = []
         self.loop_prevention_system["trajectory_history"] = []
-        
+
         # ✅ ИСПРАВЛЕНО: Сбрасываем счетчик отскоков от потолка при смене стратегии
         self.empty_bounce_tracker["ceiling_bounces"] = 0
         self.empty_bounce_tracker["consecutive_empty_bounces"] = 0
@@ -195,6 +195,7 @@ class AIPlayerLoopPreventionMixin:
         # История траекторий
         if self.current_game_state:
             import time
+
             trajectory_info = {
                 "ball_x": self.current_game_state.ball_position.x,
                 "ball_y": self.current_game_state.ball_position.y,
@@ -232,6 +233,7 @@ class AIPlayerLoopPreventionMixin:
         # Отслеживание смен направления движения
         if len(self.smoothness_system["recent_movements"]) >= 2:
             import time
+
             prev_movement = self.smoothness_system["recent_movements"][-2]
             if prev_movement != 0 and movement != 0 and prev_movement != movement:
                 # Произошла смена направления
@@ -247,7 +249,7 @@ class AIPlayerLoopPreventionMixin:
     def _detect_jitter(self) -> bool:
         """
         Обнаруживает дрожание платформы (частые смены направления движения).
-        
+
         Returns:
             True, если обнаружено дрожание.
         """
@@ -293,26 +295,31 @@ class AIPlayerLoopPreventionMixin:
     ) -> int:
         """
         Вычисляет плавное движение с учетом штрафов за дрожание.
-        
+
         Args:
             current_x: Текущая позиция платформы.
             optimal_x: Оптимальная позиция платформы.
             distance: Расстояние до оптимальной позиции.
-            
+
         Returns:
             Направление движения (-1, 0, 1).
         """
         # КРИТИЧНО: Проверяем, находится ли мяч в зоне разделения с установленной позицией
-        ball_y = self.current_game_state.ball_position.y if self.current_game_state else 0
+        ball_y = (
+            self.current_game_state.ball_position.y if self.current_game_state else 0
+        )
         ball_vel_y = (
             self.current_game_state.ball_velocity.y
-            if self.current_game_state and hasattr(self.current_game_state, "ball_velocity")
+            if self.current_game_state
+            and hasattr(self.current_game_state, "ball_velocity")
             else 0
         )
         separation_zone_start = self.separation_zone_tracker.separation_zone_start
         paddle_zone_start = self.separation_zone_tracker.paddle_zone_start
-        in_separation_zone = separation_zone_start <= ball_y < paddle_zone_start and ball_vel_y > 0
-        
+        in_separation_zone = (
+            separation_zone_start <= ball_y < paddle_zone_start and ball_vel_y > 0
+        )
+
         # КРИТИЧНО: Если целевая позиция установлена, используем уменьшенный допуск для точности
         # Когда мяч движется точно вниз по известной траектории, платформа должна точно позиционироваться
         if self.separation_zone_tracker.target_position_set:
@@ -325,11 +332,13 @@ class AIPlayerLoopPreventionMixin:
             effective_min_distance = self.smoothness_system["min_movement_distance"] * (
                 1 + penalty
             )
-        
+
         # ✅ ИСПРАВЛЕНО: Добавлен приоритет движения к мячу, когда мяч близко к платформе
         # Если мяч очень близко к платформе (y > 500), игнорируем допуск и двигаемся к мячу
         ball_is_close = ball_y > 500  # Мяч близко к платформе
-        if ball_is_close and distance > 5:  # Если есть хоть какое-то расстояние, двигаемся
+        if (
+            ball_is_close and distance > 5
+        ):  # Если есть хоть какое-то расстояние, двигаемся
             # Приоритет движения к мячу - игнорируем допуск для предотвращения потери мяча
             pass  # Продолжаем движение ниже
         elif distance < effective_min_distance:

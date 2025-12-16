@@ -40,5 +40,3 @@ def process_keyboard_events(
                 break  # Выходим из игрового цикла
 
     return running, exit_game
-
-

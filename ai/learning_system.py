@@ -17,6 +17,7 @@ try:
     from sklearn.ensemble import RandomForestClassifier
     from sklearn.model_selection import train_test_split
     from sklearn.metrics import accuracy_score
+
     SKLEARN_AVAILABLE = True
 except ImportError:
     SKLEARN_AVAILABLE = False
@@ -69,14 +70,15 @@ class LearningSystem:
 
     def __init__(self, model_path: Optional[str] = None):
         from .logging_config import get_logger
+
         self.logger = get_logger(__name__)
-        
+
         # Определяем путь к модели
         if model_path is None:
             ai_dir = get_ai_directory()
             models_dir = os.path.join(ai_dir, "models")
             model_path = os.path.join(models_dir, "ai_model.json")
-        
+
         self.model_path = model_path
         self.learning_data: Dict[str, Any] = {
             "strategy_weights": {
@@ -105,9 +107,13 @@ class LearningSystem:
             os.makedirs(os.path.dirname(self.model_path), exist_ok=True)
         except (OSError, PermissionError) as e:
             # Если не удается создать каталог, используем текущую директорию
-            print(f"Предупреждение: не удалось создать каталог модели {os.path.dirname(self.model_path)}: {e}")
+            print(
+                f"Предупреждение: не удалось создать каталог модели {os.path.dirname(self.model_path)}: {e}"
+            )
             # Fallback: используем текущую директорию
-            self.model_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "models", "ai_model.json")
+            self.model_path = os.path.join(
+                os.path.dirname(os.path.abspath(__file__)), "models", "ai_model.json"
+            )
             os.makedirs(os.path.dirname(self.model_path), exist_ok=True)
 
         # Загружаем существующую модель если она есть
@@ -199,9 +205,21 @@ class LearningSystem:
             # Проверяем тип и используем правильный доступ к атрибутам
             if ball_pos and intersection:
                 # Получаем x-координаты в зависимости от типа объекта
-                intersection_x = intersection.x if hasattr(intersection, 'x') else intersection.get("x", 0) if isinstance(intersection, dict) else 0
-                ball_pos_x = ball_pos.x if hasattr(ball_pos, 'x') else ball_pos.get("x", 0) if isinstance(ball_pos, dict) else 0
-                
+                intersection_x = (
+                    intersection.x
+                    if hasattr(intersection, "x")
+                    else (
+                        intersection.get("x", 0)
+                        if isinstance(intersection, dict)
+                        else 0
+                    )
+                )
+                ball_pos_x = (
+                    ball_pos.x
+                    if hasattr(ball_pos, "x")
+                    else ball_pos.get("x", 0) if isinstance(ball_pos, dict) else 0
+                )
+
                 if abs(intersection_x - ball_pos_x) < 10:
                     penalty_factor *= 2.0
 
@@ -253,7 +271,9 @@ class LearningSystem:
 
         pref["success_rate"] = pref["success_count"] / pref["total_count"]
 
-    def _analyze_trajectory_pattern(self, trajectory_data: Optional[Dict[str, Any]], success: bool) -> None:
+    def _analyze_trajectory_pattern(
+        self, trajectory_data: Optional[Dict[str, Any]], success: bool
+    ) -> None:
         """Анализирует паттерны траекторий"""
         if trajectory_data is None:
             return
@@ -391,7 +411,7 @@ class LearningSystem:
         # с predict_success_probability, который использует ball_speed
         if "ball_speed" not in factors:
             return
-            
+
         factor_data = factors["ball_speed"]
         if factor_data["total_cases"] < 10:
             return
@@ -404,7 +424,7 @@ class LearningSystem:
         # Создаем признаки: только ball_speed
         X_list: List[List[float]] = []
         y_list: List[int] = []
-        
+
         for val in values:
             # Бинарный таргет: успех если фактор привел к успеху
             target = 1 if np.random.random() < success_rate else 0
@@ -419,7 +439,9 @@ class LearningSystem:
 
         # Разделяем на train/test
         if not SKLEARN_AVAILABLE:
-            self.logger.warning("sklearn недоступен, пропускаем обучение модели предсказания успеха")
+            self.logger.warning(
+                "sklearn недоступен, пропускаем обучение модели предсказания успеха"
+            )
             return
 
         X_train, X_test, y_train, y_test = train_test_split(
@@ -440,7 +462,7 @@ class LearningSystem:
         # Сохраняем метрики модели для оценки
         if "model_metrics" not in self.learning_data:
             self.learning_data["model_metrics"] = {}
-        
+
         self.learning_data["model_metrics"]["last_accuracy"] = float(accuracy)
         self.learning_data["model_metrics"]["training_samples"] = len(X_train)
         self.learning_data["model_metrics"]["test_samples"] = len(X_test)
@@ -474,7 +496,9 @@ class LearningSystem:
             n_clusters = len(vectors)
 
         if not SKLEARN_AVAILABLE:
-            self.logger.warning("sklearn недоступен, пропускаем кластеризацию траекторий")
+            self.logger.warning(
+                "sklearn недоступен, пропускаем кластеризацию траекторий"
+            )
             return []
 
         try:
@@ -531,7 +555,7 @@ class LearningSystem:
     def set_user_prompt_destruction_control(self, prompt: str) -> None:
         """
         Устанавливает пользовательский промпт "разрушение и контроль" для настройки правил работы алгоритма.
-        
+
         """
         # Если промпт не указан, используем промпт по умолчанию с рекомендациями
         if not prompt or not prompt.strip():
@@ -556,66 +580,85 @@ class LearningSystem:
     def get_user_prompt_destruction_control(self) -> str:
         """
         Возвращает текущий пользовательский промпт "разрушение и контроль".
-        
+
         Returns:
             Текстовый промпт с правилами для алгоритма.
         """
         prompt = self.learning_data.get("user_prompt_destruction_control", "")
         return str(prompt) if prompt else ""
 
-    def apply_user_prompt_rules(self, current_situation: Dict[str, Any]) -> Dict[str, Any]:
+    def apply_user_prompt_rules(
+        self, current_situation: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """
         Применяет правила из пользовательского промпта "разрушение и контроль" к текущей ситуации.
-        
+
         Args:
             current_situation: Текущая ситуация в игре
-            
+
         Returns:
             Словарь с примененными правилами (например, {"precision_priority": True, "speed_limit": 2.0})
         """
         prompt = self.get_user_prompt_destruction_control()
         if not prompt:
             return {}
-        
+
         applied_rules: Dict[str, Any] = {}
-        
+
         # Анализируем промпт и извлекаем правила
         prompt_lower = prompt.lower()
-        
+
         # Правило 1: Приоритет точности при малом количестве блоков
-        if "осталось" in prompt_lower or "осталось менее" in prompt_lower or "мало блоков" in prompt_lower:
+        if (
+            "осталось" in prompt_lower
+            or "осталось менее" in prompt_lower
+            or "мало блоков" in prompt_lower
+        ):
             bricks_remaining = current_situation.get("bricks_remaining", 25)
             if bricks_remaining <= 10:
                 applied_rules["precision_priority"] = True
-                applied_rules["aggressive_penalty"] = float(0.7)  # Снижаем агрессивность
-        
+                applied_rules["aggressive_penalty"] = float(
+                    0.7
+                )  # Снижаем агрессивность
+
         # Правило 2: Ограничение скорости платформы
         if "скорость платформы" in prompt_lower or "не избыточной" in prompt_lower:
             applied_rules["speed_limit"] = float(2.5)  # Ограничиваем скорость платформы
-        
+
         # Правило 3: Точное прицеливание
-        if "точное прицеливание" in prompt_lower or "точность попадания" in prompt_lower:
-            applied_rules["precision_boost"] = float(1.3)  # Увеличиваем приоритет точности
-        
+        if (
+            "точное прицеливание" in prompt_lower
+            or "точность попадания" in prompt_lower
+        ):
+            applied_rules["precision_boost"] = float(
+                1.3
+            )  # Увеличиваем приоритет точности
+
         # Правило 4: Приоритет разрушения всех блоков
-        if "разрушение" in prompt_lower or "все блоки" in prompt_lower or "50 блоков" in prompt_lower:
+        if (
+            "разрушение" in prompt_lower
+            or "все блоки" in prompt_lower
+            or "50 блоков" in prompt_lower
+        ):
             applied_rules["destruction_priority"] = True
             applied_rules["completion_goal"] = int(50)  # Цель - все 50 блоков
-        
+
         # Правило 5: Использование координат блоков для точного прицеливания
         if "координаты" in prompt_lower or "координат" in prompt_lower:
             applied_rules["use_brick_coordinates"] = True
             applied_rules["force_precise_targeting"] = True
-        
+
         # Правило 6: Исключение многократных отбитий в пустоту
-        if ("отбитие" in prompt_lower and "пустот" in prompt_lower) or "более 2" in prompt_lower:
+        if (
+            "отбитие" in prompt_lower and "пустот" in prompt_lower
+        ) or "более 2" in prompt_lower:
             applied_rules["max_empty_bounces"] = int(2)
             applied_rules["prevent_empty_bounces"] = True
-        
+
         # Правило 7: Использование лога передвижения
         if "лог" in prompt_lower and "передвижен" in prompt_lower:
             applied_rules["use_movement_log"] = True
-        
+
         return applied_rules
 
     def get_strategy_recommendation(
@@ -649,7 +692,9 @@ class LearningSystem:
 
         total_weight = sum(base_weights.values())
         if total_weight > 0:
-            normalized_weights: Dict[str, float] = {k: float(v / total_weight) for k, v in base_weights.items()}
+            normalized_weights: Dict[str, float] = {
+                k: float(v / total_weight) for k, v in base_weights.items()
+            }
             return normalized_weights
 
         return {k: float(v) for k, v in base_weights.items()}
@@ -667,9 +712,9 @@ class LearningSystem:
         position_segment = int(paddle_x / 80)
 
         if position_segment in self.learning_data["position_preferences"]:
-            success_rate = self.learning_data["position_preferences"][position_segment].get(
-                "success_rate", 0.5
-            )
+            success_rate = self.learning_data["position_preferences"][
+                position_segment
+            ].get("success_rate", 0.5)
             return float(success_rate)
 
         return float(0.5)
@@ -689,21 +734,25 @@ class LearningSystem:
             # Проверяем количество признаков, которые ожидает модель
             try:
                 # Получаем количество признаков из метрик или проверяем модель
-                features_count = self.learning_data.get("model_metrics", {}).get("features_count", 1)
-                
+                features_count = self.learning_data.get("model_metrics", {}).get(
+                    "features_count", 1
+                )
+
                 # Используем только ball_speed, так как модель обучена на одном признаке
                 # (каждый фактор обучается отдельно в _train_success_prediction_model)
                 ball_speed = action_plan.get("ball_speed", 5)
-                
+
                 # Используем ball_speed как основной признак для предсказания
                 features = np.array([[ball_speed]])
-                
+
                 # Проверяем, что количество признаков совпадает
-                if hasattr(model, 'n_features_in_'):
+                if hasattr(model, "n_features_in_"):
                     if model.n_features_in_ != features.shape[1]:
                         # Если не совпадает, используем fallback
-                        raise ValueError(f"Feature count mismatch: model expects {model.n_features_in_}, got {features.shape[1]}")
-                
+                        raise ValueError(
+                            f"Feature count mismatch: model expects {model.n_features_in_}, got {features.shape[1]}"
+                        )
+
                 proba = model.predict_proba(features)[0][1]  # Вероятность успеха
                 return float(proba)
             except Exception:
@@ -906,7 +955,7 @@ class LearningSystem:
             "cluster_diversity": cluster_diversity,
             "prediction_model_trained": model_trained,
         }
-        
+
         if model_accuracy is not None:
             result["prediction_model_accuracy"] = model_accuracy
             result["model_training_samples"] = model_metrics.get("training_samples", 0)

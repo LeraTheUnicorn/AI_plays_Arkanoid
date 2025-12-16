@@ -46,7 +46,10 @@ if logger.level == logging.NOTSET:
             # Fallback: добавляем путь к ai модулю динамически
             import sys
             import os
-            ai_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'ai')
+
+            ai_path = os.path.join(
+                os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "ai"
+            )
             if ai_path not in sys.path:
                 sys.path.insert(0, ai_path)
             from logging_config import get_log_level  # type: ignore[import-untyped]
@@ -60,50 +63,56 @@ if logger.level == logging.NOTSET:
 # Константы
 # ============================================================================
 
+
 class SettingsConstants:
     """
     Константы для настроек игры Арканоид
-    
+
     Содержит все константы, связанные с игровой механикой и настройками.
     Используется для централизованного управления параметрами игры.
     """
-    
+
     # Скорость мяча - используем централизованные константы из game_config
     from .game_config import BALL_SPEED_DEFAULT, BALL_SPEED_MIN, BALL_SPEED_MAX
+
     DEFAULT_BALL_SPEED: int = BALL_SPEED_DEFAULT
     MIN_BALL_SPEED: int = BALL_SPEED_MIN
     MAX_BALL_SPEED: int = BALL_SPEED_MAX
-    
+
     # Ограничения производительности
-    FRAME_TIME_MS: float = 16.67      # Время на кадр при 60 FPS
+    FRAME_TIME_MS: float = 16.67  # Время на кадр при 60 FPS
     TRAJECTORY_CALC_TIME_MS: float = 5.0  # Время расчета траектории
-    SAFETY_MARGIN_MS: float = 5.0      # Запас для стабильности
-    
+    SAFETY_MARGIN_MS: float = 5.0  # Запас для стабильности
+
     # Файл настроек
-    MAX_SETTINGS_FILE_SIZE: int = 1024 * 1024  # 1 MB - максимальный размер файла настроек
-    SETTINGS_VERSION: int = 1                   # Текущая версия формата настроек
-    
+    MAX_SETTINGS_FILE_SIZE: int = (
+        1024 * 1024
+    )  # 1 MB - максимальный размер файла настроек
+    SETTINGS_VERSION: int = 1  # Текущая версия формата настроек
+
     # Настройки AI логов
-    DEFAULT_DELETE_AI_LOGS_ON_START: bool = True  # Удалять ли логи AI при старте по умолчанию
-    
+    DEFAULT_DELETE_AI_LOGS_ON_START: bool = (
+        True  # Удалять ли логи AI при старте по умолчанию
+    )
+
     @classmethod
     def get_max_ball_speed(cls) -> int:
         """
         Возвращает максимальную скорость мяча
-        
+
         Returns:
             Максимально допустимая скорость мяча
         """
         return cls.MAX_BALL_SPEED
-    
+
     @classmethod
     def validate_ball_speed_range(cls, speed: int) -> bool:
         """
         Проверяет, что скорость мяча находится в допустимом диапазоне
-        
+
         Args:
             speed: Скорость мяча для проверки
-        
+
         Returns:
             True если скорость допустима, False в противном случае
         """
@@ -114,28 +123,31 @@ class SettingsConstants:
 # Валидатор настроек
 # ============================================================================
 
+
 class SettingsValidator:
     """Валидатор настроек игры"""
-    
+
     @staticmethod
     def validate_ball_speed(speed: Any) -> int:
         """
         Валидирует скорость мяча.
-        
+
         Args:
             speed: Значение скорости (любой тип)
-        
+
         Returns:
             Валидная скорость мяча
         """
         if not isinstance(speed, (int, float)):
-            logger.warning(f"Некорректный тип скорости: {type(speed)}, используется значение по умолчанию")
+            logger.warning(
+                f"Некорректный тип скорости: {type(speed)}, используется значение по умолчанию"
+            )
             return SettingsConstants.DEFAULT_BALL_SPEED
-        
+
         max_speed = SettingsConstants.MAX_BALL_SPEED
-        
+
         speed_int = int(speed)
-        
+
         if not (SettingsConstants.MIN_BALL_SPEED <= speed_int <= max_speed):
             logger.warning(
                 f"Скорость {speed_int} вне допустимого диапазона "
@@ -143,17 +155,17 @@ class SettingsValidator:
                 f"используется значение по умолчанию"
             )
             return SettingsConstants.DEFAULT_BALL_SPEED
-        
+
         return speed_int
-    
+
     @staticmethod
     def validate_settings(settings: Dict[str, Any]) -> Dict[str, Any]:
         """
         Валидирует все настройки.
-        
+
         Args:
             settings: Словарь с настройками
-        
+
         Returns:
             Валидированный словарь настроек
         """
@@ -162,10 +174,12 @@ class SettingsValidator:
             "ball_speed": SettingsValidator.validate_ball_speed(
                 settings.get("ball_speed", SettingsConstants.DEFAULT_BALL_SPEED)
             ),
-            "delete_ai_logs_on_start": bool(settings.get(
-                "delete_ai_logs_on_start",
-                SettingsConstants.DEFAULT_DELETE_AI_LOGS_ON_START
-            ))
+            "delete_ai_logs_on_start": bool(
+                settings.get(
+                    "delete_ai_logs_on_start",
+                    SettingsConstants.DEFAULT_DELETE_AI_LOGS_ON_START,
+                )
+            ),
         }
 
         return validated
@@ -175,25 +189,26 @@ class SettingsValidator:
 # Интерфейс для работы с файловой системой (для тестирования)
 # ============================================================================
 
+
 class FileSystemInterface(Protocol):
     """Протокол для работы с файловой системой (для тестирования и mock-объектов)"""
-    
+
     def read_json(self, path: Path) -> Dict[str, Any]:
         """Читает JSON из файла"""
         ...
-    
+
     def write_json(self, path: Path, data: Dict[str, Any]) -> None:
         """Записывает JSON в файл"""
         ...
-    
+
     def exists(self, path: Path) -> bool:
         """Проверяет существование файла/директории"""
         ...
-    
+
     def get_size(self, path: Path) -> int:
         """Возвращает размер файла"""
         ...
-    
+
     def mkdir(self, path: Path, parents: bool = True, exist_ok: bool = True) -> None:
         """Создает директорию"""
         ...
@@ -201,25 +216,25 @@ class FileSystemInterface(Protocol):
 
 class RealFileSystem:
     """Реальная реализация файловой системы"""
-    
+
     def read_json(self, path: Path) -> Dict[str, Any]:
         """Читает JSON из файла"""
         with open(path, "r", encoding="utf-8") as f:
             return json.load(f)
-    
+
     def write_json(self, path: Path, data: Dict[str, Any]) -> None:
         """Записывает JSON в файл"""
         with open(path, "w", encoding="utf-8") as f:
             json.dump(data, f, ensure_ascii=False, indent=2)
-    
+
     def exists(self, path: Path) -> bool:
         """Проверяет существование файла/директории"""
         return path.exists()
-    
+
     def get_size(self, path: Path) -> int:
         """Возвращает размер файла"""
         return path.stat().st_size
-    
+
     def mkdir(self, path: Path, parents: bool = True, exist_ok: bool = True) -> None:
         """Создает директорию"""
         path.mkdir(parents=parents, exist_ok=exist_ok)
@@ -229,34 +244,35 @@ class RealFileSystem:
 # Утилиты для работы с путями
 # ============================================================================
 
+
 def safe_join_path(base: str, *paths: str) -> str:
     """
     Безопасно объединяет пути с проверкой на выход за пределы базовой директории.
     Защита от атак типа "path traversal".
-    
+
     Args:
         base: Базовая директория
         *paths: Дополнительные компоненты пути
-    
+
     Returns:
         Безопасный объединенный путь
-    
+
     Raises:
         ValueError: Если путь выходит за пределы базовой директории
     """
     # Нормализуем базовый путь
     base_path = os.path.normpath(base)
-    
+
     # Объединяем пути
     full_path = os.path.normpath(os.path.join(base, *paths))
-    
+
     # Проверяем, что итоговый путь находится внутри базовой директории
     # Для Windows нужно учитывать разные форматы путей
-    if os.name == 'nt':
+    if os.name == "nt":
         # Нормализуем для Windows (приводим к единому формату)
-        base_path_win = os.path.normpath(base_path).replace('/', '\\')
-        full_path_win = os.path.normpath(full_path).replace('/', '\\')
-        
+        base_path_win = os.path.normpath(base_path).replace("/", "\\")
+        full_path_win = os.path.normpath(full_path).replace("/", "\\")
+
         # Проверяем, что путь начинается с базового пути
         if not full_path_win.startswith(base_path_win):
             raise ValueError(
@@ -270,7 +286,7 @@ def safe_join_path(base: str, *paths: str) -> str:
                 f"Путь выходит за пределы базовой директории: {full_path} "
                 f"(базовая: {base_path})"
             )
-    
+
     return full_path
 
 
@@ -283,7 +299,7 @@ def get_game_directory() -> str:
     Определяет каталог игры.
     При запуске из студии разработки использует src/resources,
     иначе использует директорию exe файла.
-    
+
     Returns:
         Путь к каталогу игры (где находятся resources)
     """
@@ -295,7 +311,7 @@ def get_game_directory() -> str:
         src_dir = os.path.dirname(current_dir)  # src/
         resources_dir = os.path.join(src_dir, "resources")  # src/resources/
         return resources_dir
-    
+
     # Для exe файлов используем директорию exe файла (там находятся ресурсы после сборки)
     return os.path.dirname(sys.executable)
 
@@ -305,23 +321,23 @@ def get_settings_file_path() -> str:
     Возвращает полный путь к файлу настроек.
     Создает необходимые директории если их нет.
     Использует кэширование для оптимизации.
-    
+
     Returns:
         Путь к файлу настроек
-    
+
     Raises:
         OSError: При ошибках создания директорий
         ValueError: При обнаружении небезопасного пути
     """
     global _settings_file_path_cache
-    
+
     # Используем кэш если доступен
     if _settings_file_path_cache is not None:
         return _settings_file_path_cache
-    
+
     try:
         game_dir = get_game_directory()
-        
+
         # В exe файле ресурсы уже встроены, не создаем каталог resources
         # Сохраняем файл настроек напрямую в директории exe файла
         if getattr(sys, "frozen", False):
@@ -331,7 +347,7 @@ def get_settings_file_path() -> str:
             # В режиме разработки game_dir уже содержит путь к resources/
             # Используем его напрямую, не добавляя еще один resources/
             resources_dir = game_dir
-            
+
             # Создаем каталог, если он не существует
             if not os.path.exists(resources_dir):
                 try:
@@ -339,7 +355,9 @@ def get_settings_file_path() -> str:
                 except (OSError, PermissionError) as e:
                     logger.warning(f"Не удалось создать каталог {resources_dir}: {e}")
                     # Если не удается создать каталог, используем fallback - src/resources
-                    current_dir = os.path.dirname(os.path.abspath(__file__))  # src/game/
+                    current_dir = os.path.dirname(
+                        os.path.abspath(__file__)
+                    )  # src/game/
                     src_dir = os.path.dirname(current_dir)  # src/
                     fallback_dir = os.path.join(src_dir, "resources")  # src/resources/
                     resources_dir = safe_join_path(fallback_dir, "")
@@ -347,16 +365,18 @@ def get_settings_file_path() -> str:
                         try:
                             os.makedirs(resources_dir, exist_ok=True)
                         except (OSError, PermissionError) as e2:
-                            logger.error(f"Не удалось создать резервный каталог {resources_dir}: {e2}")
+                            logger.error(
+                                f"Не удалось создать резервный каталог {resources_dir}: {e2}"
+                            )
                             raise
-            
+
             settings_path = os.path.join(resources_dir, "settings.json")
-        
+
         # Кэшируем путь
         _settings_file_path_cache = settings_path
-        
+
         return settings_path
-        
+
     except ValueError as e:
         logger.error(f"Обнаружен небезопасный путь: {e}")
         raise
@@ -366,10 +386,11 @@ def get_settings_file_path() -> str:
 # Менеджер настроек
 # ============================================================================
 
+
 class SettingsManager:
     """
     Менеджер настроек игры с валидацией и версионированием.
-    
+
     Поддерживает:
     - Валидацию загружаемых данных
     - Версионирование настроек
@@ -378,37 +399,39 @@ class SettingsManager:
     - Ленивую загрузку настроек
     - Безопасную работу с путями
     """
-    
+
     def __init__(
-        self, 
+        self,
         settings_file: Optional[str] = None,
         lazy_load: bool = False,
-        fs: Optional[FileSystemInterface] = None
+        fs: Optional[FileSystemInterface] = None,
     ) -> None:
         """
         Инициализация менеджера настроек.
-        
+
         Args:
             settings_file: Путь к файлу настроек (опционально, для тестирования)
                           Если не указан, используется путь по умолчанию
             lazy_load: Если True, настройки загружаются при первом обращении
             fs: Интерфейс файловой системы (для тестирования)
         """
-        self._settings_file = Path(settings_file) if settings_file else Path(get_settings_file_path())
+        self._settings_file = (
+            Path(settings_file) if settings_file else Path(get_settings_file_path())
+        )
         self._validator = SettingsValidator()
         self._fs = fs if fs is not None else RealFileSystem()
-        
+
         # Настройки по умолчанию
         self._settings: Dict[str, Any] = {
             "version": SettingsConstants.SETTINGS_VERSION,
             "ball_speed": SettingsConstants.DEFAULT_BALL_SPEED,
-            "delete_ai_logs_on_start": SettingsConstants.DEFAULT_DELETE_AI_LOGS_ON_START
+            "delete_ai_logs_on_start": SettingsConstants.DEFAULT_DELETE_AI_LOGS_ON_START,
         }
-        
+
         # Флаги состояния
         self._loaded = not lazy_load  # Загружены ли настройки
         self._dirty = False  # Были ли изменения
-        
+
         # Загружаем настройки если не ленивая загрузка
         if not lazy_load:
             self.load_settings()
@@ -417,12 +440,12 @@ class SettingsManager:
             # Создаем файл только если его нет
             if not self._fs.exists(self._settings_file):
                 self.save_settings()
-    
+
     @property
     def settings(self) -> Dict[str, Any]:
         """
         Свойство для доступа к настройкам с ленивой загрузкой.
-        
+
         Returns:
             Словарь с настройками
         """
@@ -431,17 +454,17 @@ class SettingsManager:
             self._migrate_settings()
             self._loaded = True
         return self._settings
-    
+
     def load_settings(self) -> None:
         """
         Загружает настройки из файла с валидацией.
-        
+
         При ошибках использует настройки по умолчанию.
         """
         if not self._fs.exists(self._settings_file):
             logger.debug(f"Файл настроек не существует: {self._settings_file}")
             return
-        
+
         try:
             # Проверка размера файла (защита от больших файлов)
             file_size = self._fs.get_size(self._settings_file)
@@ -454,17 +477,17 @@ class SettingsManager:
                     f"Файл настроек превышает максимальный размер "
                     f"({SettingsConstants.MAX_SETTINGS_FILE_SIZE} байт)"
                 )
-            
+
             # Загрузка JSON через интерфейс файловой системы
             loaded_settings = self._fs.read_json(self._settings_file)
-            
+
             # Валидация и обновление настроек
             validated = self._validator.validate_settings(loaded_settings)
             self._settings.update(validated)
             self._dirty = False  # После загрузки данные не изменены
-            
+
             logger.debug(f"Настройки загружены из {self._settings_file}")
-            
+
         except json.JSONDecodeError as e:
             logger.warning(
                 f"Ошибка парсинга JSON в файле настроек {self._settings_file}: {e}. "
@@ -478,17 +501,19 @@ class SettingsManager:
             )
             # Не пробрасываем, используем значения по умолчанию
         except ValueError as e:
-            logger.error(f"Ошибка валидации настроек: {e}. Используются настройки по умолчанию")
+            logger.error(
+                f"Ошибка валидации настроек: {e}. Используются настройки по умолчанию"
+            )
             # Используем значения по умолчанию
-    
+
     def save_settings(self, force: bool = False) -> None:
         """
         Сохраняет настройки в файл атомарно.
         Сохраняет только если были изменения (если не указан force).
-        
+
         Args:
             force: Принудительное сохранение даже если ничего не изменилось
-        
+
         Raises:
             OSError: При ошибках записи файла
         """
@@ -498,7 +523,7 @@ class SettingsManager:
             if not self._dirty:
                 logger.debug("Настройки не изменены, пропускаем сохранение")
                 return
-            
+
             # Проверяем, изменились ли настройки по сравнению с файлом
             if self._fs.exists(self._settings_file):
                 try:
@@ -509,82 +534,83 @@ class SettingsManager:
                         return
                 except (OSError, json.JSONDecodeError):
                     pass  # Если не удалось прочитать, сохраняем
-        
+
         try:
             # Создаем директорию если нужно
             self._fs.mkdir(self._settings_file.parent, parents=True, exist_ok=True)
-            
+
             # Атомарное сохранение через временный файл
-            temp_file = self._settings_file.with_suffix('.tmp')
-            
+            temp_file = self._settings_file.with_suffix(".tmp")
+
             # Сохраняем во временный файл через интерфейс
             self._fs.write_json(temp_file, self._settings)
-            
+
             # Атомарная замена (если поддерживается файловой системой)
             try:
                 temp_file.replace(self._settings_file)
             except AttributeError:
                 # Fallback для старых версий pathlib
                 import shutil
+
                 shutil.move(str(temp_file), str(self._settings_file))
-            
+
             self._dirty = False  # Данные сохранены
             logger.debug(f"Настройки сохранены в {self._settings_file}")
-            
+
         except OSError as e:
             logger.error(f"Ошибка сохранения настроек в {self._settings_file}: {e}")
             # Удаляем временный файл если он остался
-            temp_file = self._settings_file.with_suffix('.tmp')
+            temp_file = self._settings_file.with_suffix(".tmp")
             if self._fs.exists(temp_file):
                 try:
                     temp_file.unlink()
                 except OSError:
                     pass
             raise
-    
+
     def _migrate_settings(self) -> None:
         """
         Мигрирует настройки со старых версий на текущую.
-        
+
         Вызывается автоматически при загрузке настроек.
         """
         current_version = self._settings.get("version", 0)
-        
+
         if current_version < SettingsConstants.SETTINGS_VERSION:
             logger.info(
                 f"Миграция настроек с версии {current_version} "
                 f"на {SettingsConstants.SETTINGS_VERSION}"
             )
-            
+
             # Здесь можно добавить логику миграции для разных версий
             # Например:
             # if current_version < 2:
             #     # Миграция с версии 1 на 2
             #     # Добавляем новые поля, преобразуем старые и т.д.
             #     pass
-            
+
             # Обновляем версию
             self._settings["version"] = SettingsConstants.SETTINGS_VERSION
             self._dirty = True  # Отмечаем как измененные для сохранения
             self.save_settings(force=True)
-    
+
     def get_ball_speed(self) -> int:
         """
         Возвращает скорость мяча.
-        
+
         Returns:
             Скорость мяча (1-10 для ручного режима, 1-8 для авто)
         """
         speed = self.settings.get("ball_speed", SettingsConstants.DEFAULT_BALL_SPEED)
         return self._validator.validate_ball_speed(speed)
-    
+
     def set_ball_speed(self, speed: int) -> None:
         """
         Устанавливает скорость мяча.
-        
+
         Args:
             speed: Скорость мяча (1-10)
-        
+
         Raises:
             ValueError: Если скорость вне допустимого диапазона
         """
@@ -595,7 +621,7 @@ class SettingsManager:
                 f"Скорость мяча должна быть в диапазоне от "
                 f"{SettingsConstants.MIN_BALL_SPEED} до {max_speed}"
             )
-        
+
         self._settings["ball_speed"] = speed
         self._dirty = True  # Отмечаем как измененные
         self.save_settings()
@@ -603,19 +629,21 @@ class SettingsManager:
     def get_delete_ai_logs_on_start(self) -> bool:
         """
         Возвращает настройку удаления логов AI при старте.
-        
+
         Returns:
             True если логи должны удаляться при старте, False в противном случае
         """
-        return bool(self.settings.get(
-            "delete_ai_logs_on_start",
-            SettingsConstants.DEFAULT_DELETE_AI_LOGS_ON_START
-        ))
+        return bool(
+            self.settings.get(
+                "delete_ai_logs_on_start",
+                SettingsConstants.DEFAULT_DELETE_AI_LOGS_ON_START,
+            )
+        )
 
     def set_delete_ai_logs_on_start(self, value: bool) -> None:
         """
         Устанавливает настройку удаления логов AI при старте.
-        
+
         Args:
             value: True для удаления логов при старте, False для сохранения
         """

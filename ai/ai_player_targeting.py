@@ -16,36 +16,42 @@ class AIPlayerTargetingMixin:
     Миксин для методов работы с целями и кирпичами.
     Добавляет методы поиска целей, обновления карты кирпичей и записи результатов ударов.
     """
-    
+
     def _generate_brick_cache_key(self) -> str:
         """
         Генерирует ключ кэша для текущего состояния кирпичей.
-        
+
         Returns:
             Строковый ключ, уникальный для текущего набора кирпичей
         """
         if not self.current_game_state or not self.current_game_state.remaining_bricks:
             return ""
-        
+
         bricks = self.current_game_state.remaining_bricks
         # Сортируем кирпичи по позиции для стабильности ключа
         # Используем координаты и размеры для создания уникального ключа
         key_parts = []
-        for brick in sorted(bricks, key=lambda b: (getattr(b, "y", 0), getattr(b, "x", 0))):
+        for brick in sorted(
+            bricks, key=lambda b: (getattr(b, "y", 0), getattr(b, "x", 0))
+        ):
             brick_x = getattr(brick, "x", 0)
             brick_y = getattr(brick, "y", 0)
             brick_width = getattr(brick, "width", self.config.brick.default_width)
             brick_height = getattr(brick, "height", 20)
             # Используем целочисленные координаты для стабильности
-            key_parts.append(f"{int(brick_x)},{int(brick_y)},{int(brick_width)},{int(brick_height)}")
-        
+            key_parts.append(
+                f"{int(brick_x)},{int(brick_y)},{int(brick_width)},{int(brick_height)}"
+            )
+
         return "|".join(key_parts)
 
-    def _update_brick_map(self, changed_brick_indices: Optional[List[int]] = None) -> None:
+    def _update_brick_map(
+        self, changed_brick_indices: Optional[List[int]] = None
+    ) -> None:
         """
         Обновляет карту всех кубиков на поле и координаты их центров.
         Использует кэширование для оптимизации производительности.
-        
+
         Args:
             changed_brick_indices: Опциональный список индексов измененных блоков в списке remaining_bricks
         """
@@ -54,14 +60,14 @@ class AIPlayerTargetingMixin:
             self.targeting_system.brick_coordinates = []
             self._brick_map_cache = None
             return
-        
+
         # Если передан список измененных блоков, инвалидируем кэш только для них
         if changed_brick_indices:
             self._invalidate_trajectory_cache(changed_brick_indices)
 
         # Генерируем ключ кэша для текущего состояния кирпичей
         cache_key = self._generate_brick_cache_key()
-        
+
         # Проверяем кэш
         if self._brick_map_cache and self._brick_map_cache[0] == cache_key:
             # Кэш попадание - используем закэшированные данные
@@ -75,7 +81,7 @@ class AIPlayerTargetingMixin:
 
         # Кэш промах - строим новую карту
         self._brick_cache_stats["misses"] += 1
-        
+
         brick_map: Dict[str, Dict[str, Any]] = {}
         brick_coordinates: List[Dict[str, Any]] = []
 
@@ -111,7 +117,7 @@ class AIPlayerTargetingMixin:
 
         # Обновляем кэш
         self._brick_map_cache = (cache_key, brick_map, brick_coordinates)
-        
+
         self.targeting_system.brick_map = brick_map
         self.targeting_system.brick_coordinates = brick_coordinates
 
@@ -121,16 +127,12 @@ class AIPlayerTargetingMixin:
     def get_brick_cache_stats(self) -> Dict[str, Any]:
         """
         Возвращает статистику использования кэша карты кирпичей.
-        
+
         Returns:
             Словарь со статистикой: hits, misses, hit_rate
         """
         total = self._brick_cache_stats["hits"] + self._brick_cache_stats["misses"]
-        hit_rate = (
-            self._brick_cache_stats["hits"] / total
-            if total > 0
-            else 0.0
-        )
+        hit_rate = self._brick_cache_stats["hits"] / total if total > 0 else 0.0
         return {
             "hits": self._brick_cache_stats["hits"],
             "misses": self._brick_cache_stats["misses"],
@@ -195,24 +197,26 @@ class AIPlayerTargetingMixin:
                     brick = coord["brick"]
                     brick_x = getattr(brick, "x", 0)
                     brick_y = getattr(brick, "y", 0)
-                    brick_width = getattr(brick, "width", self.config.brick.default_width)
+                    brick_width = getattr(
+                        brick, "width", self.config.brick.default_width
+                    )
                     brick_height = getattr(brick, "height", 20)
-                    
+
                     # Точные границы кубика
                     brick_left = brick_x
                     brick_right = brick_x + brick_width
                     brick_top = brick_y
                     brick_bottom = brick_y + brick_height
-                    
+
                     # Радиус мяча для проверки пересечения
                     ball_radius = self.config.ball.radius
-                    
+
                     # Проверяем пересечение траектории с кубиком
                     # Используем более частую проверку для точности
                     for point in after_bounce_trajectory:
                         if not hasattr(point, "x") or not hasattr(point, "y"):
                             continue
-                            
+
                         # Проверяем пересечение мяча (с учетом радиуса) с границами кубика
                         if (
                             brick_left - ball_radius
@@ -239,10 +243,14 @@ class AIPlayerTargetingMixin:
 
             self.targeting_system.visible_targets = visible_targets
         except (AttributeError, TypeError, ValueError) as e:
-            self._logger.warning(f"Ошибка при обновлении видимых целей: {e}", exc_info=True)
+            self._logger.warning(
+                f"Ошибка при обновлении видимых целей: {e}", exc_info=True
+            )
             self.targeting_system.visible_targets = []
         except PredictionError as e:
-            self._logger.error(f"Ошибка предсказания при обновлении видимых целей: {e}", exc_info=True)
+            self._logger.error(
+                f"Ошибка предсказания при обновлении видимых целей: {e}", exc_info=True
+            )
             self.targeting_system.visible_targets = []
 
     def record_hit_result(
@@ -303,8 +311,15 @@ class AIPlayerTargetingMixin:
                     "timestamp": time.time(),
                 }
             )
-            if len(self.targeting_system.successful_hits) > self.config.successful_hits_max:
-                self.targeting_system.successful_hits = self.targeting_system.successful_hits[-self.config.successful_hits_keep:]
+            if (
+                len(self.targeting_system.successful_hits)
+                > self.config.successful_hits_max
+            ):
+                self.targeting_system.successful_hits = (
+                    self.targeting_system.successful_hits[
+                        -self.config.successful_hits_keep :
+                    ]
+                )
 
     def _find_best_target_brick(self) -> Optional[Any]:
         """
@@ -321,7 +336,7 @@ class AIPlayerTargetingMixin:
             return None
 
         bricks_count = len(self.current_game_state.remaining_bricks)
-        
+
         # На поздних этапах используем стратегию максимизации разрушений
         if bricks_count <= 15:
             return self._find_optimal_angle_for_max_destruction()
@@ -333,7 +348,7 @@ class AIPlayerTargetingMixin:
         if visible_targets:
             best_visible_brick = None
             best_visible_score = -float("inf")
-            
+
             # Получаем историю последних выбранных целей для проверки симметрии
             recent_targets = self.targeting_system.recent_target_positions
             screen_center = self.screen_width // 2
@@ -365,7 +380,7 @@ class AIPlayerTargetingMixin:
                         )
                         if symmetry_distance < 20:
                             score -= 300.0
-                        
+
                         if (
                             abs(brick_center_x - screen_center) < 30
                             and abs(prev_target_x - screen_center) < 30
@@ -389,14 +404,22 @@ class AIPlayerTargetingMixin:
                 # Сохраняем позицию выбранной цели
                 selected_brick_x = (
                     getattr(best_visible_brick, "x", 0)
-                    + getattr(best_visible_brick, "width", self.config.brick.default_width) / 2
+                    + getattr(
+                        best_visible_brick, "width", self.config.brick.default_width
+                    )
+                    / 2
                 )
                 if not self.targeting_system.recent_target_positions:
                     self.targeting_system.recent_target_positions = []
                 self.targeting_system.recent_target_positions.append(selected_brick_x)
-                if len(self.targeting_system.recent_target_positions) > self.config.recent_targets_max:
+                if (
+                    len(self.targeting_system.recent_target_positions)
+                    > self.config.recent_targets_max
+                ):
                     self.targeting_system.recent_target_positions = (
-                        self.targeting_system.recent_target_positions[-self.config.recent_targets_max:]
+                        self.targeting_system.recent_target_positions[
+                            -self.config.recent_targets_max :
+                        ]
                     )
                 return best_visible_brick
 
@@ -437,7 +460,7 @@ class AIPlayerTargetingMixin:
                     )
                     if symmetry_distance < 20:
                         score -= 200.0
-                    
+
                     if (
                         abs(brick_center_x - screen_center) < 30
                         and abs(prev_target_x - screen_center) < 30
@@ -473,9 +496,14 @@ class AIPlayerTargetingMixin:
             if not self.targeting_system.recent_target_positions:
                 self.targeting_system.recent_target_positions = []
             self.targeting_system.recent_target_positions.append(selected_brick_x)
-            if len(self.targeting_system.recent_target_positions) > self.config.recent_targets_max:
+            if (
+                len(self.targeting_system.recent_target_positions)
+                > self.config.recent_targets_max
+            ):
                 self.targeting_system.recent_target_positions = (
-                    self.targeting_system.recent_target_positions[-self.config.recent_targets_max:]
+                    self.targeting_system.recent_target_positions[
+                        -self.config.recent_targets_max :
+                    ]
                 )
 
         return best_brick

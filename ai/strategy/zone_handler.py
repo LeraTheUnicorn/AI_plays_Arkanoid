@@ -63,7 +63,11 @@ class ZoneHandler:
         # КРИТИЧНО: НЕ сбрасываем отслеживание зоны разделения и целевую позицию,
         # так как мяч может временно попасть в зону кубиков (при отскоке),
         # но потом вернуться в зону разделения
-        if game_state and ball_y < self.config.zones.ball_reset_height and not self.separation_zone_tracker.target_position_set:
+        if (
+            game_state
+            and ball_y < self.config.zones.ball_reset_height
+            and not self.separation_zone_tracker.target_position_set
+        ):
             self.separation_zone_tracker.ball_entered_separation_zone = False
             self.separation_zone_tracker.target_position_set = False
             self.separation_zone_tracker.target_position = None
@@ -72,11 +76,15 @@ class ZoneHandler:
         return 0
 
     def handle_separation_zone(
-        self, ball_y: float, ball_vel_y: float, zones: Dict[str, float], game_state: Optional[GameState]
+        self,
+        ball_y: float,
+        ball_vel_y: float,
+        zones: Dict[str, float],
+        game_state: Optional[GameState],
     ) -> Optional[int]:
         """
         Обрабатывает ситуацию, когда мяч находится в зоне разделения.
-        
+
         ВАЖНО: Высокий приоритет для мячей, движущихся вниз - они требуют немедленного
         расчета целевой позиции. Мячи, движущиеся вверх, требуют стратегической позиции.
 
@@ -111,7 +119,11 @@ class ZoneHandler:
                     current_vel_x = game_state.ball_velocity.x if game_state else 0
 
                     # Если скорость изменилась - сбрасываем цель (это обработается в paddle_movement.py)
-                    if saved_vel_x is not None and abs(current_vel_x - saved_vel_x) > self.config.ball.velocity_tolerance:
+                    if (
+                        saved_vel_x is not None
+                        and abs(current_vel_x - saved_vel_x)
+                        > self.config.ball.velocity_tolerance
+                    ):
                         return None  # Продолжаем расчет - цель будет сброшена в paddle_movement.py
                     # Иначе возвращаем None, чтобы paddle_movement.py обработал движение к зафиксированной позиции
                     return None
@@ -121,7 +133,7 @@ class ZoneHandler:
                 self.separation_zone_tracker.ball_entered_separation_zone = True
 
             return None  # Продолжаем расчет позиции
-        
+
         # СРЕДНИЙ ПРИОРИТЕТ: Мяч движется вверх - занимаем стратегическую позицию
         elif ball_vel_y < 0 and separation_zone_start <= ball_y < paddle_zone_start:
             # Мяч движется вверх - сбрасываем целевую позицию, если она была установлена
@@ -138,7 +150,9 @@ class ZoneHandler:
             # Продолжаем расчет, чтобы занять позицию по умолчанию
             return None
 
-    def handle_upward_movement(self, ball_y: float, game_state: Optional[GameState], current_x: int) -> int:
+    def handle_upward_movement(
+        self, ball_y: float, game_state: Optional[GameState], current_x: int
+    ) -> int:
         """
         Обрабатывает ситуацию, когда мяч движется вверх.
 
@@ -163,5 +177,5 @@ class ZoneHandler:
             if abs(distance) <= tolerance:
                 return 0
             return 1 if distance > 0 else -1
-        
+
         return 0

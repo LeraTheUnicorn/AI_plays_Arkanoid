@@ -15,10 +15,9 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 @pytest.fixture
 def mock_pygame():
     """Фикстура для мокирования pygame."""
-    with patch('pygame.init'), \
-         patch('pygame.display.set_mode'), \
-         patch('pygame.font.Font'), \
-         patch('pygame.time.Clock'):
+    with patch("pygame.init"), patch("pygame.display.set_mode"), patch(
+        "pygame.font.Font"
+    ), patch("pygame.time.Clock"):
         yield
 
 
@@ -26,7 +25,7 @@ def mock_pygame():
 def mock_game_state():
     """Фикстура для создания мокового GameState."""
     from ai.game_state import GameState, Point
-    
+
     return GameState(
         ball_position=Point(400, 300),
         ball_velocity=Point(5, -5),
@@ -68,15 +67,11 @@ def mock_paddle():
 def mock_bricks():
     """Фикстура для создания списка кирпичей."""
     import pygame
+
     bricks = []
     for i in range(5):
         for j in range(10):
-            brick = pygame.Rect(
-                j * 70 + 50,
-                i * 30 + 60,
-                60,
-                20
-            )
+            brick = pygame.Rect(j * 70 + 50, i * 30 + 60, 60, 20)
             bricks.append(brick)
     return bricks
 
@@ -84,18 +79,15 @@ def mock_bricks():
 @pytest.fixture
 def screen_dimensions():
     """Фикстура для размеров экрана."""
-    return {
-        'width': 800,
-        'height': 600
-    }
+    return {"width": 800, "height": 600}
 
 
 @pytest.fixture(autouse=True)
 def setup_logging():
     """Автоматическая настройка логирования для тестов."""
     import logging
+
     logging.basicConfig(level=logging.WARNING)  # Минимальный уровень для тестов
     yield
     # Очистка после теста
     logging.shutdown()
-

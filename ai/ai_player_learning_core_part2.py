@@ -84,10 +84,10 @@ class AIPlayerLearningCorePart2Mixin:
 
         self._save_session_metrics(success, final_score)
         self._print_ml_system_metrics(success, final_score)
-        
+
         if training_mode:
             self._print_training_parameters()
-        
+
         self._print_console_summary(success, final_score)
 
         self._reset_current_game_stats()
@@ -101,16 +101,16 @@ class AIPlayerLearningCorePart2Mixin:
         self.separation_zone_tracker.paddle_moved_after_set = False
         self.separation_zone_tracker.paddle_reached_target = False
         self.separation_zone_tracker.last_movement_frame = 0
-        
+
         self.empty_bounce_tracker["consecutive_empty_bounces"] = 0
         self.empty_bounce_tracker["ceiling_bounces"] = 0
         self.empty_bounce_tracker["last_bounce_position"] = None
         self.empty_bounce_tracker["last_bounce_time"] = 0
-        
+
         self.loop_prevention_system["movement_history"] = []
         self.loop_prevention_system["position_history"] = []
         self.loop_prevention_system["strategy_change_cooldown"] = 0
-        
+
         self.smoothness_system["recent_movements"] = []
         self.smoothness_system["movement_changes"] = []
         self.smoothness_system["smoothness_penalty"] = 0.0

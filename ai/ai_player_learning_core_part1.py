@@ -58,23 +58,41 @@ class AIPlayerLearningCorePart1Mixin:
                 self.record_hit_result(brick, paddle_offset, success=True)
 
         elif action_type == "paddle_bounce":
-            bricks_before = enhanced_result.get("game_state_before", {}).get("bricks_remaining", 0)
-            bricks_after = len(self.current_game_state.remaining_bricks) if self.current_game_state else 0
-            
+            bricks_before = enhanced_result.get("game_state_before", {}).get(
+                "bricks_remaining", 0
+            )
+            bricks_after = (
+                len(self.current_game_state.remaining_bricks)
+                if self.current_game_state
+                else 0
+            )
+
             if bricks_before == bricks_after and bricks_before > 0:
                 self.empty_bounce_tracker["consecutive_empty_bounces"] += 1
-                self.empty_bounce_tracker["last_bounce_position"] = self.current_game_state.paddle_position.x if self.current_game_state else None
+                self.empty_bounce_tracker["last_bounce_position"] = (
+                    self.current_game_state.paddle_position.x
+                    if self.current_game_state
+                    else None
+                )
                 self.empty_bounce_tracker["last_bounce_time"] = time.time()
-                self.empty_bounce_tracker["bounce_history"].append({
-                    "position": self.current_game_state.paddle_position.x if self.current_game_state else 0,
-                    "bricks_remaining": bricks_after,
-                    "time": time.time(),
-                })
+                self.empty_bounce_tracker["bounce_history"].append(
+                    {
+                        "position": (
+                            self.current_game_state.paddle_position.x
+                            if self.current_game_state
+                            else 0
+                        ),
+                        "bricks_remaining": bricks_after,
+                        "time": time.time(),
+                    }
+                )
                 if len(self.empty_bounce_tracker["bounce_history"]) > 10:
-                    self.empty_bounce_tracker["bounce_history"] = self.empty_bounce_tracker["bounce_history"][-5:]
+                    self.empty_bounce_tracker["bounce_history"] = (
+                        self.empty_bounce_tracker["bounce_history"][-5:]
+                    )
             else:
                 self.empty_bounce_tracker["consecutive_empty_bounces"] = 0
-            
+
             if self.targeting_system.target_brick:
                 paddle_x = self.current_game_state.paddle_position.x
                 ball_x = self.current_game_state.ball_position.x
@@ -115,16 +133,20 @@ class AIPlayerLearningCorePart1Mixin:
             if action_result.get("action_type") == "game_end":
                 if isinstance(bricks_value, int):
                     max_bricks = 50
-                    self.current_game_stats["bricks_destroyed"] = min(bricks_value, max_bricks)
+                    self.current_game_stats["bricks_destroyed"] = min(
+                        bricks_value, max_bricks
+                    )
                 elif isinstance(bricks_value, list):
                     max_bricks = 50
-                    self.current_game_stats["bricks_destroyed"] = min(len(bricks_value), max_bricks)
+                    self.current_game_stats["bricks_destroyed"] = min(
+                        len(bricks_value), max_bricks
+                    )
             else:
                 if isinstance(bricks_value, int):
                     self.current_game_stats["bricks_destroyed"] += bricks_value
                 elif isinstance(bricks_value, list):
                     self.current_game_stats["bricks_destroyed"] += len(bricks_value)
-                
+
                 max_bricks = 50
                 if self.current_game_stats["bricks_destroyed"] > max_bricks:
                     self.current_game_stats["bricks_destroyed"] = max_bricks

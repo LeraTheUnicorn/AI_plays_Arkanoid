@@ -15,17 +15,19 @@ class TrajectoryPredictor:
         self.screen_width: int = screen_width
         self.screen_height: int = screen_height
         self.gravity: float = 0.5  # Гравитация для более реалистичной траектории
-        
+
         # Кэш для результатов расчетов траекторий
         # Ключ: хеш состояния игры, Значение: результат расчета
         self._trajectory_cache: Dict[str, List[Point]] = {}
         self._intersection_cache: Dict[str, Optional[Point]] = {}
         self._after_bounce_cache: Dict[str, List[Point]] = {}
-        self._cache_max_size: int = 200  # УВЕЛИЧЕНО с 100 до 200 для лучшего кэширования
+        self._cache_max_size: int = (
+            200  # УВЕЛИЧЕНО с 100 до 200 для лучшего кэширования
+        )
         self._cache_access_order: Dict[str, List[str]] = {
             "trajectory": [],
             "intersection": [],
-            "after_bounce": []
+            "after_bounce": [],
         }  # Отслеживание порядка доступа для LRU стратегии
 
     def predict_trajectory(
@@ -43,7 +45,7 @@ class TrajectoryPredictor:
         """
         # Создаем ключ кэша на основе состояния игры
         cache_key = self._create_cache_key(game_state, max_points)
-        
+
         # Проверяем кэш
         if cache_key in self._trajectory_cache:
             # Обновляем порядок доступа для LRU
@@ -51,7 +53,7 @@ class TrajectoryPredictor:
                 self._cache_access_order["trajectory"].remove(cache_key)
             self._cache_access_order["trajectory"].append(cache_key)
             return self._trajectory_cache[cache_key]
-        
+
         trajectory = []
         current_pos = Point(game_state.ball_position.x, game_state.ball_position.y)
         current_vel = Point(game_state.ball_velocity.x, game_state.ball_velocity.y)
@@ -59,7 +61,7 @@ class TrajectoryPredictor:
         # Создаем копию состояния для симуляции
         sim_ball = current_pos
         sim_vel = current_vel
-        
+
         # КРИТИЧНО: Создаем копию списка блоков для симуляции
         # Удаляем блоки из симуляции после столкновения, чтобы не учитывать их повторно
         sim_bricks = []
@@ -68,13 +70,23 @@ class TrajectoryPredictor:
             for brick in game_state.remaining_bricks:
                 # Создаем простой объект с координатами блока
                 brick_data = {
-                    'left': getattr(brick, 'left', getattr(brick, 'x', 0)),
-                    'right': getattr(brick, 'right', getattr(brick, 'left', getattr(brick, 'x', 0)) + getattr(brick, 'width', 60)),
-                    'top': getattr(brick, 'top', getattr(brick, 'y', 0)),
-                    'bottom': getattr(brick, 'bottom', getattr(brick, 'top', getattr(brick, 'y', 0)) + getattr(brick, 'height', 20))
+                    "left": getattr(brick, "left", getattr(brick, "x", 0)),
+                    "right": getattr(
+                        brick,
+                        "right",
+                        getattr(brick, "left", getattr(brick, "x", 0))
+                        + getattr(brick, "width", 60),
+                    ),
+                    "top": getattr(brick, "top", getattr(brick, "y", 0)),
+                    "bottom": getattr(
+                        brick,
+                        "bottom",
+                        getattr(brick, "top", getattr(brick, "y", 0))
+                        + getattr(brick, "height", 20),
+                    ),
                 }
                 sim_bricks.append(brick_data)
-        
+
         ball_radius = 8  # Радиус мяча (BALL_SIZE / 2)
 
         for i in range(max_points):
@@ -97,28 +109,34 @@ class TrajectoryPredictor:
             # КРИТИЧНО: Проверяем столкновение с блоками
             # Это исправляет проблему, когда предсказание не учитывает отскоки от блоков
             if sim_bricks:
-                for brick_data in sim_bricks[:]:  # Используем копию списка для безопасного удаления
-                    brick_left = brick_data['left']
-                    brick_right = brick_data['right']
-                    brick_top = brick_data['top']
-                    brick_bottom = brick_data['bottom']
-                    
+                for brick_data in sim_bricks[
+                    :
+                ]:  # Используем копию списка для безопасного удаления
+                    brick_left = brick_data["left"]
+                    brick_right = brick_data["right"]
+                    brick_top = brick_data["top"]
+                    brick_bottom = brick_data["bottom"]
+
                     # Проверяем, попадает ли мяч в область блока (с учетом радиуса)
-                    if (brick_left - ball_radius <= next_x <= brick_right + ball_radius and
-                        brick_top - ball_radius <= next_y <= brick_bottom + ball_radius):
+                    if (
+                        brick_left - ball_radius <= next_x <= brick_right + ball_radius
+                        and brick_top - ball_radius
+                        <= next_y
+                        <= brick_bottom + ball_radius
+                    ):
                         # Дополнительная проверка: мяч действительно попадает в блок
                         center_in_brick = (
-                            brick_left <= next_x <= brick_right and
-                            brick_top <= next_y <= brick_bottom
+                            brick_left <= next_x <= brick_right
+                            and brick_top <= next_y <= brick_bottom
                         )
-                        
+
                         # Проверяем расстояние от центра мяча до ближайшей точки блока
                         closest_x = max(brick_left, min(next_x, brick_right))
                         closest_y = max(brick_top, min(next_y, brick_bottom))
                         distance_to_brick = math.sqrt(
                             (next_x - closest_x) ** 2 + (next_y - closest_y) ** 2
                         )
-                        
+
                         if center_in_brick or distance_to_brick <= ball_radius:
                             # Мяч отскочил от блока - инвертируем вертикальную скорость
                             sim_vel.y *= -1
@@ -135,7 +153,7 @@ class TrajectoryPredictor:
 
         # Сохраняем в кэш
         self._cache_result(self._trajectory_cache, cache_key, trajectory)
-        
+
         return trajectory
 
     def predict_paddle_intersection(
@@ -144,10 +162,10 @@ class TrajectoryPredictor:
         """
         Предсказывает точку пересечения мяча с платформой (улучшенная версия) с кэшированием
         и учетом близости к границам.
-        
+
         ✅ АДАПТИВНАЯ ОПТИМИЗАЦИЯ: Использует упрощенный расчет для высоких скоростей
         при безопасных условиях, полную симуляцию для низких скоростей и точного прицеливания.
-        
+
         ВАЖНО: Обрабатывает случай, когда мяч движется вверх - сначала находит точку отскока
         от верхней границы, затем рекурсивно вызывает расчет для мяча, движущегося вниз.
 
@@ -159,24 +177,28 @@ class TrajectoryPredictor:
             Точка пересечения или None если пересечения не будет
         """
         # ✅ АДАПТИВНОЕ УСЛОВНОЕ УПРОЩЕНИЕ: Определяем, можно ли использовать упрощенный расчет
-        ball_speed = abs(game_state.ball_velocity.y) if hasattr(game_state, 'ball_velocity') else 0
-        bricks_count = len(game_state.remaining_bricks) if game_state.remaining_bricks else 50
-        ball_y = game_state.ball_position.y if hasattr(game_state, 'ball_position') else 0
-        
+        ball_speed = (
+            abs(game_state.ball_velocity.y)
+            if hasattr(game_state, "ball_velocity")
+            else 0
+        )
+        bricks_count = (
+            len(game_state.remaining_bricks) if game_state.remaining_bricks else 50
+        )
+        ball_y = (
+            game_state.ball_position.y if hasattr(game_state, "ball_position") else 0
+        )
+
         # КРИТИЧНО: Для последнего кирпича (<= 1) ВСЕГДА используем полную симуляцию для максимальной точности
         if bricks_count <= 1:
             return self._full_trajectory_simulation(game_state, paddle_y)
-        
+
         # Упрощенный расчет ТОЛЬКО при безопасных условиях:
         # 1. Высокая скорость (>= 25) - меньше времени для отскоков от блоков
         # 2. Много блоков (>= 10) - меньше важность точности прицеливания
         # 3. Мяч далеко (y < 300) - есть время на коррекцию
-        use_simple = (
-            ball_speed >= 25 and
-            bricks_count >= 10 and
-            ball_y < 300
-        )
-        
+        use_simple = ball_speed >= 25 and bricks_count >= 10 and ball_y < 300
+
         if use_simple:
             # Упрощенный расчет для высоких скоростей
             return self._simple_intersection_calculation(game_state, paddle_y)
@@ -186,7 +208,7 @@ class TrajectoryPredictor:
             # - Малого количества блоков (нужно точное прицеливание)
             # - Близости к платформе (нужна точность)
             return self._full_trajectory_simulation(game_state, paddle_y)
-    
+
     def _simple_intersection_calculation(
         self, game_state: GameState, paddle_y: float
     ) -> Optional[Point]:
@@ -194,46 +216,48 @@ class TrajectoryPredictor:
         ✅ УПРОЩЕННЫЙ РАСЧЕТ: Быстрый расчет без проверки всех блоков.
         Учитывает только отскоки от стен, без симуляции отскоков от блоков.
         Используется для высоких скоростей при безопасных условиях.
-        
+
         Args:
             game_state: Текущее состояние игры
             paddle_y: Y-координата платформы
-            
+
         Returns:
             Точка пересечения или None если пересечения не будет
         """
         # Проверяем, что мяч движется вниз
         if game_state.ball_velocity.y <= 0:
             return None
-        
+
         ball_x = game_state.ball_position.x
         ball_y = game_state.ball_position.y
         vel_x = game_state.ball_velocity.x
         vel_y = game_state.ball_velocity.y
-        
+
         if abs(vel_y) < 0.1:
             return None
-        
+
         # Рассчитываем время до платформы
         time_to_paddle = (paddle_y - ball_y) / vel_y
         if time_to_paddle <= 0:
             return None
-        
+
         # Упрощенный расчет только с отскоками от стен (без проверки блоков)
         ball_radius = 8
         min_x = ball_radius
         max_x = self.screen_width - ball_radius
-        
+
         # Простой расчет отскоков (без итераций)
         current_x = ball_x
         current_vel_x = vel_x
         remaining_time = time_to_paddle
-        
+
         while remaining_time > 0 and abs(current_vel_x) > 0.001:
             new_x = current_x + current_vel_x * remaining_time
-            
+
             if new_x < min_x:
-                time_to_wall = (min_x - current_x) / current_vel_x if current_vel_x < 0 else 0
+                time_to_wall = (
+                    (min_x - current_x) / current_vel_x if current_vel_x < 0 else 0
+                )
                 if time_to_wall > 0 and time_to_wall < remaining_time:
                     current_x = min_x
                     remaining_time -= time_to_wall
@@ -242,7 +266,9 @@ class TrajectoryPredictor:
                     current_x = new_x
                     break
             elif new_x > max_x:
-                time_to_wall = (max_x - current_x) / current_vel_x if current_vel_x > 0 else 0
+                time_to_wall = (
+                    (max_x - current_x) / current_vel_x if current_vel_x > 0 else 0
+                )
                 if time_to_wall > 0 and time_to_wall < remaining_time:
                     current_x = max_x
                     remaining_time -= time_to_wall
@@ -253,26 +279,26 @@ class TrajectoryPredictor:
             else:
                 current_x = new_x
                 break
-        
+
         return Point(int(current_x), int(paddle_y))
-    
+
     def _full_trajectory_simulation(
         self, game_state: GameState, paddle_y: float
     ) -> Optional[Point]:
         """
         ✅ ПОЛНАЯ СИМУЛЯЦИЯ: Полный расчет с учетом всех отскоков от блоков и стен.
         Используется для низких скоростей и точного прицеливания.
-        
+
         Args:
             game_state: Текущее состояние игры
             paddle_y: Y-координата платформы
-            
+
         Returns:
             Точка пересечения или None если пересечения не будет
         """
         # Создаем ключ кэша
         cache_key = self._create_intersection_cache_key(game_state, paddle_y)
-        
+
         # Проверяем кэш
         if cache_key in self._intersection_cache:
             # Обновляем порядок доступа для LRU
@@ -299,7 +325,7 @@ class TrajectoryPredictor:
 
         if time_to_paddle <= 0:
             return None
-        
+
         # ✅ ДОБАВЛЕНО: Проверка на разумность времени (не более 1000 кадров)
         if time_to_paddle > 1000:
             # Слишком долгое время - возможно ошибка в расчетах
@@ -315,16 +341,26 @@ class TrajectoryPredictor:
         sim_vel_y = float(vel_y)
         remaining_time = float(time_to_paddle)  # Время в кадрах
         max_iterations = 300  # УВЕЛИЧЕНО с 200 до 300 для более точной симуляции множественных отскоков от блоков
-        
+
         # КРИТИЧНО: Создаем копию списка блоков для симуляции
         sim_bricks = []
         if game_state.remaining_bricks:
             for brick in game_state.remaining_bricks:
                 brick_data = {
-                    'left': getattr(brick, 'left', getattr(brick, 'x', 0)),
-                    'right': getattr(brick, 'right', getattr(brick, 'left', getattr(brick, 'x', 0)) + getattr(brick, 'width', 60)),
-                    'top': getattr(brick, 'top', getattr(brick, 'y', 0)),
-                    'bottom': getattr(brick, 'bottom', getattr(brick, 'top', getattr(brick, 'y', 0)) + getattr(brick, 'height', 20))
+                    "left": getattr(brick, "left", getattr(brick, "x", 0)),
+                    "right": getattr(
+                        brick,
+                        "right",
+                        getattr(brick, "left", getattr(brick, "x", 0))
+                        + getattr(brick, "width", 60),
+                    ),
+                    "top": getattr(brick, "top", getattr(brick, "y", 0)),
+                    "bottom": getattr(
+                        brick,
+                        "bottom",
+                        getattr(brick, "top", getattr(brick, "y", 0))
+                        + getattr(brick, "height", 20),
+                    ),
                 }
                 sim_bricks.append(brick_data)
 
@@ -332,36 +368,50 @@ class TrajectoryPredictor:
         for iteration in range(max_iterations):
             if remaining_time <= 0:
                 break
-            
+
             # ✅ ИСПРАВЛЕНО: Рассчитываем время до следующего отскока от стены
             # Все расчеты в кадрах: расстояние (px) / скорость (px/кадр) = время (кадры)
             if sim_vel_x > 0:
                 # Движение вправо - проверяем правую стену
                 distance_to_right_wall = self.screen_width - ball_radius - sim_x
-                time_to_wall = distance_to_right_wall / sim_vel_x if sim_vel_x > 0 else float('inf')
+                time_to_wall = (
+                    distance_to_right_wall / sim_vel_x
+                    if sim_vel_x > 0
+                    else float("inf")
+                )
             elif sim_vel_x < 0:
                 # Движение влево - проверяем левую стену
                 distance_to_left_wall = sim_x - ball_radius
-                time_to_wall = distance_to_left_wall / abs(sim_vel_x) if sim_vel_x < 0 else float('inf')
+                time_to_wall = (
+                    distance_to_left_wall / abs(sim_vel_x)
+                    if sim_vel_x < 0
+                    else float("inf")
+                )
             else:
                 # Мяч не движется горизонтально
-                time_to_wall = float('inf')
-            
+                time_to_wall = float("inf")
+
             # ✅ ИСПРАВЛЕНО: Рассчитываем время до столкновения с блоком
             # Все расчеты в кадрах: расстояние (px) / скорость (px/кадр) = время (кадры)
-            time_to_brick = float('inf')
+            time_to_brick = float("inf")
             hit_brick = None
-            if sim_bricks and sim_vel_y > 0:  # Мяч движется вниз (может столкнуться с блоком)
+            if (
+                sim_bricks and sim_vel_y > 0
+            ):  # Мяч движется вниз (может столкнуться с блоком)
                 for brick_data in sim_bricks:
-                    brick_left = brick_data['left']
-                    brick_right = brick_data['right']
-                    brick_top = brick_data['top']
-                    brick_bottom = brick_data['bottom']
-                    
+                    brick_left = brick_data["left"]
+                    brick_right = brick_data["right"]
+                    brick_top = brick_data["top"]
+                    brick_bottom = brick_data["bottom"]
+
                     # Проверяем, может ли мяч столкнуться с этим блоком
                     # Блок должен быть ниже текущей позиции мяча и в горизонтальном диапазоне
-                    if (brick_top >= sim_y and 
-                        brick_left - ball_radius <= sim_x <= brick_right + ball_radius):
+                    if (
+                        brick_top >= sim_y
+                        and brick_left - ball_radius
+                        <= sim_x
+                        <= brick_right + ball_radius
+                    ):
                         # Рассчитываем время до столкновения (в кадрах)
                         distance_to_brick_y = brick_top - ball_radius - sim_y
                         if distance_to_brick_y > 0 and sim_vel_y > 0:
@@ -369,16 +419,20 @@ class TrajectoryPredictor:
                             if time_to_this_brick < time_to_brick:
                                 time_to_brick = time_to_this_brick
                                 hit_brick = brick_data
-            
+
             # Определяем, что произойдет раньше: стена, блок или платформа
             next_event_time = min(time_to_wall, time_to_brick, remaining_time)
-            
+
             if next_event_time <= 0:
                 # Мяч достиг платформы
                 sim_x += sim_vel_x * remaining_time
                 remaining_time = 0
                 break
-            elif time_to_brick > 0 and time_to_brick <= time_to_wall and time_to_brick <= remaining_time:
+            elif (
+                time_to_brick > 0
+                and time_to_brick <= time_to_wall
+                and time_to_brick <= remaining_time
+            ):
                 # Мяч отскочит от блока раньше, чем от стены
                 sim_x += sim_vel_x * time_to_brick
                 sim_y += sim_vel_y * time_to_brick
@@ -387,15 +441,16 @@ class TrajectoryPredictor:
                 # Отскок от блока означает отскок только в вертикальном направлении (vel_y)
                 # Горизонтальная скорость сохраняется или немного меняется
                 sim_vel_y = -abs(sim_vel_y)  # Инвертируем и гарантируем движение вверх
-                
+
                 # ✅ ДОБАВЛЕНО: Добавляем небольшой шум для реализма
                 # (в реальной игре скорость может немного измениться из-за угла отскока)
                 if abs(sim_vel_x) > 0.1:
                     import random
+
                     # Уменьшаем горизонтальную скорость немного при отскоке
                     noise = random.choice([-1, 1]) * random.uniform(0, 1)
                     sim_vel_x = sim_vel_x * 0.95 + noise
-                
+
                 # Удаляем блок из симуляции
                 if hit_brick and hit_brick in sim_bricks:
                     sim_bricks.remove(hit_brick)
@@ -416,10 +471,10 @@ class TrajectoryPredictor:
         # Ограничиваем результат границами экрана
         sim_x = max(ball_radius, min(self.screen_width - ball_radius, sim_x))
         result = Point(int(sim_x), int(paddle_y))
-        
+
         # Сохраняем в кэш
         self._cache_result(self._intersection_cache, cache_key, result)
-        
+
         return result
 
     def predict_after_bounce_trajectory(
@@ -437,8 +492,10 @@ class TrajectoryPredictor:
             Траектория после отскока
         """
         # Создаем ключ кэша
-        cache_key = self._create_after_bounce_cache_key(game_state, bounce_point, bounce_x)
-        
+        cache_key = self._create_after_bounce_cache_key(
+            game_state, bounce_point, bounce_x
+        )
+
         # Проверяем кэш
         if cache_key in self._after_bounce_cache:
             # Обновляем порядок доступа для LRU
@@ -446,7 +503,7 @@ class TrajectoryPredictor:
                 self._cache_access_order["after_bounce"].remove(cache_key)
             self._cache_access_order["after_bounce"].append(cache_key)
             return self._after_bounce_cache[cache_key]
-        
+
         # Рассчитываем новую скорость после отскока
         new_vel_x = self._calculate_bounce_velocity_x(game_state, bounce_x)
         new_vel_y = -abs(
@@ -468,10 +525,10 @@ class TrajectoryPredictor:
         # Предсказываем траекторию после отскока
         # УВЕЛИЧЕНО с 40 до 80 для лучшего учета последующих отскоков от блоков
         trajectory = self.predict_trajectory(after_bounce_state, max_points=80)
-        
+
         # Сохраняем в кэш
         self._cache_result(self._after_bounce_cache, cache_key, trajectory)
-        
+
         return trajectory
 
     def _calculate_bounce_velocity_x(
@@ -616,7 +673,10 @@ class TrajectoryPredictor:
         return hit_count
 
     def visualize_trajectory(
-        self, screen: pygame.Surface, trajectory: List[Point], color: Tuple[int, int, int] = (255, 255, 0)
+        self,
+        screen: pygame.Surface,
+        trajectory: List[Point],
+        color: Tuple[int, int, int] = (255, 255, 0),
     ) -> None:
         """
         Визуализирует траекторию на экране (для отладки)
@@ -639,7 +699,7 @@ class TrajectoryPredictor:
         # Рисуем точки траектории
         # for point in trajectory[::5]:  # Рисуем каждую 5-ю точку
         #     pygame.draw.circle(screen, color, (int(point.x), int(point.y)), 3)
-    
+
     def _create_cache_key(self, game_state: GameState, max_points: int) -> str:
         """Создает ключ кэша для траектории"""
         # Используем ключевые параметры состояния игры
@@ -649,10 +709,14 @@ class TrajectoryPredictor:
         vel_y = round(game_state.ball_velocity.y)
         # КРИТИЧНО: Добавляем количество блоков в ключ кэша
         # Это необходимо, так как траектория зависит от блоков, от которых мяч может отскочить
-        brick_count = len(game_state.remaining_bricks) if game_state.remaining_bricks else 0
+        brick_count = (
+            len(game_state.remaining_bricks) if game_state.remaining_bricks else 0
+        )
         return f"traj_{ball_x}_{ball_y}_{vel_x}_{vel_y}_{brick_count}_{max_points}"
-    
-    def _create_intersection_cache_key(self, game_state: GameState, paddle_y: float) -> str:
+
+    def _create_intersection_cache_key(
+        self, game_state: GameState, paddle_y: float
+    ) -> str:
         """Создает ключ кэша для пересечения с платформой"""
         ball_x = round(game_state.ball_position.x / 5) * 5
         ball_y = round(game_state.ball_position.y / 5) * 5
@@ -661,17 +725,23 @@ class TrajectoryPredictor:
         paddle_y_rounded = round(paddle_y / 5) * 5
         # КРИТИЧНО: Добавляем количество блоков в ключ кэша
         # Это необходимо, так как пересечение с платформой зависит от блоков, от которых мяч может отскочить
-        brick_count = len(game_state.remaining_bricks) if game_state.remaining_bricks else 0
+        brick_count = (
+            len(game_state.remaining_bricks) if game_state.remaining_bricks else 0
+        )
         return f"intersect_{ball_x}_{ball_y}_{vel_x}_{vel_y}_{brick_count}_{paddle_y_rounded}"
-    
-    def _create_after_bounce_cache_key(self, game_state: GameState, bounce_point: Point, bounce_x: float) -> str:
+
+    def _create_after_bounce_cache_key(
+        self, game_state: GameState, bounce_point: Point, bounce_x: float
+    ) -> str:
         """Создает ключ кэша для траектории после отскока"""
         bounce_x_rounded = round(bounce_point.x / 5) * 5
         bounce_y_rounded = round(bounce_point.y / 5) * 5
         bounce_x_pos = round(bounce_x / 5) * 5
         vel_y = round(game_state.ball_velocity.y)
-        return f"after_bounce_{bounce_x_rounded}_{bounce_y_rounded}_{bounce_x_pos}_{vel_y}"
-    
+        return (
+            f"after_bounce_{bounce_x_rounded}_{bounce_y_rounded}_{bounce_x_pos}_{vel_y}"
+        )
+
     def _cache_result(self, cache_dict: Dict[str, Any], key: str, value: Any) -> None:
         """Сохраняет результат в кэш с ограничением размера (LRU стратегия)"""
         # Определяем тип кэша для обновления порядка доступа
@@ -682,12 +752,14 @@ class TrajectoryPredictor:
             cache_type = "intersection"
         elif cache_dict is self._after_bounce_cache:
             cache_type = "after_bounce"
-        
+
         # Если кэш переполнен, удаляем наименее используемые записи (LRU)
         if len(cache_dict) >= self._cache_max_size:
             if cache_type and self._cache_access_order[cache_type]:
                 # Удаляем 25% наименее используемых записей (старейшие в порядке доступа)
-                keys_to_remove = self._cache_access_order[cache_type][:self._cache_max_size // 4]
+                keys_to_remove = self._cache_access_order[cache_type][
+                    : self._cache_max_size // 4
+                ]
                 for k in keys_to_remove:
                     if k in cache_dict:
                         del cache_dict[k]
@@ -695,17 +767,17 @@ class TrajectoryPredictor:
                         self._cache_access_order[cache_type].remove(k)
             else:
                 # Fallback: удаляем старые записи если нет информации о порядке доступа
-                keys_to_remove = list(cache_dict.keys())[:self._cache_max_size // 4]
+                keys_to_remove = list(cache_dict.keys())[: self._cache_max_size // 4]
                 for k in keys_to_remove:
                     del cache_dict[k]
-        
+
         # Добавляем новую запись в кэш и обновляем порядок доступа
         cache_dict[key] = value
         if cache_type:
             if key in self._cache_access_order[cache_type]:
                 self._cache_access_order[cache_type].remove(key)
             self._cache_access_order[cache_type].append(key)
-    
+
     def clear_cache(self) -> None:
         """Очищает все кэши"""
         self._trajectory_cache.clear()
@@ -715,9 +787,9 @@ class TrajectoryPredictor:
         self._cache_access_order = {
             "trajectory": [],
             "intersection": [],
-            "after_bounce": []
+            "after_bounce": [],
         }
-    
+
     def get_optimized_trajectory(
         self, game_state: GameState, max_relevant_points: int = 40
     ) -> List[Point]:
@@ -725,24 +797,24 @@ class TrajectoryPredictor:
         Получает оптимизированную траекторию, используя только нужные точки.
         Это позволяет использовать полную траекторию из кэша, но возвращать только
         релевантные точки для текущей ситуации.
-        
+
         Args:
             game_state: Текущее состояние игры
             max_relevant_points: Максимальное количество релевантных точек для возврата
-        
+
         Returns:
             Список точек траектории (оптимизированный)
         """
         # Получаем полную траекторию (использует кэш)
         full_trajectory = self.predict_trajectory(game_state)
-        
+
         # Если траектория короче запрошенного количества, возвращаем всю
         if len(full_trajectory) <= max_relevant_points:
             return full_trajectory
-        
+
         # Возвращаем первые N точек (наиболее релевантные для ближайшего будущего)
         return full_trajectory[:max_relevant_points]
-    
+
     def get_adaptive_trajectory(
         self, game_state: GameState, ball_y: float, paddle_y: float
     ) -> List[Point]:
@@ -750,17 +822,17 @@ class TrajectoryPredictor:
         Получает адаптивную траекторию в зависимости от расстояния мяча до платформы.
         Когда мяч близко - используем больше точек для точности.
         Когда мяч далеко - используем меньше точек для производительности.
-        
+
         Args:
             game_state: Текущее состояние игры
             ball_y: Y-координата мяча
             paddle_y: Y-координата платформы
-        
+
         Returns:
             Список точек траектории (адаптивный размер)
         """
         distance_to_paddle = paddle_y - ball_y if ball_y < paddle_y else 0
-        
+
         # Адаптивное количество точек на основе расстояния
         # УВЕЛИЧЕНО для лучшего учета отскоков от блоков
         if distance_to_paddle < 50:
@@ -775,7 +847,7 @@ class TrajectoryPredictor:
         else:
             # Мяч далеко - используем минимум точек для производительности
             max_points = 40
-        
+
         # Получаем полную траекторию и обрезаем до нужного размера
         full_trajectory = self.predict_trajectory(game_state)
         return full_trajectory[:max_points]

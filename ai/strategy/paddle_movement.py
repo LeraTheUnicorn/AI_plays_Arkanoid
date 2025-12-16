@@ -75,27 +75,31 @@ class PaddleMovementStrategy:
         self._logger = logger
         self._log_paddle_movement = log_paddle_movement_func
         self._should_log_debug = should_log_debug_func
-        self.trajectory_predictor = trajectory_predictor  # ✅ ДОБАВЛЕНО: Для доступа к предсказанию траектории
+        self.trajectory_predictor = (
+            trajectory_predictor  # ✅ ДОБАВЛЕНО: Для доступа к предсказанию траектории
+        )
         self._predict_exact_landing_position = predict_exact_landing_position_func  # ✅ ДОБАВЛЕНО: Функция для предсказания позиции приземления
         self.current_game_state = current_game_state
-        
+
         # КРИТИЧНО: Отслеживание предыдущей позиции и скорости мяча для обнаружения отскоков от блоков
         self._last_ball_position = None
         self._last_ball_velocity = None
 
-    def _get_adaptive_early_zone_start(self, ball_speed: float, separation_zone_start: int) -> int:
+    def _get_adaptive_early_zone_start(
+        self, ball_speed: float, separation_zone_start: int
+    ) -> int:
         """
         ✅ АДАПТИВНОЕ РАННЕЕ ПРЕДСКАЗАНИЕ: Возвращает начало ранней зоны в зависимости от скорости мяча.
-        
+
         Разные пороги для разных скоростей:
         - Высокие скорости (>= 25): -200px (больше времени на движение)
         - Средние скорости (15-24): -100px (умеренное раннее предсказание)
         - Низкие скорости (< 15): -50px (меньше риск неточного предсказания)
-        
+
         Args:
             ball_speed: Скорость мяча (абсолютное значение)
             separation_zone_start: Начало зоны разделения
-            
+
         Returns:
             Начало ранней зоны
         """
@@ -115,11 +119,13 @@ class PaddleMovementStrategy:
         ✅ НОВАЯ ФУНКЦИЯ: Обнаруживает отскок от блока с высокой чувствительностью.
         Возвращает True если обнаружен отскок (вниз->вверх или резкое изменение).
         """
-        if (not self.current_game_state or 
-            not self._last_ball_position or 
-            not self._last_ball_velocity):
+        if (
+            not self.current_game_state
+            or not self._last_ball_position
+            or not self._last_ball_velocity
+        ):
             return False
-        
+
         ball_x = self.current_game_state.ball_position.x
         ball_y = self.current_game_state.ball_position.y
         ball_vel_y = self.current_game_state.ball_velocity.y
@@ -128,15 +134,15 @@ class PaddleMovementStrategy:
             if hasattr(self.current_game_state, "ball_velocity")
             else 0
         )
-        
+
         last_ball_x = self._last_ball_position.x
         last_ball_y = self._last_ball_position.y
         last_vel_y = self._last_ball_velocity.y
-        
+
         # Не анализируем, если мяч слишком близко к верхней границе
         if ball_y < 30:
             return False
-        
+
         # ✅ УСЛОВИЕ 1: Изменение направления velocity (вниз -> вверх)
         # Это самый надежный признак отскока от блока/стены
         if last_vel_y > 0.5 and ball_vel_y < -1:
@@ -145,7 +151,7 @@ class PaddleMovementStrategy:
                 f"({last_vel_y:.1f} -> {ball_vel_y:.1f})"
             )
             return True
-        
+
         # ✅ УСЛОВИЕ 2: Резкое изменение Y скорости (больше, чем гравитация ~0.5)
         vel_y_change = abs(ball_vel_y - last_vel_y)
         if vel_y_change > 6:  # Пороговое значение выше гравитации
@@ -153,26 +159,25 @@ class PaddleMovementStrategy:
                 f"[BOUNCE DETECT] Условие 2: vel_y change {vel_y_change:.1f} > 6"
             )
             return True
-        
+
         # ✅ УСЛОВИЕ 3: Резкое изменение позиции X при движении вниз
         x_change = abs(ball_x - last_ball_x)
         y_change = ball_y - last_ball_y
-        if (x_change > 15 and y_change < -3 and last_vel_y > 0 and ball_vel_y < 0):
+        if x_change > 15 and y_change < -3 and last_vel_y > 0 and ball_vel_y < 0:
             self._logger.debug(
                 f"[BOUNCE DETECT] Условие 3: x_change={x_change:.1f}, "
                 f"y_change={y_change:.1f}, direction reverse"
             )
             return True
-        
+
         # ✅ УСЛОВИЕ 4: Сочетание резких X и Y изменений (мяч отскочил от блока в углу)
-        if (x_change > 12 and abs(y_change) > 8 and 
-            last_vel_y > 1 and ball_vel_y < -1):
+        if x_change > 12 and abs(y_change) > 8 and last_vel_y > 1 and ball_vel_y < -1:
             self._logger.debug(
                 f"[BOUNCE DETECT] Условие 4: combined x_change={x_change:.1f}, "
                 f"y_change={y_change:.1f}"
             )
             return True
-        
+
         return False
 
     def move_paddle_towards(self, current_x: int, paddle_speed: int) -> int:
@@ -188,25 +193,35 @@ class PaddleMovementStrategy:
         """
         # КРИТИЧНО: Валидация входных параметров
         current_x = self._clamp_paddle_position(current_x)
-        
+
         # ТЕСТ: Логируем каждый вызов для диагностики
-        self._logger.debug(f"[MOVE_PADDLE_CALL] move_paddle_towards вызван: current_x={current_x}, paddle_speed={paddle_speed}")
-        
+        self._logger.debug(
+            f"[MOVE_PADDLE_CALL] move_paddle_towards вызван: current_x={current_x}, paddle_speed={paddle_speed}"
+        )
+
         # Проверка состояния
         if not self._validate_state():
-            self._logger.debug("[MOVE_PADDLE_CALL] _validate_state вернул False, используем fallback")
-            return self._validate_movement(self._fallback_movement(current_x, paddle_speed))
+            self._logger.debug(
+                "[MOVE_PADDLE_CALL] _validate_state вернул False, используем fallback"
+            )
+            return self._validate_movement(
+                self._fallback_movement(current_x, paddle_speed)
+            )
 
         try:
-            self._logger.debug("[MOVE_PADDLE_CALL] Начинаем обработку движения платформы")
+            self._logger.debug(
+                "[MOVE_PADDLE_CALL] Начинаем обработку движения платформы"
+            )
             ball_y = self.current_game_state.ball_position.y
             ball_vel_y = (
                 self.current_game_state.ball_velocity.y
                 if hasattr(self.current_game_state, "ball_velocity")
                 else 0
             )
-            self._logger.debug(f"[MOVE_PADDLE_CALL] ball_y={ball_y:.1f}, ball_vel_y={ball_vel_y:.1f}")
-            
+            self._logger.debug(
+                f"[MOVE_PADDLE_CALL] ball_y={ball_y:.1f}, ball_vel_y={ball_vel_y:.1f}"
+            )
+
             # ✅ ДОБАВЛЕНО: Инициализируем отслеживание в первый раз
             if self._last_ball_position is None and self.current_game_state:
                 ball_x = self.current_game_state.ball_position.x
@@ -217,8 +232,10 @@ class PaddleMovementStrategy:
                 )
                 self._last_ball_position = Point(ball_x, ball_y)
                 self._last_ball_velocity = Point(current_vel_x, ball_vel_y)
-                self._logger.debug("[MOVE_PADDLE_CALL] Инициализировано отслеживание позиции/скорости")
-            
+                self._logger.debug(
+                    "[MOVE_PADDLE_CALL] Инициализировано отслеживание позиции/скорости"
+                )
+
             # ✅ ДОБАВЛЕНО: НЕМЕДЛЕННАЯ проверка отскоков ДО всего остального
             brick_bounce_detected = self._detect_brick_bounce()
             if brick_bounce_detected:
@@ -229,7 +246,7 @@ class PaddleMovementStrategy:
                 # ✅ ИСПРАВЛЕНО: Используем on_ball_bounce для пересчета цели
                 self.target_tracker.on_ball_bounce(self._logger)
                 # Не выходим - продолжаем обработку для установки новой цели
-            
+
             # Обновляем отслеживание для СЛЕДУЮЩЕГО кадра (ВСЕГДА, даже при отскоке)
             if self.current_game_state:
                 ball_x = self.current_game_state.ball_position.x
@@ -240,13 +257,15 @@ class PaddleMovementStrategy:
                 )
                 self._last_ball_position = Point(ball_x, ball_y)
                 self._last_ball_velocity = Point(current_vel_x, ball_vel_y)
-            
+
             # КРИТИЧНО: Проверяем отскоки от верхней границы ДО обработки зон
             # Это обеспечивает немедленную реакцию на отскоки
             last_vel_y = self.separation_zone_tracker.last_ball_vel_y
-            if (last_vel_y is not None and 
-                last_vel_y > 0 and  # мяч двигался вниз на предыдущем кадре
-                ball_vel_y < 0):  # мяч теперь двигается вверх (отскок от верхней границы)
+            if (
+                last_vel_y is not None
+                and last_vel_y > 0  # мяч двигался вниз на предыдущем кадре
+                and ball_vel_y < 0
+            ):  # мяч теперь двигается вверх (отскок от верхней границы)
                 # Мяч отскочил от верхней границы - сбрасываем цель и НЕМЕДЛЕННО пересчитываем
                 self._logger.debug(
                     f"[EARLY BOUNCE DETECTION] Мяч отскочил от верхней границы! "
@@ -257,7 +276,7 @@ class PaddleMovementStrategy:
                 self.target_tracker.on_ball_bounce(self._logger)
                 self.separation_zone_tracker.last_ball_vel_y = ball_vel_y
                 self.separation_zone_tracker.ball_moving_downward_last_frame = False
-                
+
                 # КРИТИЧНО: НЕМЕДЛЕННО пересчитываем новую цель после отскока
                 # Это позволяет платформе быстро адаптироваться к изменению траектории
                 zones = self.zone_handler.calculate_zones()
@@ -270,8 +289,8 @@ class PaddleMovementStrategy:
                         f"движение: {emergency_result}"
                     )
                     return self._validate_movement(emergency_result)
-                
-                # Если не удалось установить цель (мяч движется вверх) - 
+
+                # Если не удалось установить цель (мяч движется вверх) -
                 # упреждающее движение к центру для подготовки к следующей атаке
                 center_movement = self._proactive_center_movement(current_x, ball_y)
                 if center_movement != 0:
@@ -279,10 +298,10 @@ class PaddleMovementStrategy:
                         f"[BOUNCE RECOVERY] Мяч движется вверх, двигаемся к центру: {center_movement}"
                     )
                     return self._validate_movement(center_movement)
-                
+
                 # Если ничего не подошло - останавливаемся
                 return self._validate_movement(0)
-            
+
             # КРИТИЧНО: Проверяем отскоки от блоков ДО обработки зон
             # Это обеспечивает немедленную реакцию на отскоки от блоков
             if brick_bounce_detected:
@@ -294,8 +313,10 @@ class PaddleMovementStrategy:
                 # ✅ ИСПРАВЛЕНО: Используем on_ball_bounce для пересчета цели
                 self.target_tracker.on_ball_bounce(self._logger)
                 self.separation_zone_tracker.last_ball_vel_y = ball_vel_y
-                self.separation_zone_tracker.ball_moving_downward_last_frame = (ball_vel_y > 0)
-                
+                self.separation_zone_tracker.ball_moving_downward_last_frame = (
+                    ball_vel_y > 0
+                )
+
                 # КРИТИЧНО: НЕМЕДЛЕННО пересчитываем новую цель после отскока от блока
                 # Это позволяет платформе быстро адаптироваться к изменению траектории
                 zones = self.zone_handler.calculate_zones()
@@ -308,8 +329,8 @@ class PaddleMovementStrategy:
                         f"движение: {emergency_result}"
                     )
                     return self._validate_movement(emergency_result)
-                
-                # Если не удалось установить цель (мяч движется вверх) - 
+
+                # Если не удалось установить цель (мяч движется вверх) -
                 # упреждающее движение к центру для подготовки к следующей атаке
                 center_movement = self._proactive_center_movement(current_x, ball_y)
                 if center_movement != 0:
@@ -317,17 +338,23 @@ class PaddleMovementStrategy:
                         f"[BRICK BOUNCE RECOVERY] Мяч движется вверх, двигаемся к центру: {center_movement}"
                     )
                     return self._validate_movement(center_movement)
-                
+
                 # Если ничего не подошло - останавливаемся
                 return self._validate_movement(0)
 
             # Обработка зоны кубиков
             zones = self.zone_handler.calculate_zones()
             if ball_y < zones["separation_zone_start"]:
-                bricks_count = len(self.current_game_state.remaining_bricks) if self.current_game_state else 50
+                bricks_count = (
+                    len(self.current_game_state.remaining_bricks)
+                    if self.current_game_state
+                    else 50
+                )
                 is_last_brick = bricks_count == 1
                 if not is_last_brick:
-                    result = self.zone_handler.handle_bricks_zone(ball_y, self.current_game_state)
+                    result = self.zone_handler.handle_bricks_zone(
+                        ball_y, self.current_game_state
+                    )
                     return self._validate_movement(result)
 
             # Обработка потерянного мяча
@@ -357,11 +384,15 @@ class PaddleMovementStrategy:
                 return self._validate_movement(new_target_result)
 
             # Обычная логика движения
-            return self._validate_movement(self._handle_normal_movement(current_x, paddle_speed))
+            return self._validate_movement(
+                self._handle_normal_movement(current_x, paddle_speed)
+            )
 
         except Exception as e:
             self._logger.error(f"Ошибка при движении платформы: {e}", exc_info=True)
-            return self._validate_movement(self._fallback_movement(current_x, paddle_speed))
+            return self._validate_movement(
+                self._fallback_movement(current_x, paddle_speed)
+            )
 
     def _validate_state(self) -> bool:
         """
@@ -384,7 +415,7 @@ class PaddleMovementStrategy:
                 self.current_game_state.paddle_position.x,
                 self.current_game_state.paddle_position.x,
                 "ball_vel_y_zero_warning",
-                0.5
+                0.5,
             )
 
         return True
@@ -412,7 +443,9 @@ class PaddleMovementStrategy:
                 f"[PADDLE DEBUG] Мяч потерян (ball_y={ball_y:.1f} > paddle_y={paddle_y:.1f}), "
                 f"платформа не двигается"
             )
-            self._log_paddle_movement(current_x, current_x, "ball_lost_below_paddle", 1.0)
+            self._log_paddle_movement(
+                current_x, current_x, "ball_lost_below_paddle", 1.0
+            )
             return 0
 
         return None
@@ -444,23 +477,25 @@ class PaddleMovementStrategy:
         # КРИТИЧНО: Проверяем, не потерян ли мяч
         if not self.current_game_state:
             return None
-        
+
         paddle_y = self.current_game_state.paddle_position.y
         ball_lost = ball_y > paddle_y
-        
+
         if ball_lost:
             # Мяч потерян - не двигаемся
             return None
 
         separation_zone_start = zones["separation_zone_start"]
         paddle_zone_start = zones["paddle_zone_start"]
-        in_separation_zone = separation_zone_start <= ball_y < paddle_zone_start and ball_vel_y > 0
+        in_separation_zone = (
+            separation_zone_start <= ball_y < paddle_zone_start and ball_vel_y > 0
+        )
 
         # ✅ ИСПРАВЛЕНО: ПРИОРИТЕТНАЯ проверка отскоков в НАЧАЛЕ функции для немедленной реакции
         # Проверяем отскоки от блоков ДО всех других проверок при наличии установленной цели
         if self.target_tracker.is_target_set():
             brick_bounce_detected_immediate = self._detect_brick_bounce()
-            
+
             if brick_bounce_detected_immediate:
                 self._logger.debug(
                     "[FIXED TARGET] [IMMEDIATE BOUNCE CHECK] "
@@ -474,9 +509,11 @@ class PaddleMovementStrategy:
         # КРИТИЧНО: Проверяем отскок от верхней границы (вниз -> вверх)
         # Если мяч отскочил от верхней границы, нужно сбросить целевую позицию немедленно
         last_vel_y = self.separation_zone_tracker.last_ball_vel_y
-        if (last_vel_y is not None and 
-            last_vel_y > 0 and  # мяч двигался вниз на предыдущем кадре
-            ball_vel_y < 0):  # мяч теперь двигается вверх (отскок от верхней границы)
+        if (
+            last_vel_y is not None
+            and last_vel_y > 0  # мяч двигался вниз на предыдущем кадре
+            and ball_vel_y < 0
+        ):  # мяч теперь двигается вверх (отскок от верхней границы)
             # Мяч отскочил от верхней границы - сбрасываем цель немедленно
             self._logger.debug(
                 f"[FIXED TARGET] [EARLY BOUNCE DETECTION] Мяч отскочил от верхней границы! "
@@ -491,10 +528,12 @@ class PaddleMovementStrategy:
         # КРИТИЧНО: Проверяем смену направления мяча (вверх -> вниз)
         # Если мяч только что начал двигаться вниз после движения вверх,
         # нужно сбросить целевую позицию и пересчитать её
-        if (last_vel_y is not None and 
-            last_vel_y <= 0 and  # мяч двигался вверх на предыдущем кадре
-            ball_vel_y > 0 and  # мяч теперь двигается вниз
-            in_separation_zone):  # мяч в зоне разделения
+        if (
+            last_vel_y is not None
+            and last_vel_y <= 0  # мяч двигался вверх на предыдущем кадре
+            and ball_vel_y > 0  # мяч теперь двигается вниз
+            and in_separation_zone
+        ):  # мяч в зоне разделения
             # Мяч сменил направление на движение вниз - сбрасываем цель для пересчета
             self._logger.debug(
                 f"[DIRECTION CHANGE] Мяч сменил направление с вверх (vel_y={last_vel_y:.1f}) "
@@ -505,7 +544,7 @@ class PaddleMovementStrategy:
             # Обновляем отслеживание направления
             self.separation_zone_tracker.last_ball_vel_y = ball_vel_y
             return None  # Возвращаем None, чтобы установить новую цель
-        
+
         # Обновляем отслеживание направления
         self.separation_zone_tracker.last_ball_vel_y = ball_vel_y
         if ball_vel_y > 0:
@@ -531,15 +570,14 @@ class PaddleMovementStrategy:
         # Если целевая позиция отличается от предсказанной более чем на 50px, используем предсказанную позицию напрямую
         if self.current_game_state:
             intersection_point = self.trajectory_predictor.predict_paddle_intersection(
-                self.current_game_state,
-                self.current_game_state.paddle_position.y
+                self.current_game_state, self.current_game_state.paddle_position.y
             )
-            
+
             if intersection_point is None:
                 predicted_landing_x = self._predict_exact_landing_position()
             else:
                 predicted_landing_x = intersection_point.x
-            
+
             # Если целевая позиция отличается от предсказанной более чем на 50px - используем предсказанную позицию напрямую
             if abs(current_target - predicted_landing_x) > 50:
                 self._logger.debug(
@@ -550,7 +588,9 @@ class PaddleMovementStrategy:
                 # ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ V3: Используем предсказанную позицию напрямую (с ограничением границами)
                 # НЕ вызываем get_optimal_paddle_position(), который может снова вернуть неправильную позицию
                 corrected_target = self._clamp_paddle_position(int(predicted_landing_x))
-                self.target_tracker.set_target_position(corrected_target, "direct_prediction", self._logger, current_x)
+                self.target_tracker.set_target_position(
+                    corrected_target, "direct_prediction", self._logger, current_x
+                )
                 current_target = corrected_target
                 self._logger.debug(
                     f"[FIXED TARGET] Целевая позиция обновлена: {current_target:.1f}px "
@@ -564,21 +604,26 @@ class PaddleMovementStrategy:
                 if hasattr(self.current_game_state, "ball_velocity")
                 else 0
             )
-            
+
             # КРИТИЧНО: Проверяем отскоки от блоков по изменению позиции/скорости
             brick_bounce_detected_here = False
-            if self._last_ball_position is not None and self._last_ball_velocity is not None:
+            if (
+                self._last_ball_position is not None
+                and self._last_ball_velocity is not None
+            ):
                 ball_x = self.current_game_state.ball_position.x
                 last_vel_y = self._last_ball_velocity.y
-                vel_y_direction_change = (last_vel_y > 0 and ball_vel_y < 0)
+                vel_y_direction_change = last_vel_y > 0 and ball_vel_y < 0
                 position_change = abs(ball_x - self._last_ball_position.x)
                 y_change = ball_y - self._last_ball_position.y
                 vel_y_change = abs(ball_vel_y - last_vel_y)
-                
+
                 if ball_y > 30:  # Мяч не у верхней границы
-                    if (vel_y_direction_change or 
-                        (position_change > 15 and y_change < -3) or
-                        (vel_y_change > 5 and y_change < -3)):
+                    if (
+                        vel_y_direction_change
+                        or (position_change > 15 and y_change < -3)
+                        or (vel_y_change > 5 and y_change < -3)
+                    ):
                         vel_x_change = abs(current_vel_x - self._last_ball_velocity.x)
                         if vel_x_change < 15 or vel_y_direction_change:
                             brick_bounce_detected_here = True
@@ -601,22 +646,37 @@ class PaddleMovementStrategy:
             # Слишком агрессивная проверка мешала платформе достичь цели
             # Проверяем только если мяч достигнет стены в ближайшие 3 кадра
             ball_x = self.current_game_state.ball_position.x
-            ball_radius = getattr(self.config, 'ball', None)
-            ball_radius = ball_radius.radius if ball_radius and hasattr(ball_radius, 'radius') else 8
+            ball_radius = getattr(self.config, "ball", None)
+            ball_radius = (
+                ball_radius.radius
+                if ball_radius and hasattr(ball_radius, "radius")
+                else 8
+            )
             distance_to_paddle_y = paddle_y - ball_y if ball_y < paddle_y else 0
-            time_to_paddle = distance_to_paddle_y / ball_vel_y if ball_vel_y > 0 and distance_to_paddle_y > 0 else float('inf')
-            
+            time_to_paddle = (
+                distance_to_paddle_y / ball_vel_y
+                if ball_vel_y > 0 and distance_to_paddle_y > 0
+                else float("inf")
+            )
+
             # ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Проверяем отскок только если мяч очень близко к стене (менее 3 кадров)
             WALL_BOUNCE_THRESHOLD = 3  # кадров до стены
-            
-            if time_to_paddle != float('inf') and time_to_paddle > 0:
+
+            if time_to_paddle != float("inf") and time_to_paddle > 0:
                 # Проверяем, летит ли мяч к правой стене
                 if current_vel_x > 0:  # Мяч движется вправо
                     distance_to_right_wall = self.screen_width - ball_radius - ball_x
                     if distance_to_right_wall > 0:
-                        time_to_right_wall = distance_to_right_wall / current_vel_x if current_vel_x > 0 else float('inf')
+                        time_to_right_wall = (
+                            distance_to_right_wall / current_vel_x
+                            if current_vel_x > 0
+                            else float("inf")
+                        )
                         # ✅ ИСПРАВЛЕНО: Сбрасываем цель ТОЛЬКО если мяч достигнет стены очень скоро (менее 3 кадров)
-                        if 0 < time_to_right_wall < WALL_BOUNCE_THRESHOLD and time_to_right_wall < time_to_paddle:
+                        if (
+                            0 < time_to_right_wall < WALL_BOUNCE_THRESHOLD
+                            and time_to_right_wall < time_to_paddle
+                        ):
                             self._logger.debug(
                                 f"[FIXED TARGET WALL CHECK] Мяч очень близко к правой стене! "
                                 f"time_to_wall={time_to_right_wall:.1f} < {WALL_BOUNCE_THRESHOLD}, "
@@ -625,14 +685,21 @@ class PaddleMovementStrategy:
                             self.target_tracker.reset_target_position()
                             self.target_tracker.update_saved_velocity(current_vel_x)
                             return None
-                
+
                 # Проверяем, летит ли мяч к левой стене
                 elif current_vel_x < 0:  # Мяч движется влево
                     distance_to_left_wall = ball_x - ball_radius
                     if distance_to_left_wall > 0:
-                        time_to_left_wall = distance_to_left_wall / abs(current_vel_x) if current_vel_x < 0 else float('inf')
+                        time_to_left_wall = (
+                            distance_to_left_wall / abs(current_vel_x)
+                            if current_vel_x < 0
+                            else float("inf")
+                        )
                         # ✅ ИСПРАВЛЕНО: Сбрасываем цель ТОЛЬКО если мяч достигнет стены очень скоро (менее 3 кадров)
-                        if 0 < time_to_left_wall < WALL_BOUNCE_THRESHOLD and time_to_left_wall < time_to_paddle:
+                        if (
+                            0 < time_to_left_wall < WALL_BOUNCE_THRESHOLD
+                            and time_to_left_wall < time_to_paddle
+                        ):
                             self._logger.debug(
                                 f"[FIXED TARGET WALL CHECK] Мяч очень близко к левой стене! "
                                 f"time_to_wall={time_to_left_wall:.1f} < {WALL_BOUNCE_THRESHOLD}, "
@@ -646,18 +713,24 @@ class PaddleMovementStrategy:
 
         # Двигаемся к зафиксированной позиции
         target_pos = int(current_target)
-        
+
         # ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Динамическая корректировка позиции при приближении мяча
         # Если мяч очень близко к платформе, пересчитываем целевую позицию для учета изменений траектории
         distance_to_paddle_y = paddle_y - ball_y if ball_y < paddle_y else 0
-        time_to_paddle = distance_to_paddle_y / ball_vel_y if ball_vel_y > 0 and distance_to_paddle_y > 0 else float('inf')
-        
+        time_to_paddle = (
+            distance_to_paddle_y / ball_vel_y
+            if ball_vel_y > 0 and distance_to_paddle_y > 0
+            else float("inf")
+        )
+
         # ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Если мяч очень близко к платформе (< 15px по Y), пересчитываем цель
         # Это позволяет платформе адаптироваться к последним изменениям траектории
-        if (time_to_paddle != float('inf') and 
-            time_to_paddle > 0 and 
-            distance_to_paddle_y < 15 and 
-            self.current_game_state):
+        if (
+            time_to_paddle != float("inf")
+            and time_to_paddle > 0
+            and distance_to_paddle_y < 15
+            and self.current_game_state
+        ):
             # Мяч очень близко - пересчитываем целевую позицию
             new_optimal_x = self.get_optimal_paddle_position()
             if new_optimal_x is not None:
@@ -665,11 +738,13 @@ class PaddleMovementStrategy:
                 new_target_pos = self._clamp_paddle_position(new_target_pos)
                 distance_to_old_target = abs(current_x - target_pos)
                 distance_to_new_target = abs(current_x - new_target_pos)
-                
+
                 # ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Обновляем цель, если новая позиция значительно лучше
                 # (разница более 10px) ИЛИ новая позиция ближе к текущей позиции платформы
-                if (abs(new_target_pos - target_pos) > 10 or 
-                    distance_to_new_target < distance_to_old_target - 5):
+                if (
+                    abs(new_target_pos - target_pos) > 10
+                    or distance_to_new_target < distance_to_old_target - 5
+                ):
                     self._logger.debug(
                         f"[FIXED TARGET] Динамическая корректировка: мяч близко (distance_to_paddle={distance_to_paddle_y:.1f}px), "
                         f"старая цель={target_pos:.1f}px, новая цель={new_target_pos:.1f}px, "
@@ -677,33 +752,53 @@ class PaddleMovementStrategy:
                     )
                     target_pos = new_target_pos
                     # Обновляем зафиксированную позицию
-                    self.target_tracker.set_target_position(target_pos, "dynamic_correction", self._logger, current_x)
-        
+                    self.target_tracker.set_target_position(
+                        target_pos, "dynamic_correction", self._logger, current_x
+                    )
+
         # КРИТИЧНО: Ограничиваем целевую позицию границами экрана
         target_pos = self._clamp_paddle_position(target_pos)
-        
+
         distance_to_target = abs(current_x - target_pos)
         # КРИТИЧНО: Адаптивный tolerance на основе скорости мяча, расстояния и критичности
-        ball_y = self.current_game_state.ball_position.y if self.current_game_state else 0
-        paddle_y = self.current_game_state.paddle_position.y if self.current_game_state else 0
+        ball_y = (
+            self.current_game_state.ball_position.y if self.current_game_state else 0
+        )
+        paddle_y = (
+            self.current_game_state.paddle_position.y if self.current_game_state else 0
+        )
         distance_to_paddle = paddle_y - ball_y if ball_y < paddle_y else 0
-        is_critical = distance_to_paddle < 50 or target_pos < 100 or target_pos > self.screen_width - 100
-        
+        is_critical = (
+            distance_to_paddle < 50
+            or target_pos < 100
+            or target_pos > self.screen_width - 100
+        )
+
         # Используем адаптивный tolerance, который учитывает скорость мяча
         tolerance = self._get_adaptive_tolerance(
             ball_vel_y, distance_to_target, paddle_speed, is_critical
         )
-        
+
         # КРИТИЧНО: Буферная зона для ранней остановки платформы
         # УМЕНЬШЕНО для критических случаев в углах - платформа должна доезжать до цели
         # Отключаем буферную зону, если мяч близко к платформе или в углу
-        ball_y = self.current_game_state.ball_position.y if self.current_game_state else 0
-        paddle_y = self.current_game_state.paddle_position.y if self.current_game_state else 0
+        ball_y = (
+            self.current_game_state.ball_position.y if self.current_game_state else 0
+        )
+        paddle_y = (
+            self.current_game_state.paddle_position.y if self.current_game_state else 0
+        )
         distance_to_paddle = paddle_y - ball_y if ball_y < paddle_y else 0
-        
+
         # Если мяч очень близко к платформе (< 50px) или цель в углу - отключаем буферную зону
-        is_critical = distance_to_paddle < 50 or target_pos < 100 or target_pos > self.screen_width - 100
-        buffer_zone = 0 if is_critical else paddle_speed * 0.15  # Минимальная буферная зона только для некритических случаев
+        is_critical = (
+            distance_to_paddle < 50
+            or target_pos < 100
+            or target_pos > self.screen_width - 100
+        )
+        buffer_zone = (
+            0 if is_critical else paddle_speed * 0.15
+        )  # Минимальная буферная зона только для некритических случаев
 
         # КРИТИЧНО: Логируем для диагностики проблем с движением
         # Фильтрация по уровню выполняется автоматически системой логирования Python
@@ -717,30 +812,39 @@ class PaddleMovementStrategy:
         # ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Рассчитываем время до приземления мяча
         # Платформа должна продолжать движение, пока мяч не достигнет платформы
         distance_to_paddle_y = paddle_y - ball_y if ball_y < paddle_y else 0
-        time_to_paddle = distance_to_paddle_y / ball_vel_y if ball_vel_y > 0 and distance_to_paddle_y > 0 else float('inf')
-        
+        time_to_paddle = (
+            distance_to_paddle_y / ball_vel_y
+            if ball_vel_y > 0 and distance_to_paddle_y > 0
+            else float("inf")
+        )
+
         # ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Проверяем, может ли платформа достичь цели за оставшееся время
         # Если мяч очень близко к платформе (< 3 кадров), продолжаем движение даже при малом расстоянии
-        frames_available = max(1, int(time_to_paddle)) if time_to_paddle != float('inf') else 999
+        frames_available = (
+            max(1, int(time_to_paddle)) if time_to_paddle != float("inf") else 999
+        )
         max_reachable_distance = paddle_speed * frames_available
-        
+
         # ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Если мяч еще не достиг платформы, продолжаем движение
         # Останавливаемся ТОЛЬКО если:
         # 1. Мяч очень близко к платформе (менее 3 кадров) И мы близко к цели (distance <= tolerance)
         # 2. ИЛИ мяч уже достиг платформы (ball_y >= paddle_y)
-        should_continue_moving = (
-            time_to_paddle > 3 or  # Мяч еще далеко от платформы
-            (time_to_paddle > 0 and distance_to_target > max_reachable_distance * 0.8)  # Платформа еще не достигла 80% от максимально достижимого расстояния
-        )
-        
+        should_continue_moving = time_to_paddle > 3 or (  # Мяч еще далеко от платформы
+            time_to_paddle > 0 and distance_to_target > max_reachable_distance * 0.8
+        )  # Платформа еще не достигла 80% от максимально достижимого расстояния
+
         # КРИТИЧНО: Используем буферную зону для более плавной остановки
         if distance_to_target > tolerance + buffer_zone:
             # Достаточно далеко - двигаемся к цели
-            movement = 1 if target_pos > current_x else (-1 if target_pos < current_x else 0)
+            movement = (
+                1 if target_pos > current_x else (-1 if target_pos < current_x else 0)
+            )
             if movement != 0:
                 self._update_loop_tracking(movement, int(current_x), int(target_pos))
                 self._update_smoothness_tracking(movement, current_x)
-                self._log_paddle_movement(current_x, target_pos, "moving_to_fixed_target", 1.0)
+                self._log_paddle_movement(
+                    current_x, target_pos, "moving_to_fixed_target", 1.0
+                )
                 self._logger.debug(
                     f"[FIXED TARGET] Движение: {movement} (влево=-1, вправо=1, стоп=0), "
                     f"distance={distance_to_target:.1f}px > tolerance+buffer={tolerance+buffer_zone:.1f}, "
@@ -756,7 +860,7 @@ class PaddleMovementStrategy:
                     f"возвращаем 0 (стоп)"
                 )
                 return 0
-            
+
             if time_to_paddle < 1 and distance_to_target <= tolerance:
                 # Мяч очень близко И платформа близко к цели - останавливаемся
                 self._logger.debug(
@@ -765,9 +869,11 @@ class PaddleMovementStrategy:
                     f"возвращаем 0 (стоп)"
                 )
                 return 0
-            
+
             # Мяч еще не достиг платформы - продолжаем движение
-            movement = 1 if target_pos > current_x else (-1 if target_pos < current_x else 0)
+            movement = (
+                1 if target_pos > current_x else (-1 if target_pos < current_x else 0)
+            )
             if movement != 0:
                 self._logger.debug(
                     f"[FIXED TARGET] Мяч еще не достиг платформы (time_to_paddle={time_to_paddle:.1f} frames), "
@@ -778,7 +884,11 @@ class PaddleMovementStrategy:
             # В буферной зоне - проверяем, нужно ли продолжать движение
             if should_continue_moving and time_to_paddle > 0:
                 # Мяч еще не достиг платформы - продолжаем движение
-                movement = 1 if target_pos > current_x else (-1 if target_pos < current_x else 0)
+                movement = (
+                    1
+                    if target_pos > current_x
+                    else (-1 if target_pos < current_x else 0)
+                )
                 if movement != 0:
                     self._logger.debug(
                         f"[FIXED TARGET] В буферной зоне, но мяч еще не достиг платформы "
@@ -816,14 +926,20 @@ class PaddleMovementStrategy:
         """
         separation_zone_start = zones["separation_zone_start"]
         paddle_zone_start = zones["paddle_zone_start"]
-        in_separation_zone = separation_zone_start <= ball_y < paddle_zone_start and ball_vel_y > 0
+        in_separation_zone = (
+            separation_zone_start <= ball_y < paddle_zone_start and ball_vel_y > 0
+        )
 
         # ✅ АДАПТИВНОЕ РАННЕЕ ПРЕДСКАЗАНИЕ: Разные пороги для разных скоростей
         # Это дает больше времени на движение для высоких скоростей,
         # но снижает риск неточного предсказания для низких скоростей
         ball_speed = abs(ball_vel_y) if ball_vel_y > 0 else 0
-        early_zone_start = self._get_adaptive_early_zone_start(ball_speed, separation_zone_start)
-        in_early_zone = early_zone_start <= ball_y < separation_zone_start and ball_vel_y > 0
+        early_zone_start = self._get_adaptive_early_zone_start(
+            ball_speed, separation_zone_start
+        )
+        in_early_zone = (
+            early_zone_start <= ball_y < separation_zone_start and ball_vel_y > 0
+        )
         in_target_zone = in_separation_zone or in_early_zone
 
         # КРИТИЧНО: Устанавливаем новую цель если:
@@ -832,24 +948,24 @@ class PaddleMovementStrategy:
         # 3. Цель еще не установлена ИЛИ мяч только что сменил направление на вниз
         if not in_target_zone:
             return None
-        
+
         # КРИТИЧНО: Дополнительная проверка - мяч должен двигаться вниз (к AI)
         # Это критично, так как AI находится внизу экрана
         if ball_vel_y <= 0:
             # Мяч движется вверх или стоит на месте - не устанавливаем цель
             return None
-        
+
         # КРИТИЧНО: Проверяем, что мяч действительно приближается к AI
         # AI находится внизу экрана, поэтому мяч должен двигаться вниз
         if not self.current_game_state:
             return None
-        
+
         paddle_y = self.current_game_state.paddle_position.y
         # Мяч должен быть выше платформы и двигаться вниз
         if ball_y >= paddle_y:
             # Мяч уже на уровне или ниже платформы - слишком поздно
             return None
-        
+
         # КРИТИЧНО: В зоне разделения всегда пересчитываем цель для учета изменений траектории
         # Это особенно важно для мячей, которые отскакивают от боковых стен ИЛИ от кирпичей
         if self.target_tracker.is_target_set():
@@ -862,38 +978,47 @@ class PaddleMovementStrategy:
                 if hasattr(self.current_game_state, "ball_velocity")
                 else 0
             )
-            
+
             # КРИТИЧНО: Проверяем отскоки от блоков по изменению позиции/скорости
             # Это более надежный способ, чем только проверка vel_y
             brick_bounce_detected_here = False
-            if self._last_ball_position is not None and self._last_ball_velocity is not None:
+            if (
+                self._last_ball_position is not None
+                and self._last_ball_velocity is not None
+            ):
                 last_vel_y = self._last_ball_velocity.y
-                vel_y_direction_change = (last_vel_y > 0 and ball_vel_y < 0)
+                vel_y_direction_change = last_vel_y > 0 and ball_vel_y < 0
                 position_change = abs(ball_x - self._last_ball_position.x)
                 y_change = ball_y - self._last_ball_position.y
                 vel_y_change = abs(ball_vel_y - last_vel_y)
-                
+
                 if ball_y > 30:  # Мяч не у верхней границы
-                    if (vel_y_direction_change or 
-                        (position_change > 15 and y_change < -3) or
-                        (vel_y_change > 5 and y_change < -3)):
+                    if (
+                        vel_y_direction_change
+                        or (position_change > 15 and y_change < -3)
+                        or (vel_y_change > 5 and y_change < -3)
+                    ):
                         vel_x_change = abs(current_vel_x - self._last_ball_velocity.x)
                         if vel_x_change < 15 or vel_y_direction_change:
                             brick_bounce_detected_here = True
-            
+
             # Проверяем, не сменил ли мяч направление (отскок от верхней границы или кирпича)
             last_vel_y = self.separation_zone_tracker.last_ball_vel_y
-            if (last_vel_y is not None and 
-                last_vel_y <= 0 and  # мяч двигался вверх
-                ball_vel_y > 0):  # мяч теперь двигается вниз
+            if (
+                last_vel_y is not None
+                and last_vel_y <= 0  # мяч двигался вверх
+                and ball_vel_y > 0
+            ):  # мяч теперь двигается вниз
                 # Мяч сменил направление - сбрасываем старую цель и устанавливаем новую
                 self._logger.debug(
                     f"[NEW TARGET] Мяч сменил направление, сбрасываем старую цель и устанавливаем новую"
                 )
                 self.target_tracker.reset_target_position()
-            elif (last_vel_y is not None and 
-                  last_vel_y > 0 and  # мяч двигался вниз
-                  ball_vel_y < 0):  # мяч теперь двигается вверх (отскок от кирпича!)
+            elif (
+                last_vel_y is not None
+                and last_vel_y > 0  # мяч двигался вниз
+                and ball_vel_y < 0
+            ):  # мяч теперь двигается вверх (отскок от кирпича!)
                 # КРИТИЧНО: Мяч отскочил от кирпича вверх - траектория изменилась!
                 self._logger.debug(
                     f"[NEW TARGET] Мяч отскочил от кирпича! vel_y изменился с {last_vel_y:.1f} (вниз) на {ball_vel_y:.1f} (вверх), "
@@ -921,7 +1046,10 @@ class PaddleMovementStrategy:
                         saved_vel_x = self.target_tracker.get_saved_velocity()
                         # Если горизонтальная скорость изменилась - пересчитываем цель
                         # УМЕНЬШЕНО порог с 1 до 0.5 для более чувствительного обнаружения
-                        if saved_vel_x is not None and abs(current_vel_x - saved_vel_x) > 0.5:
+                        if (
+                            saved_vel_x is not None
+                            and abs(current_vel_x - saved_vel_x) > 0.5
+                        ):
                             self._logger.debug(
                                 f"[NEW TARGET] Траектория изменилась (vel_x: {saved_vel_x:.1f} -> {current_vel_x:.1f}), "
                                 f"пересчитываем цель"
@@ -954,16 +1082,18 @@ class PaddleMovementStrategy:
         if abs(optimal_x - current_x) < 1.0:
             # optimal_x совпадает с current_x - вычисляем предсказанную позицию приземления напрямую
             if self.current_game_state:
-                intersection_point = self.trajectory_predictor.predict_paddle_intersection(
-                    self.current_game_state,
-                    self.current_game_state.paddle_position.y
+                intersection_point = (
+                    self.trajectory_predictor.predict_paddle_intersection(
+                        self.current_game_state,
+                        self.current_game_state.paddle_position.y,
+                    )
                 )
-                
+
                 if intersection_point is None:
                     landing_x = self._predict_exact_landing_position()
                 else:
                     landing_x = intersection_point.x
-                
+
                 # Используем предсказанную позицию приземления вместо текущей позиции платформы
                 optimal_x = int(landing_x)
                 self._logger.debug(
@@ -973,27 +1103,43 @@ class PaddleMovementStrategy:
 
         # КРИТИЧНО: Вычисляем time_to_paddle для проверки отскока от стен
         distance_to_paddle_y = paddle_y - ball_y if ball_y < paddle_y else 0
-        time_to_paddle = distance_to_paddle_y / ball_vel_y if ball_vel_y > 0 and distance_to_paddle_y > 0 else float('inf')
+        time_to_paddle = (
+            distance_to_paddle_y / ball_vel_y
+            if ball_vel_y > 0 and distance_to_paddle_y > 0
+            else float("inf")
+        )
 
         # КРИТИЧНО: Специальная обработка для мяча, летящего к стенам
-        # Если мяч летит к правой/левой стене и должен отскочить, 
+        # Если мяч летит к правой/левой стене и должен отскочить,
         # платформа должна быть максимально справа/слева, чтобы поймать мяч после отскока
-        if self.current_game_state and time_to_paddle != float('inf') and time_to_paddle > 0:
+        if (
+            self.current_game_state
+            and time_to_paddle != float("inf")
+            and time_to_paddle > 0
+        ):
             ball_x = self.current_game_state.ball_position.x
             ball_vel_x = (
                 self.current_game_state.ball_velocity.x
                 if hasattr(self.current_game_state, "ball_velocity")
                 else 0
             )
-            ball_radius = getattr(self.config, 'ball', None)
-            ball_radius = ball_radius.radius if ball_radius and hasattr(ball_radius, 'radius') else 8
-            
+            ball_radius = getattr(self.config, "ball", None)
+            ball_radius = (
+                ball_radius.radius
+                if ball_radius and hasattr(ball_radius, "radius")
+                else 8
+            )
+
             # Проверяем, летит ли мяч к правой стене
             if ball_vel_x > 0:  # Мяч движется вправо
                 distance_to_right_wall = self.screen_width - ball_radius - ball_x
                 # Если мяч близко к правой стене и должен отскочить до достижения платформы
                 if distance_to_right_wall > 0:
-                    time_to_right_wall = distance_to_right_wall / ball_vel_x if ball_vel_x > 0 else float('inf')
+                    time_to_right_wall = (
+                        distance_to_right_wall / ball_vel_x
+                        if ball_vel_x > 0
+                        else float("inf")
+                    )
                     # Если мяч достигнет правой стены до платформы, устанавливаем максимальную правую позицию
                     if time_to_right_wall < time_to_paddle and time_to_right_wall > 0:
                         max_right_x = self.screen_width - self.paddle_width // 2
@@ -1003,13 +1149,17 @@ class PaddleMovementStrategy:
                             f"устанавливаем максимальную правую позицию: {max_right_x:.1f}"
                         )
                         optimal_x = max_right_x
-            
+
             # Проверяем, летит ли мяч к левой стене
             elif ball_vel_x < 0:  # Мяч движется влево
                 distance_to_left_wall = ball_x - ball_radius
                 # Если мяч близко к левой стене и должен отскочить до достижения платформы
                 if distance_to_left_wall > 0:
-                    time_to_left_wall = distance_to_left_wall / abs(ball_vel_x) if ball_vel_x < 0 else float('inf')
+                    time_to_left_wall = (
+                        distance_to_left_wall / abs(ball_vel_x)
+                        if ball_vel_x < 0
+                        else float("inf")
+                    )
                     # Если мяч достигнет левой стены до платформы, устанавливаем максимальную левую позицию
                     if time_to_left_wall < time_to_paddle and time_to_left_wall > 0:
                         min_left_x = self.paddle_width // 2
@@ -1023,37 +1173,45 @@ class PaddleMovementStrategy:
         # ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Улучшенная проверка достижимости цели
         # Учитываем время движения платформы и корректируем цель, если она недостижима
         distance_to_target = abs(current_x - optimal_x)
-        MAX_TARGET_DISTANCE = 250  # ✅ ИСПРАВЛЕНО: Увеличено до 250px для большей гибкости
+        MAX_TARGET_DISTANCE = (
+            250  # ✅ ИСПРАВЛЕНО: Увеличено до 250px для большей гибкости
+        )
 
         # ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ (Задача 6): Проверяем достижимость с учетом предсказанной позиции приземления
         # Сначала вычисляем предсказанную позицию приземления для сравнения
         predicted_landing_x = None
         if self.current_game_state:
             intersection_point = self.trajectory_predictor.predict_paddle_intersection(
-                self.current_game_state,
-                self.current_game_state.paddle_position.y
+                self.current_game_state, self.current_game_state.paddle_position.y
             )
-            
+
             if intersection_point is None:
                 predicted_landing_x = self._predict_exact_landing_position()
             else:
                 predicted_landing_x = intersection_point.x
-        
+
         # Проверяем достижимость только если мяч действительно летит к платформе
-        if time_to_paddle != float('inf') and time_to_paddle > 0 and distance_to_target > 0:
+        if (
+            time_to_paddle != float("inf")
+            and time_to_paddle > 0
+            and distance_to_target > 0
+        ):
             # КРИТИЧНО: paddle_speed уже в px/кадр
             frames_available = max(1, int(time_to_paddle))
-            
+
             # ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Используем 90% от доступного времени для учета погрешностей
             # Это более консервативный подход, который гарантирует, что платформа успеет добраться
             # Учитываем также, что платформа может начать движение не сразу
             safety_factor = 0.90  # 90% от доступного времени
             max_reachable_distance = paddle_speed * frames_available * safety_factor
-            
+
             # ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ (Задача 6): Если цель недостижима, но предсказанная позиция приземления достижима, используем предсказанную позицию
             if predicted_landing_x is not None:
                 distance_to_predicted = abs(current_x - predicted_landing_x)
-                if distance_to_predicted <= max_reachable_distance and distance_to_target > max_reachable_distance:
+                if (
+                    distance_to_predicted <= max_reachable_distance
+                    and distance_to_target > max_reachable_distance
+                ):
                     # Предсказанная позиция достижима, а текущая цель нет - используем предсказанную позицию
                     self._logger.debug(
                         f"[NEW TARGET] Цель недостижима ({distance_to_target:.1f}px > {max_reachable_distance:.1f}px), "
@@ -1062,7 +1220,7 @@ class PaddleMovementStrategy:
                     )
                     optimal_x = int(predicted_landing_x)
                     distance_to_target = distance_to_predicted
-            
+
             # ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Если цель слишком далеко, корректируем её
             # НО стараемся сохранить направление к оптимальной позиции
             if distance_to_target > max_reachable_distance:
@@ -1071,7 +1229,7 @@ class PaddleMovementStrategy:
                     f"reachable={max_reachable_distance:.1f}px (time={time_to_paddle:.1f} frames, "
                     f"frames_available={frames_available}, paddle_speed={paddle_speed})"
                 )
-                
+
                 # ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Корректируем цель, сохраняя направление
                 # Если оптимальная позиция справа - двигаемся максимально вправо, но не дальше достижимого
                 # Если оптимальная позиция слева - двигаемся максимально влево, но не дальше достижимого
@@ -1090,12 +1248,14 @@ class PaddleMovementStrategy:
                         f"(было дальше, теперь достижимо за {frames_available} кадров)"
                     )
                 distance_to_target = abs(current_x - optimal_x)
-                
+
                 # ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Если после коррекции цель все еще слишком далеко,
                 # используем более агрессивную коррекцию (80% от времени)
                 if distance_to_target > max_reachable_distance * 1.1:
                     safety_factor_aggressive = 0.80
-                    max_reachable_distance_aggressive = paddle_speed * frames_available * safety_factor_aggressive
+                    max_reachable_distance_aggressive = (
+                        paddle_speed * frames_available * safety_factor_aggressive
+                    )
                     if optimal_x > current_x:
                         optimal_x = current_x + int(max_reachable_distance_aggressive)
                     else:
@@ -1105,7 +1265,7 @@ class PaddleMovementStrategy:
                         f"[NEW TARGET] Применена агрессивная коррекция: {optimal_x:.1f}px "
                         f"(max_reachable={max_reachable_distance_aggressive:.1f}px)"
                     )
-        
+
         # Жесткое ограничение максимального расстояния (200px согласно анализу)
         if distance_to_target > MAX_TARGET_DISTANCE:
             self._logger.debug(
@@ -1128,7 +1288,9 @@ class PaddleMovementStrategy:
                 else 0
             )
             # ✅ ИСПРАВЛЕНО: Передаем current_x для проверки максимального расстояния
-            self.target_tracker.set_target_position(int(optimal_x), "new_target", self._logger, current_x)
+            self.target_tracker.set_target_position(
+                int(optimal_x), "new_target", self._logger, current_x
+            )
             self.target_tracker.update_saved_velocity(current_vel_x)
             # КРИТИЧНО: Обновляем отслеживание направления мяча
             self.separation_zone_tracker.last_ball_vel_y = ball_vel_y
@@ -1140,15 +1302,14 @@ class PaddleMovementStrategy:
         # ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ (Задача 5): Добавляем логирование предсказанной позиции приземления для диагностики
         if self.current_game_state:
             intersection_point = self.trajectory_predictor.predict_paddle_intersection(
-                self.current_game_state,
-                self.current_game_state.paddle_position.y
+                self.current_game_state, self.current_game_state.paddle_position.y
             )
-            
+
             if intersection_point is None:
                 predicted_landing_x = self._predict_exact_landing_position()
             else:
                 predicted_landing_x = intersection_point.x
-            
+
             # Логируем предсказанную позицию и сравнение с целевой позицией
             position_diff = abs(target_pos - predicted_landing_x)
             self._logger.debug(
@@ -1156,7 +1317,7 @@ class PaddleMovementStrategy:
                 f"predicted_landing_x={predicted_landing_x:.1f}, position_diff={position_diff:.1f}px, "
                 f"distance={distance_to_target:.1f}px, ball_y={ball_y:.1f}, ball_vel_y={ball_vel_y:.1f}, paddle_speed={paddle_speed}"
             )
-            
+
             # Предупреждение, если целевая позиция сильно отличается от предсказанной
             if position_diff > 50:
                 self._logger.warning(
@@ -1171,7 +1332,9 @@ class PaddleMovementStrategy:
             )
 
         if target_pos == current_x:
-            self._logger.debug(f"[NEW TARGET] Цель совпадает с текущей позицией, возвращаем 0")
+            self._logger.debug(
+                f"[NEW TARGET] Цель совпадает с текущей позицией, возвращаем 0"
+            )
             return 0
 
         if distance_to_target <= 25:
@@ -1181,9 +1344,13 @@ class PaddleMovementStrategy:
             )
             return 0
 
-        movement = 1 if target_pos > current_x else (-1 if target_pos < current_x else 0)
+        movement = (
+            1 if target_pos > current_x else (-1 if target_pos < current_x else 0)
+        )
         if movement == 0:
-            self._logger.debug(f"[NEW TARGET] Не удалось определить направление, используем fallback")
+            self._logger.debug(
+                f"[NEW TARGET] Не удалось определить направление, используем fallback"
+            )
             return self._fallback_movement(current_x, paddle_speed)
 
         self._update_loop_tracking(movement, int(current_x), int(target_pos))
@@ -1255,7 +1422,9 @@ class PaddleMovementStrategy:
                 )
                 return 0
             else:
-                smooth_movement = self._calculate_smooth_movement(current_x, optimal_x, distance_to_optimal)
+                smooth_movement = self._calculate_smooth_movement(
+                    current_x, optimal_x, distance_to_optimal
+                )
                 self._logger.debug(
                     f"[NORMAL MOVEMENT] Плавное движение: {smooth_movement} "
                     f"(distance={distance_to_optimal:.1f}px < min_movement={min_movement_distance:.1f}px)"
@@ -1282,7 +1451,9 @@ class PaddleMovementStrategy:
                     base_speed_multiplier = 12.0
 
                 adjusted_paddle_speed = int(paddle_speed * base_speed_multiplier)
-                adjusted_paddle_speed = max(int(paddle_speed * 0.8), adjusted_paddle_speed)
+                adjusted_paddle_speed = max(
+                    int(paddle_speed * 0.8), adjusted_paddle_speed
+                )
 
             movement = self.position_optimizer.calculate_paddle_movement(
                 current_x, optimal_x, adjusted_paddle_speed
@@ -1340,7 +1511,9 @@ class PaddleMovementStrategy:
                         predicted_x = 2 * ball_radius - predicted_x
                         vel_x = abs(vel_x)
                     elif predicted_x > self.screen_width - ball_radius:
-                        predicted_x = 2 * (self.screen_width - ball_radius) - predicted_x
+                        predicted_x = (
+                            2 * (self.screen_width - ball_radius) - predicted_x
+                        )
                         vel_x = -abs(vel_x)
                 target_x = predicted_x
             else:
@@ -1360,10 +1533,12 @@ class PaddleMovementStrategy:
         distance = target_x - current_x
         # ✅ ИСПРАВЛЕНО: Используем адаптивный tolerance вместо фиксированного
         tolerance = self._get_adaptive_tolerance(
-            vel_y if vel_y != 0 else 5.0,  # Используем скорость мяча или значение по умолчанию
+            (
+                vel_y if vel_y != 0 else 5.0
+            ),  # Используем скорость мяча или значение по умолчанию
             abs(distance),
             paddle_speed,
-            False  # fallback не критический случай
+            False,  # fallback не критический случай
         )
 
         # КРИТИЧНО: Логируем fallback движение для диагностики
@@ -1376,7 +1551,7 @@ class PaddleMovementStrategy:
         if abs(distance) <= tolerance:
             self._logger.debug(f"[FALLBACK] В пределах tolerance, возвращаем 0")
             return 0
-        
+
         movement = 1 if distance > 0 else -1
         self._logger.debug(f"[FALLBACK] Движение: {movement} (влево=-1, вправо=1)")
         return movement
@@ -1422,7 +1597,9 @@ class PaddleMovementStrategy:
 
         strategies = self.loop_prevention_system["alternative_strategies"]
         idx = self.loop_prevention_system["current_strategy_index"]
-        self.loop_prevention_system["current_strategy_index"] = (idx + 1) % len(strategies)
+        self.loop_prevention_system["current_strategy_index"] = (idx + 1) % len(
+            strategies
+        )
 
         self.loop_prevention_system["strategy_change_cooldown"] = 10
         self.loop_prevention_system["movement_history"] = []
@@ -1450,7 +1627,9 @@ class PaddleMovementStrategy:
             if self.current_game_state:
                 current_pos = self.current_game_state.paddle_position
                 if current_pos:
-                    return self.screen_width - 70 if current_pos.x < screen_center else 70
+                    return (
+                        self.screen_width - 70 if current_pos.x < screen_center else 70
+                    )
             return 70
 
         return optimal_position
@@ -1511,7 +1690,9 @@ class PaddleMovementStrategy:
             effective_min_distance = 30
         else:
             penalty = self.smoothness_system["smoothness_penalty"]
-            effective_min_distance = self.smoothness_system["min_movement_distance"] * (1 + penalty)
+            effective_min_distance = self.smoothness_system["min_movement_distance"] * (
+                1 + penalty
+            )
 
         if distance < effective_min_distance:
             return 0
@@ -1568,16 +1749,22 @@ class PaddleMovementStrategy:
             current_x: Текущая позиция
         """
         self.smoothness_system["recent_movements"].append(movement)
-        if len(self.smoothness_system["recent_movements"]) > self.smoothness_system["jitter_window"]:
+        if (
+            len(self.smoothness_system["recent_movements"])
+            > self.smoothness_system["jitter_window"]
+        ):
             self.smoothness_system["recent_movements"] = self.smoothness_system[
                 "recent_movements"
-            ][-self.smoothness_system["jitter_window"]:]
+            ][-self.smoothness_system["jitter_window"] :]
 
         self.smoothness_system["recent_positions"].append(current_x)
-        if len(self.smoothness_system["recent_positions"]) > self.smoothness_system["jitter_window"]:
+        if (
+            len(self.smoothness_system["recent_positions"])
+            > self.smoothness_system["jitter_window"]
+        ):
             self.smoothness_system["recent_positions"] = self.smoothness_system[
                 "recent_positions"
-            ][-self.smoothness_system["jitter_window"]:]
+            ][-self.smoothness_system["jitter_window"] :]
 
         if len(self.smoothness_system["recent_movements"]) >= 2:
             prev_movement = self.smoothness_system["recent_movements"][-2]
@@ -1620,99 +1807,105 @@ class PaddleMovementStrategy:
                 f"Исправляем на 0."
             )
             return 0
-        
+
         return movement
 
     def _get_adaptive_tolerance(
-        self, ball_vel_y: float, distance_to_target: float, paddle_speed: int, is_critical: bool
+        self,
+        ball_vel_y: float,
+        distance_to_target: float,
+        paddle_speed: int,
+        is_critical: bool,
     ) -> int:
         """
         Вычисляет адаптивный допуск на основе скорости мяча, расстояния и критичности.
-        
+
         ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Упрощенная формула согласно анализу.
         Согласно анализу, tolerance должен быть примерно paddle_speed / 3 (17-20 для скорости 52-60).
-        
+
         Args:
             ball_vel_y: Вертикальная скорость мяча (px/кадр)
             distance_to_target: Расстояние до целевой позиции (px)
             paddle_speed: Скорость платформы (px/кадр)
             is_critical: Критическая ситуация (мяч близко или в углу)
-        
+
         Returns:
             Адаптивный tolerance в пикселях
         """
         # ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Простая формула согласно анализу
         # tolerance = paddle_speed / 3 (как указано в анализе)
         # Это дает примерно 17-20 для скорости 52-60 px/кадр
-        
+
         base_tolerance = paddle_speed // 3
-        
+
         # Минимальные значения для обеспечения работоспособности
         if base_tolerance < 10:
             base_tolerance = 10
-        
+
         # Для критических случаев немного уменьшаем tolerance для точности
         if is_critical:
             tolerance = max(12, int(base_tolerance * 0.85))
         else:
             tolerance = base_tolerance
-        
+
         # Небольшая корректировка на основе скорости мяча (но не слишком агрессивная)
         # Если мяч очень быстрый, немного увеличиваем tolerance
         if abs(ball_vel_y) > 10:
             tolerance = int(tolerance * 1.1)
         elif abs(ball_vel_y) < 5:
             tolerance = int(tolerance * 0.95)
-        
+
         # Ограничиваем разумными пределами
         if is_critical:
             final_tolerance = max(12, min(tolerance, 22))
         else:
             final_tolerance = max(15, min(tolerance, 25))
-        
+
         self._logger.debug(
             f"[ADAPTIVE TOLERANCE] ball_vel_y={ball_vel_y:.1f}, distance={distance_to_target:.1f}, "
             f"paddle_speed={paddle_speed}px/frame, base={base_tolerance}, final={final_tolerance}, "
             f"is_critical={is_critical}"
         )
-        
+
         return final_tolerance
 
     def _proactive_center_movement(self, current_x: int, ball_y: float) -> int:
         """
         Упреждающее движение к центру при неопределенности.
-        
+
         Если мяч далеко и движется от платформы, возвращаемся к центру,
         готовясь к новой атаке.
-        
+
         Args:
             current_x: Текущая X-координата платформы
             ball_y: Y-координата мяча
-        
+
         Returns:
             Направление движения (-1, 0, 1) или 0 если движение не требуется
         """
         if not self.current_game_state:
             return 0
-        
+
         paddle_y = self.current_game_state.paddle_position.y
         field_height = self.screen_height
-        
+
         # Если мяч далеко (в верхней трети поля) и выше платформы
         if ball_y < field_height * 0.3 and ball_y < paddle_y:
             center = self.screen_width // 2
             distance_to_center = abs(current_x - center)
-            
+
             # Если достаточно далеко от центра - двигаемся к нему
             if distance_to_center > 50:
-                movement = 1 if center > current_x else (-1 if center < current_x else 0)
+                movement = (
+                    1 if center > current_x else (-1 if center < current_x else 0)
+                )
                 self._logger.debug(
                     f"[PROACTIVE CENTER] Мяч далеко ({ball_y:.1f}px), "
                     f"двигаемся к центру: current_x={current_x}, center={center}, "
                     f"movement={movement}"
                 )
                 return movement
-        
+
         return 0
 
     def _clamp_paddle_position(self, position: int) -> int:
@@ -1728,13 +1921,13 @@ class PaddleMovementStrategy:
         paddle_half_width = self.paddle_width // 2
         min_x = paddle_half_width
         max_x = self.screen_width - paddle_half_width
-        
+
         clamped = max(min_x, min(max_x, position))
-        
+
         if clamped != position:
             self._logger.debug(
                 f"[POSITION CLAMP] Позиция {position} ограничена до {clamped} "
                 f"(границы: {min_x} - {max_x})"
             )
-        
+
         return clamped

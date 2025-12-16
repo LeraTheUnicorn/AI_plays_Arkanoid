@@ -15,14 +15,16 @@ FPS: int = 60
 # Размеры и скорость платформы
 PADDLE_WIDTH: int = 120
 PADDLE_HEIGHT: int = 15
-PADDLE_SPEED: int = 45  # КРИТИЧНО: Увеличено до 45 для достаточной скорости реакции в углах
+PADDLE_SPEED: int = (
+    45  # КРИТИЧНО: Увеличено до 45 для достаточной скорости реакции в углах
+)
 
 # Размеры и скорость мяча
 BALL_SIZE: int = 16
 # ✅ ЦЕНТРАЛИЗОВАННЫЕ КОНСТАНТЫ СКОРОСТИ МЯЧА
 BALL_SPEED_DEFAULT: int = 30  # Начальная скорость мяча
-BALL_SPEED_MIN: int = 1       # Минимальная скорость мяча
-BALL_SPEED_MAX: int = 30      # Максимальная скорость мяча
+BALL_SPEED_MIN: int = 1  # Минимальная скорость мяча
+BALL_SPEED_MAX: int = 30  # Максимальная скорость мяча
 
 # Параметры кубиков
 BRICK_ROWS: int = 5
@@ -60,7 +62,13 @@ BIG_FONT_SIZE: int = 42
 MONO_FONT_SIZE: int = 18
 
 # Резервные моноширинные шрифты для кросс-платформенной совместимости
-MONO_FONT_NAMES: List[str] = ["consolas", "courier new", "courier", "monospace", "liberation mono"]
+MONO_FONT_NAMES: List[str] = [
+    "consolas",
+    "courier new",
+    "courier",
+    "monospace",
+    "liberation mono",
+]
 
 # Настройки звука
 SOUND_DEFAULT_VOLUME: float = 0.3
@@ -74,4 +82,6 @@ USE_DIRTY_RECTS: bool = True  # Использовать оптимизацию 
 DIRTY_RECT_BUFFER: int = 2  # Дополнительные пиксели вокруг измененной области
 
 # Настройки рандомизации
-RANDOM_BALL_START_DIRECTION: bool = True  # Рандомизировать направление мяча при старте игры
+RANDOM_BALL_START_DIRECTION: bool = (
+    True  # Рандомизировать направление мяча при старте игры
+)

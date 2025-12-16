@@ -14,12 +14,16 @@ from .ai_player_learning_core_part2 import AIPlayerLearningCorePart2Mixin
 from .ai_player_match_processing import AIPlayerMatchProcessingMixin
 
 
-class AIPlayerLearningMixin(AIPlayerLearningCorePart1Mixin, AIPlayerLearningCorePart2Mixin, AIPlayerMatchProcessingMixin):
+class AIPlayerLearningMixin(
+    AIPlayerLearningCorePart1Mixin,
+    AIPlayerLearningCorePart2Mixin,
+    AIPlayerMatchProcessingMixin,
+):
     """
     Миксин для методов обучения и метрик.
     Добавляет методы обучения, обновления метрик и обработки результатов игры.
     """
-    
+
     # Методы learn_from_result и _update_performance_metrics теперь в ai_player_learning_core_part1.py
     # Методы on_game_end, _reset_game_state_trackers, _reset_current_game_stats теперь в ai_player_learning_core_part2.py
 

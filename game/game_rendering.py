@@ -30,14 +30,14 @@ except ImportError:
 def draw_bricks(screen: pygame.Surface, bricks: List[pygame.Rect]) -> None:
     """
     Отрисовывает все кирпичи на экране.
-    
+
     Каждый ряд кирпичей имеет свой цвет из палитры. Кирпичи отрисовываются
     с цветной заливкой и темной рамкой.
-    
+
     Args:
         screen: Поверхность pygame для отрисовки
         bricks: Список прямоугольников кирпичей для отрисовки
-        
+
     Note:
         Для использования новой архитектуры с оптимизацией отрисовки см. game_views.BricksView
     """
@@ -58,7 +58,7 @@ def draw_hud(
 ) -> None:
     """
     Отрисовывает HUD (информацию о счете, жизнях и скорости).
-    
+
     Args:
         screen: Поверхность pygame для отрисовки
         score: Текущий счет игрока
@@ -92,7 +92,7 @@ def render_colored_hint(
 ) -> int:
     """
     Отображает подсказку с выделенными ключевыми словами цветом.
-    
+
     Args:
         screen: Поверхность pygame для отрисовки
         font: Шрифт для отрисовки текста
@@ -100,7 +100,7 @@ def render_colored_hint(
         pos: Позиция (x, y) для начала отрисовки
         base_color: Базовый цвет текста
         key_color: Цвет для ключевых слов
-        
+
     Returns:
         Ширина отрисованного текста
     """
@@ -128,7 +128,7 @@ def render_colored_hint(
 def draw_start_hint(screen: pygame.Surface, font: pygame.font.Font) -> None:
     """
     Отрисовывает подсказку для начала игры.
-    
+
     Args:
         screen: Поверхность pygame для отрисовки
         font: Шрифт для отрисовки текста

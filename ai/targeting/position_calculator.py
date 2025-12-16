@@ -47,47 +47,49 @@ class PositionCalculator:
     ) -> float:
         """
         Обеспечивает безопасную позицию платформы, предотвращая попадание мяча в углы.
-        
+
         Если предсказанная точка приземления (landing_x) слишком близко к краю платформы,
         смещает позицию платформы так, чтобы мяч попадал в безопасную зону (минимум 25px от края).
-        
+
         Args:
             paddle_center_x: Текущая позиция центра платформы
             landing_x: Предсказанная X-координата приземления мяча
             paddle_half_width: Половина ширины платформы
-            
+
         Returns:
             Скорректированная позиция центра платформы
         """
         ball_radius = 8  # Радиус мяча
-        safe_edge_distance = 25  # Минимальное расстояние от края платформы до точки попадания мяча
-        
+        safe_edge_distance = (
+            25  # Минимальное расстояние от края платформы до точки попадания мяча
+        )
+
         # Вычисляем края платформы при текущей позиции
         paddle_left_edge = paddle_center_x - paddle_half_width
         paddle_right_edge = paddle_center_x + paddle_half_width
-        
+
         # Вычисляем расстояние от точки приземления до краев платформы
         distance_to_left_edge = landing_x - paddle_left_edge
         distance_to_right_edge = paddle_right_edge - landing_x
-        
+
         # Если мяч попадает слишком близко к левому краю
         if distance_to_left_edge < safe_edge_distance:
             # Смещаем платформу вправо, чтобы мяч попадал в безопасную зону
             adjustment = safe_edge_distance - distance_to_left_edge
             paddle_center_x += adjustment
-        
+
         # Если мяч попадает слишком близко к правому краю
         elif distance_to_right_edge < safe_edge_distance:
             # Смещаем платформу влево, чтобы мяч попадал в безопасную зону
             adjustment = safe_edge_distance - distance_to_right_edge
             paddle_center_x -= adjustment
-        
+
         # Ограничиваем границами экрана
         safe_margin = 30
         min_position = paddle_half_width + safe_margin
         max_position = self.screen_width - paddle_half_width - safe_margin
         paddle_center_x = max(min_position, min(max_position, paddle_center_x))
-        
+
         return paddle_center_x
 
     def calculate_optimal_offset(
@@ -111,7 +113,9 @@ class PositionCalculator:
 
         # КРИТИЧНО: При 1 кирпиче - используем максимально точный расчет с учетом траектории
         if bricks_count == 1:
-            brick_center_x = getattr(target_brick, "x", 0) + getattr(target_brick, "width", 60) / 2
+            brick_center_x = (
+                getattr(target_brick, "x", 0) + getattr(target_brick, "width", 60) / 2
+            )
             brick_y = getattr(target_brick, "y", 0)
             brick_height = getattr(target_brick, "height", 20)
             brick_width = getattr(target_brick, "width", 60)
@@ -119,8 +123,16 @@ class PositionCalculator:
             ball_y = game_state.ball_position.y
             ball_x = game_state.ball_position.x
             paddle_y = game_state.paddle_position.y
-            vel_x = game_state.ball_velocity.x if hasattr(game_state, "ball_velocity") else 0
-            vel_y = game_state.ball_velocity.y if hasattr(game_state, "ball_velocity") else 0
+            vel_x = (
+                game_state.ball_velocity.x
+                if hasattr(game_state, "ball_velocity")
+                else 0
+            )
+            vel_y = (
+                game_state.ball_velocity.y
+                if hasattr(game_state, "ball_velocity")
+                else 0
+            )
 
             # Расстояние от платформы до кирпича
             distance_to_brick = brick_y - paddle_y
@@ -153,9 +165,13 @@ class PositionCalculator:
                 # Если мяч движется в сторону кирпича, уменьшаем offset (мяч уже направлен правильно)
                 # Если мяч движется от кирпича, увеличиваем offset (нужно больше коррекции)
                 if direction_to_brick == ball_direction:
-                    offset *= 0.9  # Небольшое уменьшение, т.к. мяч уже направлен правильно
+                    offset *= (
+                        0.9  # Небольшое уменьшение, т.к. мяч уже направлен правильно
+                    )
                 else:
-                    offset *= 1.1  # Увеличение для компенсации неправильного направления
+                    offset *= (
+                        1.1  # Увеличение для компенсации неправильного направления
+                    )
 
             # Ограничиваем диапазоном (используем максимальный offset 1.5 для экстремальных углов)
             max_offset = 1.5
@@ -287,20 +303,24 @@ class PositionCalculator:
                 brick_y = getattr(brick, "y", 0)
                 brick_width = getattr(brick, "width", self.config.brick.default_width)
                 brick_center_x = brick_x + brick_width / 2
-                
+
                 # Рассчитываем требуемое смещение для попадания в кирпич
                 dx = brick_center_x - landing_x
                 distance_to_brick = brick_y - paddle_y
-                
+
                 # Используем максимальный offset для экстремальных углов
                 max_offset = 1.5
-                required_offset = max(-max_offset, min(max_offset, dx / (paddle_half_width * max_offset)))
-                
+                required_offset = max(
+                    -max_offset, min(max_offset, dx / (paddle_half_width * max_offset))
+                )
+
                 optimal_position = landing_x - (required_offset * paddle_half_width)
                 min_position = paddle_half_width
                 max_position = self.screen_width - paddle_half_width
-                optimal_position = max(min_position, min(max_position, optimal_position))
-                
+                optimal_position = max(
+                    min_position, min(max_position, optimal_position)
+                )
+
                 return float(optimal_position)
             else:
                 # Для нескольких кирпичей используем упрощенный расчет
@@ -308,17 +328,25 @@ class PositionCalculator:
                     bricks,
                     key=lambda b: (
                         paddle_y - getattr(b, "y", 0),
-                        abs((getattr(b, "x", 0) + getattr(b, "width", 60) / 2) - landing_x),
+                        abs(
+                            (getattr(b, "x", 0) + getattr(b, "width", 60) / 2)
+                            - landing_x
+                        ),
                     ),
                 )
-                brick_center_x = getattr(closest_brick, "x", 0) + getattr(closest_brick, "width", 60) / 2
+                brick_center_x = (
+                    getattr(closest_brick, "x", 0)
+                    + getattr(closest_brick, "width", 60) / 2
+                )
                 dx = brick_center_x - landing_x
                 required_offset = max(-1.0, min(1.0, dx / (paddle_half_width * 1.5)))
                 optimal_position = landing_x - (required_offset * paddle_half_width)
                 min_position = paddle_half_width
                 max_position = self.screen_width - paddle_half_width
-                optimal_position = max(min_position, min(max_position, optimal_position))
-                
+                optimal_position = max(
+                    min_position, min(max_position, optimal_position)
+                )
+
                 return float(optimal_position)
 
         best_position = None
@@ -367,8 +395,12 @@ class PositionCalculator:
 
                 ball_radius = self.config.ball.radius
                 if (
-                    brick_x - brick_width/2 - ball_radius <= point.x <= brick_x + brick_width/2 + ball_radius
-                    and brick_y - ball_radius <= point.y <= brick_y + brick_height + ball_radius
+                    brick_x - brick_width / 2 - ball_radius
+                    <= point.x
+                    <= brick_x + brick_width / 2 + ball_radius
+                    and brick_y - ball_radius
+                    <= point.y
+                    <= brick_y + brick_height + ball_radius
                 ):
                     will_hit = True
                     center_x = brick_x + brick_width / 2
@@ -376,12 +408,17 @@ class PositionCalculator:
                     distance_to_center = math.sqrt(
                         (point.x - center_x) ** 2 + (point.y - center_y) ** 2
                     )
-                    max_distance = math.sqrt((brick_width / 2 + ball_radius) ** 2 + (brick_height / 2 + ball_radius) ** 2)
-                    hit_confidence = max(hit_confidence, 1.0 - (distance_to_center / max_distance))
+                    max_distance = math.sqrt(
+                        (brick_width / 2 + ball_radius) ** 2
+                        + (brick_height / 2 + ball_radius) ** 2
+                    )
+                    hit_confidence = max(
+                        hit_confidence, 1.0 - (distance_to_center / max_distance)
+                    )
                     break
 
             if is_critical and not will_hit:
-                min_distance_to_brick = float('inf')
+                min_distance_to_brick = float("inf")
                 for point in after_bounce_trajectory:
                     if not hasattr(point, "x") or not hasattr(point, "y"):
                         continue
@@ -424,8 +461,22 @@ class PositionCalculator:
                 brick_height = getattr(brick, "height", 20)
                 brick_center_x = brick_x + brick_width / 2
 
-                for test_offset in [-1.0, -0.8, -0.6, -0.4, -0.2, 0.0, 0.2, 0.4, 0.6, 0.8, 1.0]:
-                    test_bounce_x = intersection_point.x - (test_offset * paddle_half_width)
+                for test_offset in [
+                    -1.0,
+                    -0.8,
+                    -0.6,
+                    -0.4,
+                    -0.2,
+                    0.0,
+                    0.2,
+                    0.4,
+                    0.6,
+                    0.8,
+                    1.0,
+                ]:
+                    test_bounce_x = intersection_point.x - (
+                        test_offset * paddle_half_width
+                    )
                     test_paddle_position = test_bounce_x
 
                     min_position = paddle_half_width
@@ -483,19 +534,28 @@ class PositionCalculator:
                 if is_critical:
                     for test_offset_multiplier in [1.0, 1.2, 1.5, 2.0]:
                         dx = brick_center_x - landing_x
-                        required_offset = max(-1.0, min(1.0, dx / (paddle_half_width * test_offset_multiplier)))
-                        test_position = landing_x - (required_offset * paddle_half_width)
+                        required_offset = max(
+                            -1.0,
+                            min(1.0, dx / (paddle_half_width * test_offset_multiplier)),
+                        )
+                        test_position = landing_x - (
+                            required_offset * paddle_half_width
+                        )
 
                         min_position = paddle_half_width
                         max_position = self.screen_width - paddle_half_width
-                        test_position = max(min_position, min(max_position, test_position))
+                        test_position = max(
+                            min_position, min(max_position, test_position)
+                        )
 
                         if abs(test_position - landing_x) < self.screen_width:
                             best_position = test_position
                             break
                 else:
                     dx = brick_center_x - landing_x
-                    required_offset = max(-1.0, min(1.0, dx / (paddle_half_width * 1.5)))
+                    required_offset = max(
+                        -1.0, min(1.0, dx / (paddle_half_width * 1.5))
+                    )
                     best_position = landing_x - (required_offset * paddle_half_width)
 
                 min_position = paddle_half_width
@@ -509,16 +569,12 @@ class PositionCalculator:
                 bricks,
                 key=lambda b: (
                     paddle_y - getattr(b, "y", 0),
-                    abs(
-                        (getattr(b, "x", 0) + getattr(b, "width", 60) / 2)
-                        - landing_x
-                    ),
+                    abs((getattr(b, "x", 0) + getattr(b, "width", 60) / 2) - landing_x),
                 ),
             )
 
             brick_center_x = (
-                getattr(closest_brick, "x", 0)
-                + getattr(closest_brick, "width", 60) / 2
+                getattr(closest_brick, "x", 0) + getattr(closest_brick, "width", 60) / 2
             )
 
             dx = brick_center_x - landing_x
@@ -529,12 +585,16 @@ class PositionCalculator:
             max_position = self.screen_width - paddle_half_width
             best_position = max(min_position, min(max_position, best_position))
             # КРИТИЧНО: Применяем защиту от попадания в углы платформы
-            best_position = self._ensure_safe_paddle_position(best_position, landing_x, paddle_half_width)
+            best_position = self._ensure_safe_paddle_position(
+                best_position, landing_x, paddle_half_width
+            )
 
         # КРИТИЧНО: Применяем защиту от попадания в углы платформы перед возвратом
         if best_position is not None:
-            best_position = self._ensure_safe_paddle_position(best_position, landing_x, paddle_half_width)
-        
+            best_position = self._ensure_safe_paddle_position(
+                best_position, landing_x, paddle_half_width
+            )
+
         return best_position
 
     def calculate_position_with_target_brick(
@@ -559,7 +619,9 @@ class PositionCalculator:
         if not target_brick:
             return None
 
-        optimal_offset = self.calculate_optimal_offset(landing_x, target_brick, game_state)
+        optimal_offset = self.calculate_optimal_offset(
+            landing_x, target_brick, game_state
+        )
         self.targeting_system.target_brick = target_brick
         self.targeting_system.optimal_offset = optimal_offset
 
@@ -579,8 +641,10 @@ class PositionCalculator:
             optimal_position = self.screen_width - safe_margin - paddle_half_width
 
         # КРИТИЧНО: Применяем защиту от попадания в углы платформы
-        optimal_position = self._ensure_safe_paddle_position(optimal_position, landing_x, paddle_half_width)
-        
+        optimal_position = self._ensure_safe_paddle_position(
+            optimal_position, landing_x, paddle_half_width
+        )
+
         return optimal_position
 
     def calculate_position_for_max_destruction(
@@ -644,12 +708,18 @@ class PositionCalculator:
 
                     brick_x = getattr(brick, "x", 0)
                     brick_y = getattr(brick, "y", 0)
-                    brick_width = getattr(brick, "width", self.config.brick.default_width)
+                    brick_width = getattr(
+                        brick, "width", self.config.brick.default_width
+                    )
                     brick_height = getattr(brick, "height", 20)
 
                     if (
-                        brick_x - ball_radius <= point.x <= brick_x + brick_width + ball_radius
-                        and brick_y - ball_radius <= point.y <= brick_y + brick_height + ball_radius
+                        brick_x - ball_radius
+                        <= point.x
+                        <= brick_x + brick_width + ball_radius
+                        and brick_y - ball_radius
+                        <= point.y
+                        <= brick_y + brick_height + ball_radius
                     ):
                         hit_bricks.add(brick_id)
                         destruction_count += 1
@@ -663,8 +733,10 @@ class PositionCalculator:
         min_position = paddle_half_width
         max_position = self.screen_width - paddle_half_width
         optimal_position = max(min_position, min(max_position, optimal_position))
-        
+
         # КРИТИЧНО: Применяем защиту от попадания в углы платформы
-        optimal_position = self._ensure_safe_paddle_position(optimal_position, landing_x, paddle_half_width)
+        optimal_position = self._ensure_safe_paddle_position(
+            optimal_position, landing_x, paddle_half_width
+        )
 
         return optimal_position

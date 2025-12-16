@@ -18,27 +18,10 @@ if __name__ == "__main__":
 
 # Импортируем утилиты из модуля (с поддержкой как относительных, так и абсолютных импортов)
 try:
-    from .game_utils import (
-        suppress_pkg_resources_warnings,
-        create_ai_player,
-    )
+    from .game_utils import suppress_pkg_resources_warnings
 except ImportError:
-    from game.game_utils import (
-        suppress_pkg_resources_warnings,
-        create_ai_player,
-    )
+    from game.game_utils import suppress_pkg_resources_warnings
 
-# Импортируем UI функции из модуля
-try:
-    from .game_ui import (
-        show_victory_splash,
-        show_game_results,
-    )
-except ImportError:
-    from game.game_ui import (
-        show_victory_splash,
-        show_game_results,
-    )
 
 # Примечание: функции из game_main_helpers больше не используются,
 # так как они заменены на модули game_loop_*
@@ -230,7 +213,9 @@ def main() -> None:
     screen, clock, font, big_font = initialize_pygame()
 
     # Инициализация менеджеров
-    highscore_manager, settings_manager = initialize_managers()
+    _, settings_manager = (
+        initialize_managers()
+    )  # highscore_manager не используется в авторежиме
 
     # Загрузка фоновой музыки
     load_background_music()
@@ -246,7 +231,6 @@ def main() -> None:
     training_mode = game_vars["training_mode"]
     training_rounds = game_vars["training_rounds"]
     ai_player = game_vars["ai_player"]
-    player_name = game_vars["player_name"]
 
     # Создание объектов игры
     paddle, ball, bricks, score = initialize_game_objects(settings_manager)
@@ -390,16 +374,6 @@ def main() -> None:
                     ai_player,
                     logger,
                     settings_manager,
-                    screen,
-                    font,
-                    big_font,
-                    player_name,
-                    highscore_manager,
-                    show_victory_splash,
-                    show_game_results,
-                    create_ai_player,
-                    SCREEN_WIDTH,
-                    SCREEN_HEIGHT,
                     training_rounds,
                 )
                 if should_exit:

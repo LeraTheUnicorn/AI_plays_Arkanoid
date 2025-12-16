@@ -26,22 +26,40 @@ class AIPlayerTargetSelectionPart2Mixin:
 
         if len(bricks) == 1:
             brick = bricks[0]
-            self._logger.debug(f"[LAST BRICK] Таргетирование последнего кирпича: x={getattr(brick, 'x', 0)}, y={getattr(brick, 'y', 0)}")
+            self._logger.debug(
+                f"[LAST BRICK] Таргетирование последнего кирпича: x={getattr(brick, 'x', 0)}, y={getattr(brick, 'y', 0)}"
+            )
             return brick
 
         if len(bricks) <= 3:
             bottom_brick = min(bricks, key=lambda b: getattr(b, "y", 0))
-            ball_y = self.current_game_state.ball_position.y if self.current_game_state else 0
-            vel_x = self.current_game_state.ball_velocity.x if (self.current_game_state and hasattr(self.current_game_state, "ball_velocity")) else 0
-            
+            ball_y = (
+                self.current_game_state.ball_position.y
+                if self.current_game_state
+                else 0
+            )
+            vel_x = (
+                self.current_game_state.ball_velocity.x
+                if (
+                    self.current_game_state
+                    and hasattr(self.current_game_state, "ball_velocity")
+                )
+                else 0
+            )
+
             for brick in bricks:
                 brick_x = getattr(brick, "x", 0) + getattr(brick, "width", 60) / 2
                 brick_y = getattr(brick, "y", 0)
-                
-                if abs(brick_x - ball_x) < 150 and brick_y <= getattr(bottom_brick, "y", 0) + 30:
-                    if (vel_x > 0 and brick_x > ball_x) or (vel_x < 0 and brick_x < ball_x):
+
+                if (
+                    abs(brick_x - ball_x) < 150
+                    and brick_y <= getattr(bottom_brick, "y", 0) + 30
+                ):
+                    if (vel_x > 0 and brick_x > ball_x) or (
+                        vel_x < 0 and brick_x < ball_x
+                    ):
                         return brick
-            
+
             return bottom_brick
 
         best_brick = None
@@ -77,41 +95,53 @@ class AIPlayerTargetSelectionPart2Mixin:
         """Рассчитывает оптимальное смещение на платформе для попадания в кубик."""
         if not target_brick or not self.current_game_state:
             return 0.0
-        
+
         bricks_count = len(self.current_game_state.remaining_bricks)
-        
+
         if bricks_count == 1:
-            brick_center_x = getattr(target_brick, "x", 0) + getattr(target_brick, "width", 60) / 2
+            brick_center_x = (
+                getattr(target_brick, "x", 0) + getattr(target_brick, "width", 60) / 2
+            )
             horizontal_offset_needed = brick_center_x - landing_x
             paddle_half_width = self.paddle_width / 2
             max_offset = 1.5
-            
+
             if abs(horizontal_offset_needed) > paddle_half_width * max_offset:
                 offset = max_offset if horizontal_offset_needed > 0 else -max_offset
             else:
-                offset = horizontal_offset_needed / (paddle_half_width * max_offset) * max_offset
-            
-            vel_x = self.current_game_state.ball_velocity.x if hasattr(self.current_game_state, "ball_velocity") else 0
+                offset = (
+                    horizontal_offset_needed
+                    / (paddle_half_width * max_offset)
+                    * max_offset
+                )
+
+            vel_x = (
+                self.current_game_state.ball_velocity.x
+                if hasattr(self.current_game_state, "ball_velocity")
+                else 0
+            )
             if abs(vel_x) > 0.1:
                 prediction_adjustment = (vel_x / abs(vel_x)) * 0.2
                 offset += prediction_adjustment
-            
+
             offset = max(-max_offset, min(max_offset, offset))
-            self._logger.debug(f"[LAST BRICK OFFSET] brick_x={brick_center_x:.1f}, landing_x={landing_x:.1f}, offset={offset:.2f}")
+            self._logger.debug(
+                f"[LAST BRICK OFFSET] brick_x={brick_center_x:.1f}, landing_x={landing_x:.1f}, offset={offset:.2f}"
+            )
             return offset
-        
+
         brick_x = getattr(target_brick, "x", 0)
         brick_y = getattr(target_brick, "y", 0)
         brick_width = getattr(target_brick, "width", 60)
         brick_height = getattr(target_brick, "height", 20)
-        
+
         brick_center_x = brick_x + brick_width / 2
         brick_center_y = brick_y + brick_height / 2
 
         paddle_y = self.current_game_state.paddle_position.y
         ball_x = self.current_game_state.ball_position.x
         ball_vel_x = self.current_game_state.ball_velocity.x
-        
+
         if abs(ball_vel_x) > 0:
             if ball_vel_x > 0 and ball_x < brick_center_x:
                 target_x = brick_center_x + min(brick_width * 0.15, 10)
@@ -160,9 +190,11 @@ class AIPlayerTargetSelectionPart2Mixin:
         # Type narrowing: ensure successful_offsets is a list of numbers
         if not isinstance(successful_offsets, list):
             return offset
-        
+
         # Convert to list of floats for type safety
-        offset_values = [float(x) for x in successful_offsets if isinstance(x, (int, float))]
+        offset_values = [
+            float(x) for x in successful_offsets if isinstance(x, (int, float))
+        ]
         if not offset_values:
             return offset
 

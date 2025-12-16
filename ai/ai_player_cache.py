@@ -13,16 +13,12 @@ class AIPlayerCacheMixin:
     def get_brick_cache_stats(self) -> Dict[str, Any]:
         """
         Возвращает статистику использования кэша карты кирпичей.
-        
+
         Returns:
             Словарь со статистикой: hits, misses, hit_rate
         """
         total = self._brick_cache_stats["hits"] + self._brick_cache_stats["misses"]
-        hit_rate = (
-            self._brick_cache_stats["hits"] / total
-            if total > 0
-            else 0.0
-        )
+        hit_rate = self._brick_cache_stats["hits"] / total if total > 0 else 0.0
         return {
             "hits": self._brick_cache_stats["hits"],
             "misses": self._brick_cache_stats["misses"],

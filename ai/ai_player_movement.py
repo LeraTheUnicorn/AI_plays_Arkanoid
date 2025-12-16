@@ -15,7 +15,7 @@ class AIPlayerMovementMixin:
     Миксин для методов движения платформы.
     Добавляет методы расчета скорости, выполнения движения и отслеживания плавности.
     """
-    
+
     def calculate_adaptive_paddle_speed(
         self, current_x: int, optimal_x: int, ball_speed: int
     ) -> int:
@@ -25,30 +25,30 @@ class AIPlayerMovementMixin:
         base_paddle_speed = max(35, min(int(ball_speed * 2.5), 60))
         min_speed = 35
         max_speed = 60
-        
+
         if not self.current_game_state:
             return base_paddle_speed
-        
+
         distance_to_optimal = abs(optimal_x - current_x)
-        
+
         if distance_to_optimal <= 5:
             return min_speed
-        
+
         time_to_meeting: float = 0.0
         if self.is_ball_moving_towards_paddle() and self.current_game_state:
             game_state = self.current_game_state
             ball_y = game_state.ball_position.y
             paddle_y = game_state.paddle_position.y
             ball_vel_y = game_state.ball_velocity.y
-            
+
             if ball_vel_y > 0:
                 distance_y = paddle_y - ball_y
                 if distance_y > 0:
                     time_to_meeting = distance_y / ball_vel_y
                     time_to_meeting = max(0.0, time_to_meeting)
-        
+
         required_speed: float = float(base_paddle_speed)
-        
+
         if time_to_meeting > 0 and time_to_meeting != float("inf"):
             if time_to_meeting <= 20:
                 required_speed = max(
@@ -69,44 +69,52 @@ class AIPlayerMovementMixin:
                 required_speed = max(float(min_speed), float(base_paddle_speed * 1.0))
         else:
             required_speed = float(base_paddle_speed * 0.8)
-        
+
         speed_ratio = float(ball_speed) / 5.0
         speed_multiplier = 0.7 + speed_ratio * 0.6
         required_speed *= speed_multiplier
-        
+
         if distance_to_optimal > 150:
             required_speed *= 1.4
         elif distance_to_optimal > 100:
             required_speed *= 1.2
         elif distance_to_optimal > 50:
             required_speed *= 1.1
-        
+
         if (
             distance_to_optimal > time_to_meeting * ball_speed * 0.8
             and time_to_meeting > 0
         ):
             required_speed *= 1.3
-        
+
         required_speed = max(min_speed, min(max_speed, required_speed))
-        
+
         if distance_to_optimal > 20:
             variation = random.uniform(0.97, 1.03)
             required_speed *= variation
-        
+
         return int(required_speed)
 
     def _execute_movement_strategy(self, current_x: int, paddle_speed: int) -> int:
         """Выполняет стратегию движения платформы."""
-        self._logger.debug(f"[AI_PLAYER_MOVE] Вызываем paddle_movement_strategy.move_paddle_towards: current_x={current_x}, paddle_speed={paddle_speed}")
+        self._logger.debug(
+            f"[AI_PLAYER_MOVE] Вызываем paddle_movement_strategy.move_paddle_towards: current_x={current_x}, paddle_speed={paddle_speed}"
+        )
         self.paddle_movement_strategy.current_game_state = self.current_game_state
-        result = self.paddle_movement_strategy.move_paddle_towards(current_x, paddle_speed)
-        self._logger.debug(f"[AI_PLAYER_MOVE] paddle_movement_strategy вернул: {result}")
+        result = self.paddle_movement_strategy.move_paddle_towards(
+            current_x, paddle_speed
+        )
+        self._logger.debug(
+            f"[AI_PLAYER_MOVE] paddle_movement_strategy вернул: {result}"
+        )
         return result
 
     def _validate_movement_conditions(self, current_x: int, paddle_speed: int) -> bool:
         """Проверяет условия для движения платформы."""
         if not self.current_game_state or not self.is_active:
-            self._logger.debug(f"[PADDLE DEBUG] move_paddle_towards: current_game_state={self.current_game_state is not None}, is_active={self.is_active}")
+            self._logger.debug(
+                f"[PADDLE DEBUG] move_paddle_towards: current_game_state={self.current_game_state is not None}, is_active={self.is_active}"
+            )
             return False
         return True
 
@@ -179,11 +187,11 @@ class AIPlayerMovementMixin:
 
         self.loop_prevention_system["movement_history"] = []
         self.loop_prevention_system["position_history"] = []
-        
+
         self.smoothness_system["recent_movements"] = []
         self.smoothness_system["movement_changes"] = []
         self.smoothness_system["smoothness_penalty"] = 0.0
-        
+
         self.separation_zone_tracker.ball_entered_separation_zone = False
         self.separation_zone_tracker.target_position_set = False
         self.separation_zone_tracker.target_position = None
@@ -191,7 +199,9 @@ class AIPlayerMovementMixin:
         self.separation_zone_tracker.paddle_reached_target = False
         self.separation_zone_tracker.last_movement_frame = 0
 
-    def _update_loop_tracking(self, movement: int, current_x: int, optimal_x: int) -> None:
+    def _update_loop_tracking(
+        self, movement: int, current_x: int, optimal_x: int
+    ) -> None:
         """Обновляет данные отслеживания зацикливания."""
         self.loop_prevention_system["movement_history"].append(movement)
         if len(self.loop_prevention_system["movement_history"]) > 20:
@@ -286,16 +296,21 @@ class AIPlayerMovementMixin:
         self, current_x: int, optimal_x: int, distance: float
     ) -> int:
         """Вычисляет плавное движение с учетом штрафов за дрожание."""
-        ball_y = self.current_game_state.ball_position.y if self.current_game_state else 0
+        ball_y = (
+            self.current_game_state.ball_position.y if self.current_game_state else 0
+        )
         ball_vel_y = (
             self.current_game_state.ball_velocity.y
-            if self.current_game_state and hasattr(self.current_game_state, "ball_velocity")
+            if self.current_game_state
+            and hasattr(self.current_game_state, "ball_velocity")
             else 0
         )
         separation_zone_start = self.separation_zone_tracker.separation_zone_start
         paddle_zone_start = self.separation_zone_tracker.paddle_zone_start
-        in_separation_zone = separation_zone_start <= ball_y < paddle_zone_start and ball_vel_y > 0
-        
+        in_separation_zone = (
+            separation_zone_start <= ball_y < paddle_zone_start and ball_vel_y > 0
+        )
+
         if self.separation_zone_tracker.target_position_set:
             effective_min_distance = 30
         else:

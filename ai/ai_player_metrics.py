@@ -16,7 +16,7 @@ class AIPlayerMetricsMixin:
     def _print_ml_system_metrics(self, success: bool, final_score: int) -> None:
         """
         Выводит метрики оценки работы системы scikit-learn в лог.
-        
+
         Args:
             success: True, если игра выиграна.
             final_score: Итоговый счёт игры.
@@ -25,13 +25,15 @@ class AIPlayerMetricsMixin:
             self._logger.info("\n" + "=" * 70)
             self._logger.info("МЕТРИКИ ОЦЕНКИ РАБОТЫ СИСТЕМЫ AI (scikit-learn)")
             self._logger.info("=" * 70)
-            
+
             # Базовые метрики игры
             self._logger.info(f"\n[РЕЗУЛЬТАТЫ] Результаты игры:")
             result_text = "[+] ПОБЕДА" if success else "[-] ПОРАЖЕНИЕ"
             self._logger.info(f"   Результат: {result_text}")
             self._logger.info(f"   Финальный счёт: {final_score}")
-            self._logger.info(f"   Всего игр: {self.performance_metrics['games_played']}")
+            self._logger.info(
+                f"   Всего игр: {self.performance_metrics['games_played']}"
+            )
             self._logger.info(f"   Побед: {self.performance_metrics['games_won']}")
             if self.performance_metrics["games_played"] > 0:
                 win_rate = (
@@ -39,7 +41,7 @@ class AIPlayerMetricsMixin:
                     / self.performance_metrics["games_played"]
                 ) * 100
                 self._logger.info(f"   Процент побед: {win_rate:.1f}%")
-            
+
             # Метрики текущей игры
             self._logger.info(f"\n[МЕТРИКИ] Метрики текущей игры:")
             self._logger.info(
@@ -53,18 +55,22 @@ class AIPlayerMetricsMixin:
                     self.current_game_stats["successful_predictions"]
                     / self.current_game_stats["total_predictions"]
                 ) * 100
-                self._logger.info(f"   Точность предсказаний: {prediction_accuracy:.1f}%")
-            self._logger.info(f"   Всего ходов: {self.current_game_stats['total_moves']}")
+                self._logger.info(
+                    f"   Точность предсказаний: {prediction_accuracy:.1f}%"
+                )
+            self._logger.info(
+                f"   Всего ходов: {self.current_game_stats['total_moves']}"
+            )
             if self.current_game_stats["total_moves"] > 0:
                 optimal_move_rate = (
                     self.current_game_stats["optimal_moves"]
                     / self.current_game_stats["total_moves"]
                 ) * 100
                 self._logger.info(f"   Оптимальных ходов: {optimal_move_rate:.1f}%")
-            
+
             # Метрики обучения и scikit-learn
             learning_progress = self.learning_system.get_learning_progress()
-            
+
             if (
                 isinstance(learning_progress, dict)
                 and learning_progress.get("total_iterations", 0) > 0
@@ -79,18 +85,22 @@ class AIPlayerMetricsMixin:
                 self._logger.info(
                     f"   Средний прогресс: {learning_progress.get('average_improvement', 0.0):.2%}"
                 )
-                
+
                 # Кластеризация траекторий (KMeans)
-                self._logger.info(f"\n[КЛАСТЕРИЗАЦИЯ] Кластеризация траекторий (KMeans):")
+                self._logger.info(
+                    f"\n[КЛАСТЕРИЗАЦИЯ] Кластеризация траекторий (KMeans):"
+                )
                 trajectory_clusters = self.learning_system.cluster_trajectories()
                 unique_clusters = learning_progress.get("trajectory_clusters_count", 0)
                 cluster_diversity = learning_progress.get("cluster_diversity", 0.0)
                 trajectory_patterns = learning_progress.get("trajectory_patterns", 0)
-                
-                self._logger.info(f"   Найдено паттернов траекторий: {trajectory_patterns}")
+
+                self._logger.info(
+                    f"   Найдено паттернов траекторий: {trajectory_patterns}"
+                )
                 self._logger.info(f"   Количество кластеров: {unique_clusters}")
                 self._logger.info(f"   Разнообразие кластеров: {cluster_diversity:.3f}")
-                
+
                 if trajectory_clusters:
                     # Анализ распределения по кластерам
                     cluster_counts: Dict[int, int] = {}
@@ -99,7 +109,7 @@ class AIPlayerMetricsMixin:
                         cluster_counts[cluster_id] = (
                             cluster_counts.get(cluster_id, 0) + 1
                         )
-                    
+
                     self._logger.info(f"   Распределение по кластерам:")
                     for cluster_id, count in sorted(cluster_counts.items()):
                         percentage = (count / len(trajectory_clusters)) * 100
@@ -107,34 +117,44 @@ class AIPlayerMetricsMixin:
                             f"      Кластер {cluster_id}: {count} паттернов ({percentage:.1f}%)"
                         )
                 else:
-                    self._logger.info(f"   [ВНИМАНИЕ]  Недостаточно данных для кластеризации")
-                
+                    self._logger.info(
+                        f"   [ВНИМАНИЕ]  Недостаточно данных для кластеризации"
+                    )
+
                 # Модель предсказания успеха (RandomForestClassifier)
-                self._logger.info(f"\n[МОДЕЛЬ] Модель предсказания успеха (RandomForestClassifier):")
+                self._logger.info(
+                    f"\n[МОДЕЛЬ] Модель предсказания успеха (RandomForestClassifier):"
+                )
                 model = self.learning_system.learning_data.get(
                     "success_prediction_model"
                 )
                 model_metrics = self.learning_system.learning_data.get(
                     "model_metrics", {}
                 )
-                
+
                 if model is not None:
                     self._logger.info(f"   [+] Модель обучена и готова к использованию")
-                    
+
                     # Показываем метрики модели
                     model_accuracy = model_metrics.get("last_accuracy")
                     if model_accuracy is not None:
-                        self._logger.info(f"   Точность модели (accuracy): {model_accuracy:.2%}")
-                    
+                        self._logger.info(
+                            f"   Точность модели (accuracy): {model_accuracy:.2%}"
+                        )
+
                     training_samples = model_metrics.get("training_samples", 0)
                     test_samples = model_metrics.get("test_samples", 0)
                     features_count = model_metrics.get("features_count", 0)
-                    
+
                     if training_samples > 0:
-                        self._logger.info(f"   Образцов для обучения: {training_samples}")
-                        self._logger.info(f"   Образцов для тестирования: {test_samples}")
+                        self._logger.info(
+                            f"   Образцов для обучения: {training_samples}"
+                        )
+                        self._logger.info(
+                            f"   Образцов для тестирования: {test_samples}"
+                        )
                         self._logger.info(f"   Количество признаков: {features_count}")
-                    
+
                     # Получаем информацию о факторах успеха
                     success_factors = self.learning_system.learning_data.get(
                         "success_factors", {}
@@ -168,7 +188,7 @@ class AIPlayerMetricsMixin:
                         self._logger.info(
                             f"   До следующего обучения: {iterations_needed} итераций"
                         )
-                
+
                 # Веса стратегий
                 strategy_weights = learning_progress.get("strategy_weights", {})
                 if strategy_weights:
@@ -177,19 +197,21 @@ class AIPlayerMetricsMixin:
                         bar_length = int(weight * 20)
                         bar = "█" * bar_length + "░" * (20 - bar_length)
                         self._logger.info(f"   {strategy:12s}: {bar} {weight:.3f}")
-                
+
             else:
-                self._logger.info(f"\n[ВНИМАНИЕ]  Система обучения ещё не накопила достаточно данных")
+                self._logger.info(
+                    f"\n[ВНИМАНИЕ]  Система обучения ещё не накопила достаточно данных"
+                )
                 self._logger.info(
                     f"   Продолжайте играть для активации кластеризации и предсказания"
                 )
-            
+
             # Общая оценка системы
             self._logger.info(f"\n[ОЦЕНКА] Общая оценка системы:")
             if isinstance(learning_progress, dict):
                 avg_accuracy = self.performance_metrics.get("average_accuracy", 0.0)
                 learning_prog = self.performance_metrics.get("learning_progress", 0.0)
-                
+
                 # Комплексная оценка
                 if learning_progress.get("total_iterations", 0) > 0:
                     # Базовые компоненты оценки
@@ -197,19 +219,21 @@ class AIPlayerMetricsMixin:
                     learning_progress_weight = 0.25
                     success_rate_weight = 0.25
                     model_accuracy_weight = 0.2
-                    
+
                     system_score = (
                         avg_accuracy * prediction_accuracy_weight
                         + learning_prog * learning_progress_weight
                         + (learning_progress.get("success_rate", 0.0))
                         * success_rate_weight
                     ) * 100
-                    
+
                     # Добавляем оценку модели предсказания, если она обучена
                     model_accuracy = learning_progress.get("prediction_model_accuracy")
                     if model_accuracy is not None:
                         system_score += model_accuracy * model_accuracy_weight * 100
-                        self._logger.info(f"   Точность ML модели: {model_accuracy:.2%}")
+                        self._logger.info(
+                            f"   Точность ML модели: {model_accuracy:.2%}"
+                        )
                     else:
                         # Если модель не обучена, перераспределяем веса
                         adjusted_weight = (
@@ -220,14 +244,18 @@ class AIPlayerMetricsMixin:
                         system_score = (
                             system_score / (1 - model_accuracy_weight) * adjusted_weight
                         )
-                    
-                    self._logger.info(f"   Средняя точность предсказаний: {avg_accuracy:.2%}")
+
+                    self._logger.info(
+                        f"   Средняя точность предсказаний: {avg_accuracy:.2%}"
+                    )
                     self._logger.info(f"   Прогресс обучения: {learning_prog:.2%}")
                     self._logger.info(
                         f"   Успешность адаптаций: {learning_progress.get('success_rate', 0.0):.2%}"
                     )
-                    self._logger.info(f"   Комплексная оценка системы: {system_score:.1f}/100")
-                    
+                    self._logger.info(
+                        f"   Комплексная оценка системы: {system_score:.1f}/100"
+                    )
+
                     if system_score >= 80:
                         self._logger.info(f"   [ОТЛИЧНО] Система работает эффективно")
                     elif system_score >= 60:
@@ -237,20 +265,31 @@ class AIPlayerMetricsMixin:
                     else:
                         self._logger.info(f"   [ТРЕБУЕТ УЛУЧШЕНИЯ] Недостаточно данных")
                 else:
-                    self._logger.info(f"   [ВНИМАНИЕ]  Недостаточно данных для комплексной оценки")
-            
+                    self._logger.info(
+                        f"   [ВНИМАНИЕ]  Недостаточно данных для комплексной оценки"
+                    )
+
             self._logger.info("=" * 70 + "\n")
         except (AttributeError, TypeError, KeyError) as e:
             # В случае ошибки выводим минимальную информацию
             try:
-                self._logger.error(f"\n[ОШИБКА] Ошибка типов при выводе метрик: {e}\n", exc_info=True)
+                self._logger.error(
+                    f"\n[ОШИБКА] Ошибка типов при выводе метрик: {e}\n", exc_info=True
+                )
             except (UnicodeError, ValueError) as e2:
                 # Если даже это не работает, выводим без форматирования
-                self._logger.error(f"\n[ОШИБКА] Ошибка при выводе метрик: {e}\n", exc_info=True)
-                self._logger.error(f"[ОШИБКА] Дополнительная ошибка: {e2}\n", exc_info=True)
+                self._logger.error(
+                    f"\n[ОШИБКА] Ошибка при выводе метрик: {e}\n", exc_info=True
+                )
+                self._logger.error(
+                    f"[ОШИБКА] Дополнительная ошибка: {e2}\n", exc_info=True
+                )
         except (UnicodeError, ValueError) as e:
             # Ошибка форматирования/кодировки
-            self._logger.error(f"\n[ОШИБКА] Ошибка форматирования при выводе метрик: {e}\n", exc_info=True)
+            self._logger.error(
+                f"\n[ОШИБКА] Ошибка форматирования при выводе метрик: {e}\n",
+                exc_info=True,
+            )
 
     def _save_session_metrics(self, success: bool, final_score: int) -> None:
         """
