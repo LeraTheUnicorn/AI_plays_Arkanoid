@@ -11,7 +11,6 @@ import re
 import logging
 from typing import List, Dict, Any, Optional
 from datetime import datetime
-from pathlib import Path
 
 # Настройка логирования
 # Используем стандартный logger, root logger будет настроен через ai.logging_config
@@ -153,25 +152,33 @@ def get_highscores_file_path(custom_path: Optional[str] = None) -> str:
         return custom_path
     
     game_dir = get_game_directory()
-    resources_dir = os.path.join(game_dir, "resources")
-    data_dir = os.path.join(resources_dir, "data")
+    
+    # В exe файле ресурсы уже встроены, не создаем каталог resources
+    # Сохраняем файл рекордов напрямую в директории exe файла
+    if getattr(sys, "frozen", False):
+        # В exe файле сохраняем напрямую в директории exe
+        data_dir = game_dir
+    else:
+        # В режиме разработки game_dir уже содержит путь к resources/
+        # Используем resources/data напрямую
+        data_dir = os.path.join(game_dir, "data")
 
-    # Создаем каталоги, если они не существуют
-    try:
-        os.makedirs(data_dir, exist_ok=True)
-    except (OSError, PermissionError) as e:
-        logger.warning(f"Не удалось создать каталог {data_dir}: {e}")
-        # Если не удается создать каталог, используем fallback - src/resources/data
-        current_dir = os.path.dirname(os.path.abspath(__file__))  # src/game/
-        src_dir = os.path.dirname(current_dir)  # src/
-        fallback_resources = os.path.join(src_dir, "resources")  # src/resources/
-        data_dir = os.path.join(fallback_resources, "data")
+        # Создаем каталоги, если они не существуют
         try:
             os.makedirs(data_dir, exist_ok=True)
-        except (OSError, PermissionError) as e2:
-            logger.warning(f"Не удалось создать fallback каталог {data_dir}: {e2}")
-            # Последний fallback: каталог без resources/data
-            data_dir = os.path.dirname(os.path.abspath(__file__))
+        except (OSError, PermissionError) as e:
+            logger.warning(f"Не удалось создать каталог {data_dir}: {e}")
+            # Если не удается создать каталог, используем fallback - src/resources/data
+            current_dir = os.path.dirname(os.path.abspath(__file__))  # src/game/
+            src_dir = os.path.dirname(current_dir)  # src/
+            fallback_resources = os.path.join(src_dir, "resources")  # src/resources/
+            data_dir = os.path.join(fallback_resources, "data")
+            try:
+                os.makedirs(data_dir, exist_ok=True)
+            except (OSError, PermissionError) as e2:
+                logger.warning(f"Не удалось создать fallback каталог {data_dir}: {e2}")
+                # Последний fallback: каталог без resources/data
+                data_dir = os.path.dirname(os.path.abspath(__file__))
 
     return os.path.join(data_dir, "highscores.json")
 
@@ -428,6 +435,45 @@ class HighScoreManager:
         # Список отсортирован, проверяем последний элемент
         worst_score = self.highscores[-1]["score"]
         return score >= worst_score
+
+    def is_new_record(self, score: int, game_time_seconds: int) -> bool:
+        """
+        Проверяет, является ли результат новым рекордом (лучше текущего лучшего).
+        
+        Args:
+            score: Количество очков для проверки
+            game_time_seconds: Время игры в секундах
+            
+        Returns:
+            True если результат лучше текущего лучшего рекорда, False иначе
+        """
+        # Проверяем диапазон очков
+        if not isinstance(score, int):
+            return False
+        if not (MIN_SCORE <= score <= MAX_SCORE):
+            return False
+        
+        # Проверяем диапазон времени
+        if not isinstance(game_time_seconds, int):
+            return False
+        if not (0 <= game_time_seconds <= MAX_TIME_SECONDS):
+            return False
+
+        # Если список пуст, это новый рекорд
+        if not self.highscores:
+            return True
+        
+        # Список отсортирован, лучший результат - первый
+        best_score = self.highscores[0]
+        
+        # Сравниваем по приоритету: очки (убывание), время (возрастание)
+        if score > best_score["score"]:
+            return True
+        elif score == best_score["score"]:
+            # При равных очках лучше тот, у кого меньше время
+            return game_time_seconds < best_score["time_seconds"]
+        
+        return False
 
     def display_highscores(self) -> str:
         """

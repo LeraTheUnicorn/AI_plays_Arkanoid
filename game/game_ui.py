@@ -7,7 +7,7 @@ import os
 import sys
 import time
 from typing import Tuple, Optional, Any
-import pygame
+import pygame  # pyright: ignore[reportMissingImports]
 
 try:
     from .game_config import SCREEN_WIDTH, SCREEN_HEIGHT
@@ -199,7 +199,7 @@ def show_victory_splash(screen: pygame.Surface, duration_seconds: float = 5.0) -
     
     try:
         try:
-            from PIL import Image, ImageSequence
+            from PIL import Image, ImageSequence  # type: ignore[import-untyped]
             
             screen_width, screen_height = screen.get_size()
             if not getattr(sys, "frozen", False):

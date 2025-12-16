@@ -16,40 +16,26 @@ if __name__ == "__main__":
     if project_root not in sys.path:
         sys.path.insert(0, project_root)
 
-import warnings
-from contextlib import contextmanager
-from typing import Generator
-
 # Импортируем утилиты из модуля (с поддержкой как относительных, так и абсолютных импортов)
 try:
     from .game_utils import (
         suppress_pkg_resources_warnings,
-        resource_path,
-        is_valid_player_name_char,
-        build_bricks,
         create_ai_player,
     )
 except ImportError:
     from game.game_utils import (
         suppress_pkg_resources_warnings,
-        resource_path,
-        is_valid_player_name_char,
-        build_bricks,
         create_ai_player,
     )
 
 # Импортируем UI функции из модуля
 try:
     from .game_ui import (
-        show_highscores,
-        trigger_instant_victory,
         show_victory_splash,
         show_game_results,
     )
 except ImportError:
     from game.game_ui import (
-        show_highscores,
-        trigger_instant_victory,
         show_victory_splash,
         show_game_results,
     )
@@ -66,7 +52,6 @@ try:
         initialize_game_objects,
         initialize_game_variables,
         create_ai_player_system,
-        setup_ai_player_for_training,
         start_background_music,
         save_training_data_on_exit,
         finalize_game_setup,
@@ -79,7 +64,6 @@ except ImportError:
         initialize_game_objects,
         initialize_game_variables,
         create_ai_player_system,
-        setup_ai_player_for_training,
         start_background_music,
         save_training_data_on_exit,
         finalize_game_setup,
@@ -100,34 +84,14 @@ except ImportError:
 # Импортируем функции физики и столкновений
 try:
     from .game_loop_physics import (
-        update_ball_physics,
-        check_paddle_collisions,
-        handle_paddle_top_bounce,
-        handle_ball_stuck,
-        check_brick_collisions,
-        handle_ball_loss,
-        handle_game_restart_training,
-        handle_paddle_side_collision,
-        handle_all_lives_lost_after_ball_loss,
         apply_restart_result,
         position_ball_on_paddle,
-        handle_victory_check,
         process_ball_physics_and_collisions,
     )
 except ImportError:
     from game.game_loop_physics import (
-        update_ball_physics,
-        check_paddle_collisions,
-        handle_paddle_top_bounce,
-        handle_ball_stuck,
-        check_brick_collisions,
-        handle_ball_loss,
-        handle_game_restart_training,
-        handle_paddle_side_collision,
-        handle_all_lives_lost_after_ball_loss,
         apply_restart_result,
         position_ball_on_paddle,
-        handle_victory_check,
         process_ball_physics_and_collisions,
     )
 
@@ -145,29 +109,19 @@ except ImportError:
 try:
     from .game_loop_ai import (
         update_ai_logic,
-        update_ai_paddle_movement,
-        calculate_paddle_speed_with_bricks,
         initialize_ai_before_game_loop,
-        apply_paddle_movement,
         process_paddle_control,
     )
 except ImportError:
     from game.game_loop_ai import (
         update_ai_logic,
-        update_ai_paddle_movement,
-        calculate_paddle_speed_with_bricks,
         initialize_ai_before_game_loop,
-        apply_paddle_movement,
         process_paddle_control,
     )
 
 os.environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "1"  # Скрыть сообщение поддержки pygame
 
-import random
 import time
-import numpy as np
-from dataclasses import dataclass, field
-from typing import List, Tuple, Optional, Any
 
 # КРИТИЧНО: Настраиваем логирование ПЕРЕД импортом всех модулей
 # Это гарантирует, что ВСЕ модули используют централизованную конфигурацию
@@ -209,97 +163,64 @@ except (ImportError, ModuleNotFoundError):
 
 # Импортируем pygame с ограниченным подавлением предупреждений
 with suppress_pkg_resources_warnings():
-    import pygame
+    import pygame  # type: ignore[reportMissingImports]
 
-# Импорты с поддержкой как относительных, так и абсолютных путей
-try:
-    # Пытаемся использовать относительные импорты (когда запускается как модуль)
-    from highscores import HighScoreManager
-    from settings import SettingsManager
-    from game_models import Ball, Paddle
-except ImportError:
-    # Если относительные импорты не работают (когда запускается напрямую), используем абсолютные
-    from game.highscores import HighScoreManager  # type: ignore[assignment]
-    from game.settings import SettingsManager  # type: ignore[assignment]
-    from game.game_models import Ball, Paddle  # type: ignore[assignment]
-
-from ai.ai_player import AIPlayer
+# Note: HighScoreManager, SettingsManager, Ball, Paddle, and AIPlayer are not directly imported
+# as they are created by factory functions (initialize_managers, initialize_game_objects, etc.)
 
 
 # Импортируем конфигурацию из централизованного файла
 try:
     from .game_config import (
-        BALL_SIZE,
-        BALL_SPEED_DEFAULT,
-        BRICK_COLS,
-        BRICK_HEIGHT,
-        BRICK_OFFSET_TOP,
-        BRICK_PADDING,
-        BRICK_ROWS,
-        BRICK_WIDTH,
-        FPS,
         MAX_LIVES,
-        PADDLE_HEIGHT,
-        PADDLE_SPEED,
-        PADDLE_WIDTH,
         SCREEN_HEIGHT,
         SCREEN_WIDTH,
-        SEPARATION_ZONE_BOTTOM,
-        SEPARATION_ZONE_TOP,
     )
 except ImportError:
     from game.game_config import (
-        BALL_SIZE,
-        BALL_SPEED_DEFAULT,
-        BRICK_COLS,
-        BRICK_HEIGHT,
-        BRICK_OFFSET_TOP,
-        BRICK_PADDING,
-        BRICK_ROWS,
-        BRICK_WIDTH,
-        FPS,
         MAX_LIVES,
-        PADDLE_HEIGHT,
-        PADDLE_SPEED,
-        PADDLE_WIDTH,
         SCREEN_HEIGHT,
         SCREEN_WIDTH,
-        SEPARATION_ZONE_BOTTOM,
-        SEPARATION_ZONE_TOP,
     )
 
 
-# is_valid_player_name_char импортируется из game_utils
-
-
-
-
-# show_game_results импортируется из game_ui.py
-
-# КРИТИЧНО: Классы Paddle и Ball импортируются из game_models.py
-# для устранения дубликатов кода (см. docs/DUPLICATE_ANALYSIS.md)
-
-# build_bricks импортируется из game_utils
-
-# Импортируем функции отрисовки из модуля
-try:
-    from .game_rendering import (
-        draw_bricks,
-        draw_hud,
-        render_colored_hint,
-        draw_start_hint,
-    )
-except ImportError:
-    from game.game_rendering import (
-        draw_bricks,
-        draw_hud,
-        render_colored_hint,
-        draw_start_hint,
-    )
+# Note: Rendering functions (draw_bricks, draw_hud, etc.) are not directly imported
+# as they are called through render_game_frame from game_loop_rendering
 
 
 
 def main() -> None:
+    # Настройка кодировки консоли для Windows (исправление отображения русских символов)
+    # В exe файле не выполняем os.system, чтобы не открывать консоль
+    if getattr(sys, "frozen", False):
+        # В exe файле перенаправляем stdout и stderr в никуда, чтобы не открывать консоль
+        import io
+        try:
+            sys.stdout = io.StringIO()
+            sys.stderr = io.StringIO()
+        except (AttributeError, ValueError):
+            # Если не удалось, пробуем другой способ
+            try:
+                import os
+                devnull = os.devnull
+                sys.stdout = open(devnull, 'w')
+                sys.stderr = open(devnull, 'w')
+            except:
+                pass
+    elif sys.platform == "win32":
+        try:
+            # Пытаемся установить UTF-8 для консоли
+            import io
+            sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
+            sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
+        except (AttributeError, ValueError):
+            # Если не удалось, пробуем через os (только в режиме разработки)
+            try:
+                import os
+                os.system('chcp 65001 >nul 2>&1')  # Устанавливаем UTF-8 в консоли
+            except:
+                pass
+    
     # Инициализация pygame и создание основных объектов
     screen, clock, font, big_font = initialize_pygame()
     

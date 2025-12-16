@@ -23,12 +23,8 @@ from pathlib import Path
 from typing import Dict, Any, Optional
 
 # Protocol доступен в typing начиная с Python 3.8
-# Используем typing_extensions для совместимости с type checkers
-try:
-    from typing import Protocol  # type: ignore[assignment]
-except ImportError:
-    # Fallback для старых версий (хотя мы уже проверили версию)
-    from typing_extensions import Protocol
+# Проект требует Python 3.11+, поэтому fallback не нужен
+from typing import Protocol
 
 # Проверка версии Python
 if sys.version_info < (3, 8):
@@ -326,28 +322,35 @@ def get_settings_file_path() -> str:
     try:
         game_dir = get_game_directory()
         
-        # Безопасное объединение путей с защитой от path traversal
-        resources_dir = safe_join_path(game_dir, "resources")
-        
-        # Создаем каталог, если он не существует
-        if not os.path.exists(resources_dir):
-            try:
-                os.makedirs(resources_dir, exist_ok=True)
-            except (OSError, PermissionError) as e:
-                logger.warning(f"Не удалось создать каталог {resources_dir}: {e}")
-                # Если не удается создать каталог, используем fallback - src/resources
-                current_dir = os.path.dirname(os.path.abspath(__file__))  # src/game/
-                src_dir = os.path.dirname(current_dir)  # src/
-                fallback_dir = os.path.join(src_dir, "resources")  # src/resources/
-                resources_dir = safe_join_path(fallback_dir, "")
-                if not os.path.exists(resources_dir):
-                    try:
-                        os.makedirs(resources_dir, exist_ok=True)
-                    except (OSError, PermissionError) as e2:
-                        logger.error(f"Не удалось создать резервный каталог {resources_dir}: {e2}")
-                        raise
-        
-        settings_path = os.path.join(resources_dir, "settings.json")
+        # В exe файле ресурсы уже встроены, не создаем каталог resources
+        # Сохраняем файл настроек напрямую в директории exe файла
+        if getattr(sys, "frozen", False):
+            # В exe файле сохраняем напрямую в директории exe
+            settings_path = os.path.join(game_dir, "settings.json")
+        else:
+            # В режиме разработки game_dir уже содержит путь к resources/
+            # Используем его напрямую, не добавляя еще один resources/
+            resources_dir = game_dir
+            
+            # Создаем каталог, если он не существует
+            if not os.path.exists(resources_dir):
+                try:
+                    os.makedirs(resources_dir, exist_ok=True)
+                except (OSError, PermissionError) as e:
+                    logger.warning(f"Не удалось создать каталог {resources_dir}: {e}")
+                    # Если не удается создать каталог, используем fallback - src/resources
+                    current_dir = os.path.dirname(os.path.abspath(__file__))  # src/game/
+                    src_dir = os.path.dirname(current_dir)  # src/
+                    fallback_dir = os.path.join(src_dir, "resources")  # src/resources/
+                    resources_dir = safe_join_path(fallback_dir, "")
+                    if not os.path.exists(resources_dir):
+                        try:
+                            os.makedirs(resources_dir, exist_ok=True)
+                        except (OSError, PermissionError) as e2:
+                            logger.error(f"Не удалось создать резервный каталог {resources_dir}: {e2}")
+                            raise
+            
+            settings_path = os.path.join(resources_dir, "settings.json")
         
         # Кэшируем путь
         _settings_file_path_cache = settings_path

@@ -7,7 +7,7 @@ import sys
 import warnings
 from contextlib import contextmanager
 from typing import Generator, List
-import pygame
+import pygame  # type: ignore[reportMissingImports]
 
 # Контекстный менеджер для ограниченного подавления предупреждений
 @contextmanager

@@ -404,7 +404,7 @@ def handle_paddle_top_bounce(
             if predicted_landing_x is not None:
                 prediction_error = abs(actual_ball_x - predicted_landing_x)
                 logger.info(
-                    f"[BALL BOUNCE SUCCESS] ✅ Мяч успешно отскочил от платформы! "
+                    f"[BALL BOUNCE SUCCESS] [OK] Мяч успешно отскочил от платформы! "
                     f"Фактическая позиция мяча: {actual_ball_x:.1f}px, "
                     f"Предсказанная позиция: {predicted_landing_x:.1f}px, "
                     f"Ошибка предсказания: {prediction_error:.1f}px, "
@@ -413,7 +413,7 @@ def handle_paddle_top_bounce(
                 )
             else:
                 logger.info(
-                    f"[BALL BOUNCE SUCCESS] ✅ Мяч успешно отскочил от платформы! "
+                    f"[BALL BOUNCE SUCCESS] [OK] Мяч успешно отскочил от платформы! "
                     f"Фактическая позиция мяча: {actual_ball_x:.1f}px, "
                     f"Предсказанная позиция: НЕ ДОСТУПНА, "
                     f"Позиция платформы: {actual_paddle_x:.1f}px, "
@@ -802,12 +802,12 @@ def handle_ball_loss(
                 print(f"  Мяч ударился о платформу: {ball_hit_paddle} (если False - мяч пролетел мимо)")
                 print(f"  Целевая позиция AI: optimal_x={optimal_x:.1f} distance_to_optimal={distance_to_optimal:.1f}px")
                 if predicted_landing_x is not None:
-                    print(f"  🔴 ПРЕДСКАЗАНИЕ: Предсказанная позиция приземления: {predicted_landing_x:.1f}px")
-                    print(f"  🔴 ПРЕДСКАЗАНИЕ: Фактическая позиция мяча: {ball_x:.1f}px")
-                    print(f"  🔴 ПРЕДСКАЗАНИЕ: Ошибка предсказания: {prediction_error:.1f}px")
-                    print(f"  🔴 ПРЕДСКАЗАНИЕ: Мяч пролетел мимо на: {abs(ball_x - paddle_x):.1f}px от центра платформы")
+                    print(f"  [ПРЕДСКАЗАНИЕ] Предсказанная позиция приземления: {predicted_landing_x:.1f}px")
+                    print(f"  [ПРЕДСКАЗАНИЕ] Фактическая позиция мяча: {ball_x:.1f}px")
+                    print(f"  [ПРЕДСКАЗАНИЕ] Ошибка предсказания: {prediction_error:.1f}px")
+                    print(f"  [ПРЕДСКАЗАНИЕ] Мяч пролетел мимо на: {abs(ball_x - paddle_x):.1f}px от центра платформы")
                 else:
-                    print(f"  🔴 ПРЕДСКАЗАНИЕ: Предсказанная позиция НЕ ДОСТУПНА")
+                    print(f"  [ПРЕДСКАЗАНИЕ] Предсказанная позиция НЕ ДОСТУПНА")
                 print(f"  Скорость платформы: base={base_speed} adjusted={adjusted_speed}")
                 print(f"  Зоны: separation_start={separation_zone_start} paddle_start={paddle_zone_start} ball_was_in_zone={ball_was_in_separation_zone}")
                 print(f"  Целевая позиция установлена: {ai_player.separation_zone_tracker.target_position_set if hasattr(ai_player, 'separation_zone_tracker') else False}")
@@ -1306,6 +1306,15 @@ def apply_restart_result(
         Tuple: (paddle, ball, bricks, score, lives_left, game_over, game_started, game_start_time, ai_player)
     """
     if new_paddle is not None:
+        # Type narrowing: if new_paddle is not None, all other new_* values should also be not None
+        # This is guaranteed by the calling code (handle_game_restart_training returns all values together)
+        assert new_ball is not None, "new_ball must not be None when new_paddle is not None"
+        assert new_bricks is not None, "new_bricks must not be None when new_paddle is not None"
+        assert new_score is not None, "new_score must not be None when new_paddle is not None"
+        assert new_lives_left is not None, "new_lives_left must not be None when new_paddle is not None"
+        assert new_game_over is not None, "new_game_over must not be None when new_paddle is not None"
+        assert new_game_started is not None, "new_game_started must not be None when new_paddle is not None"
+        assert new_game_start_time is not None, "new_game_start_time must not be None when new_paddle is not None"
         return (
             new_paddle,
             new_ball,

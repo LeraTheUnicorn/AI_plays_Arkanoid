@@ -10,7 +10,7 @@ import math
 from dataclasses import dataclass, field
 from typing import List, Optional
 
-import pygame
+import pygame  # pyright: ignore[reportMissingImports]
 
 from .game_config import (
     BALL_SIZE,

@@ -4,7 +4,7 @@
 Содержит функции для отрисовки игровых объектов, UI и обновления экрана.
 """
 
-import pygame
+import pygame  # pyright: ignore[reportMissingImports]
 from typing import Optional, Any
 
 try:

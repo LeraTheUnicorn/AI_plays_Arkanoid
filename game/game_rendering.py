@@ -3,7 +3,7 @@
 """
 
 from typing import List, Tuple, Optional
-import pygame
+import pygame  # pyright: ignore[reportMissingImports]
 
 try:
     from .game_config import (

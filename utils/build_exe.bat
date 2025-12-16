@@ -2,10 +2,24 @@
 REM Скрипт для сборки exe файла игры Arkanoid
 REM Использование: build_exe.bat
 
+REM Устанавливаем кодировку UTF-8 для корректного отображения русских символов
+chcp 65001 >nul 2>&1
+
+REM Переходим в корневую директорию проекта (где находится spec файл)
+cd /d "%~dp0.."
+
 echo ========================================
 echo Сборка Arkanoid в EXE файл
 echo ========================================
 echo.
+
+REM Проверка наличия spec файла
+if not exist arkanoid.spec (
+    echo [ОШИБКА] Файл arkanoid.spec не найден!
+    echo Убедитесь, что вы запускаете скрипт из корня проекта.
+    pause
+    exit /b 1
+)
 
 REM Проверка наличия PyInstaller
 python -m pip show pyinstaller >nul 2>&1
