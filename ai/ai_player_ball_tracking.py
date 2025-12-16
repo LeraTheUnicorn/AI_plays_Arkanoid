@@ -6,13 +6,36 @@
 """
 
 import random
-from typing import Optional, Any
+import logging
+from typing import Optional, Any, TYPE_CHECKING, Dict, Callable
 
-from .exceptions import InvalidStateError, PredictionError
+if TYPE_CHECKING:
+    from .game_state import GameState
+    from .targeting import TargetSelector, PositionCalculator
+    from .ai_player_models import TargetingSystem, SeparationZoneTracker
+    from .config import AIConfig
 
 
 class AIPlayerBallTrackingMixin:
     """Миксин для методов отслеживания мяча AIPlayer."""
+
+    # Аннотации типов для статического анализатора
+    current_game_state: Optional["GameState"]
+    target_selector: "TargetSelector"
+    loop_prevention_system: Dict[str, Any]
+    targeting_system: "TargetingSystem"
+    position_calculator: "PositionCalculator"
+    smoothness_system: Dict[str, Any]
+    separation_zone_tracker: "SeparationZoneTracker"
+    empty_bounce_tracker: Dict[str, Any]
+    screen_width: int
+    paddle_width: int
+    config: "AIConfig"
+    _logger: logging.Logger
+    _predict_exact_landing_position: Callable[[], float]
+    _change_strategy_if_looping: Callable[[], None]
+    _apply_alternative_strategy: Callable[[int], int]
+    is_ball_moving_towards_paddle: Callable[[], bool]
 
     def _reevaluate_after_bounce(self) -> None:
         """Переоценивает ситуацию после отбития мяча."""

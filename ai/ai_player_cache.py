@@ -10,6 +10,9 @@ from typing import Dict, Any
 class AIPlayerCacheMixin:
     """Миксин для методов кэширования AIPlayer."""
 
+    # Аннотация типа для статического анализатора
+    _brick_cache_stats: Dict[str, int]
+
     def get_brick_cache_stats(self) -> Dict[str, Any]:
         """
         Возвращает статистику использования кэша карты кирпичей.

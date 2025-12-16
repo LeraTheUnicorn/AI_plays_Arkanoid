@@ -4,11 +4,23 @@
 Содержит методы для резервных стратегий движения и проверки временного давления.
 """
 
-from typing import Dict, Any
+from __future__ import annotations
+
+from typing import Optional, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .game_state import GameState
+    from .ai_player_models import TargetingSystem
 
 
 class AIPlayerFallbackMixin:
     """Миксин для методов fallback логики AIPlayer."""
+
+    # Аннотации типов для статического анализатора
+    current_game_state: Optional["GameState"]
+    screen_width: int
+    paddle_width: int
+    targeting_system: "TargetingSystem"
 
     def _fallback_movement(self, current_x: int) -> int:
         """
@@ -36,7 +48,6 @@ class AIPlayerFallbackMixin:
         predicted_ball_x = ball_x + ball_vel_x * prediction_frames
 
         # Ограничиваем границами экрана
-        screen_center = self.screen_width // 2
         paddle_half_width = self.paddle_width / 2
         min_x = paddle_half_width
         max_x = self.screen_width - paddle_half_width

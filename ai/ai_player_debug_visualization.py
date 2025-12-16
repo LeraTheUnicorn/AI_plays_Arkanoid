@@ -4,12 +4,19 @@
 Содержит методы для отображения отладочной информации и предсказанной траектории.
 """
 
-from typing import Any
+from __future__ import annotations
+
+import logging
+from typing import Any, Optional, Dict, TYPE_CHECKING, Callable
 
 try:
-    import pygame
+    import pygame  # pyright: ignore[reportMissingImports]
 except ImportError:
     pygame = None
+
+if TYPE_CHECKING:
+    from .game_state import GameState
+    from .trajectory_predictor import TrajectoryPredictor
 
 
 class AIPlayerDebugVisualizationMixin:
@@ -17,6 +24,15 @@ class AIPlayerDebugVisualizationMixin:
     Миксин для методов визуализации отладочной информации.
     Добавляет методы для отображения отладочной информации на экране.
     """
+
+    # Аннотации типов для статического анализатора
+    performance_metrics: Dict[str, Any]
+    is_active: bool
+    current_game_state: Optional["GameState"]
+    is_ball_moving_towards_paddle: Callable[[], bool]
+    debug_mode: bool
+    _logger: logging.Logger
+    trajectory_predictor: "TrajectoryPredictor"
 
     def visualize_debug_info(self, screen: Any) -> None:
         """
@@ -47,6 +63,8 @@ class AIPlayerDebugVisualizationMixin:
                 info_lines.append(f"Best: -- (50 blocks)")
 
             # Отрисовка фона для текста
+            if pygame is None:
+                return
             font = pygame.font.SysFont("arial", 16)
             line_height = 20
             box_width = 200
@@ -111,7 +129,8 @@ class AIPlayerDebugVisualizationMixin:
                     else:
                         color = (255, 255, 0)  # Желтый - конец траектории
 
-                    pygame.draw.circle(screen, color, (int(point.x), int(point.y)), 2)
+                    if pygame is not None:
+                        pygame.draw.circle(screen, color, (int(point.x), int(point.y)), 2)
 
             # Рисуем точку пересечения с платформой
             intersection = self.trajectory_predictor.predict_paddle_intersection(
@@ -123,6 +142,7 @@ class AIPlayerDebugVisualizationMixin:
                 intersection
                 and hasattr(intersection, "x")
                 and hasattr(intersection, "y")
+                and pygame is not None
             ):
                 pygame.draw.circle(
                     screen, (255, 0, 0), (int(intersection.x), int(intersection.y)), 5
