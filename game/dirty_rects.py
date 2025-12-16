@@ -6,7 +6,7 @@
 """
 
 from typing import List, Set
-import pygame
+import pygame  # pyright: ignore[reportMissingImports]
 
 from .game_config import DIRTY_RECT_BUFFER, USE_DIRTY_RECTS
 

@@ -5,7 +5,7 @@
 """
 
 import time
-import pygame
+import pygame  # pyright: ignore[reportMissingImports]
 from typing import Tuple, Optional, Any
 
 try:
@@ -236,44 +236,6 @@ def update_ai_paddle_movement(
         return 0, base_speed
 
 
-def calculate_paddle_speed_with_bricks(
-    ball: Ball,
-    bricks: list,
-    ai_player: AIPlayer,
-) -> int:
-    """
-    Вычисляет скорость платформы с учетом количества оставшихся блоков.
-    
-    Args:
-        ball: Объект мяча
-        bricks: Список кирпичей
-        ai_player: Объект AI игрока
-        
-    Returns:
-        int: Базовая скорость платформы (35-60)
-    """
-    # КРИТИЧНО: При малом количестве блоков увеличиваем скорость платформы
-    # Но ограничиваем разумными пределами (35-60)
-    try:
-        bricks_remaining = len(bricks) if bricks is not None else 50
-    except (NameError, TypeError):
-        bricks_remaining = 50
-    
-    # Вычисляем базовую скорость с учетом количества блоков
-    ball_speed = ball.get_speed()
-    base_speed = max(35, min(int(ball_speed * 2.5), 60))
-    paddle_speed_multiplier = ai_player.get_optimal_paddle_speed_multiplier()
-    base_speed = int(base_speed * paddle_speed_multiplier)
-    base_speed = max(35, min(base_speed, 60))
-    
-    if bricks_remaining <= 5:
-        base_speed = min(int(base_speed * 1.2), 60)
-    if bricks_remaining == 1:
-        base_speed = 60
-    
-    return base_speed
-
-
 def initialize_ai_before_game_loop(
     ai_player: AIPlayer,
     ball: Ball,
@@ -332,32 +294,21 @@ def process_paddle_control(
     training_mode: bool,
     ai_player: Optional[AIPlayer],
     ball: Ball,
-    bricks: list,
     frame_counter: int,
     logger: Any,
-    keys: Any,
 ) -> None:
     """
-    Обрабатывает управление платформой (AI или ручное).
+    Обрабатывает управление платформой через AI.
     
     Args:
         paddle: Объект платформы
-        training_mode: Режим обучения
+        training_mode: Режим обучения (всегда True)
         ai_player: Объект AI игрока
         ball: Объект мяча
-        bricks: Список кирпичей
         frame_counter: Счетчик кадров
         logger: Логгер
-        keys: Нажатые клавиши
     """
     if training_mode and ai_player is not None:
-        # Вычисляем скорость платформы с учетом количества блоков используя модуль game_loop_ai
-        base_speed = calculate_paddle_speed_with_bricks(
-            ball,
-            bricks,
-            ai_player,
-        )
-        
         # Обновляем движение платформы используя модуль game_loop_ai
         movement, adjusted_speed = update_ai_paddle_movement(
             ai_player,
@@ -369,13 +320,10 @@ def process_paddle_control(
         
         # Применяем движение платформы используя модуль game_loop_ai
         apply_paddle_movement(paddle, movement, adjusted_speed)
-        
-        # Отладочная информация (выводим периодически)
-        if pygame.time.get_ticks() % 1000 < 16:
-            optimal_x = ai_player.get_optimal_paddle_position()
     else:
-        # Ручное управление платформой
-        if keys[pygame.K_LEFT]:
-            paddle.move(-1)
-        if keys[pygame.K_RIGHT]:
-            paddle.move(1)
+        # КРИТИЧНО: В этой игре всегда используется режим обучения (training_mode=True)
+        # Если мы попали сюда, это ошибка конфигурации
+        if not training_mode:
+            raise RuntimeError("Игра работает только в режиме обучения (training_mode=True)")
+        if ai_player is None:
+            raise RuntimeError("ai_player должен быть создан в режиме обучения")

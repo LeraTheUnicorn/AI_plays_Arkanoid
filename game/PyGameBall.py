@@ -314,15 +314,7 @@ def main() -> None:
                 key_1_last_press_time,
                 KEY_1_RESET_TIME,
                 bricks,
-                game_over,
                 lives_left,
-                game_start_time,
-                score,
-                player_name,
-                highscore_manager,
-                screen,
-                font,
-                big_font,
             )
             
             # Обработка выхода из игры
@@ -380,10 +372,8 @@ def main() -> None:
                     training_mode,
                     ai_player,
                     ball,
-                    bricks,
                     frame_counter,
                     logger,
-                    keys,
                 )
 
                 # Обрабатываем физику мяча и столкновения используя модуль game_loop_physics

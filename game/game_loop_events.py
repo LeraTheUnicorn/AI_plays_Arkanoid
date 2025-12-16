@@ -32,15 +32,7 @@ def process_keyboard_events(
     key_1_last_press_time: float,
     KEY_1_RESET_TIME: float,
     bricks: list,
-    game_over: bool,
     lives_left: int,
-    game_start_time: float,
-    score: int,
-    player_name: str,
-    highscore_manager: Any,
-    screen: pygame.Surface,
-    font: pygame.font.Font,
-    big_font: pygame.font.Font,
 ) -> Tuple[bool, bool, int, float, list, bool, bool]:
     """
     Обрабатывает события клавиатуры в игровом цикле.
@@ -55,21 +47,14 @@ def process_keyboard_events(
         key_1_last_press_time: Время последнего нажатия "1".
         KEY_1_RESET_TIME: Время сброса счетчика.
         bricks: Список кирпичей.
-        game_over: Флаг окончания игры.
-        lives_left: Количество жизней.
-        game_start_time: Время начала игры.
-        score: Текущий счет.
-        player_name: Имя игрока.
-        highscore_manager: Менеджер рекордов.
-        screen: Поверхность pygame.
-        font: Шрифт.
-        big_font: Большой шрифт.
+        lives_left: Количество жизней (для отладки).
         
     Returns:
         Tuple: (running, sound_enabled, key_1_press_count, key_1_last_press_time, bricks, game_over, exit_game)
     """
     running = True
     exit_game = False
+    game_over = False  # Инициализируем для возврата
     
     for event in events:
         if event.type == pygame.QUIT:
@@ -150,7 +135,7 @@ def process_restart_key(
         Если should_restart=False, остальные значения None
     """
     if game_over and keys[pygame.K_r]:
-        # В ручном режиме R перезапускает игру
+        # Клавиша R перезапускает игру после окончания
         # Сброс состояния игры
         paddle = Paddle()
         ball = Ball()
