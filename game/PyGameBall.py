@@ -63,11 +63,13 @@ try:
     from .game_loop_physics import (
         position_ball_on_paddle,
         process_ball_physics_and_collisions,
+        apply_restart_result,
     )
 except ImportError:
     from game.game_loop_physics import (
         position_ball_on_paddle,
         process_ball_physics_and_collisions,
+        apply_restart_result,
     )
 
 # Импортируем функции отрисовки
@@ -154,14 +156,14 @@ with suppress_pkg_resources_warnings():
 try:
     from .game_config import (
         MAX_LIVES,
-        SCREEN_HEIGHT,
-        SCREEN_WIDTH,
+        SCREEN_HEIGHT,  # pyright: ignore[reportUnusedImport]
+        SCREEN_WIDTH,  # pyright: ignore[reportUnusedImport]
     )
 except ImportError:
     from game.game_config import (
         MAX_LIVES,
-        SCREEN_HEIGHT,
-        SCREEN_WIDTH,
+        SCREEN_HEIGHT,  # pyright: ignore[reportUnusedImport]
+        SCREEN_WIDTH,  # pyright: ignore[reportUnusedImport]
     )
 
 

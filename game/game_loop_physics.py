@@ -10,10 +10,7 @@ import sys
 import time
 from typing import Tuple, Optional, Any
 
-try:
-    import pygame
-except ImportError:
-    pygame = None  # type: ignore
+# pygame не используется напрямую в этом модуле
 
 try:
     from .game_config import (
@@ -23,15 +20,13 @@ try:
         MAX_LIVES,
         PADDLE_SPEED,
         PADDLE_WIDTH,
-        SCREEN_HEIGHT,
         SCREEN_WIDTH,
-        SEPARATION_ZONE_BOTTOM,
         SEPARATION_ZONE_TOP,
         BALL_SPEED_MAX,
         RANDOM_BALL_START_DIRECTION,
     )
     from .game_models import Ball, Paddle
-    from .game_utils import build_bricks, create_ai_player
+    from .game_utils import build_bricks
     from ai.ai_player import AIPlayer
 except ImportError:
     from game.game_config import (
@@ -41,15 +36,13 @@ except ImportError:
         MAX_LIVES,
         PADDLE_SPEED,
         PADDLE_WIDTH,
-        SCREEN_HEIGHT,
         SCREEN_WIDTH,
-        SEPARATION_ZONE_BOTTOM,
         SEPARATION_ZONE_TOP,
         BALL_SPEED_MAX,
         RANDOM_BALL_START_DIRECTION,
     )
     from game.game_models import Ball, Paddle
-    from game.game_utils import build_bricks, create_ai_player
+    from game.game_utils import build_bricks
     from ai.ai_player import AIPlayer
 
 
@@ -730,11 +723,6 @@ def check_brick_collisions(
                 # Мяч отскочил от потолка и не попал в кубики - увеличиваем счетчик
                 ai_player.empty_bounce_tracker["consecutive_empty_bounces"] += 1
                 # Логируем отбитие в пустоту (paddle не нужен для этой функции)
-                brick_coords_count = len(
-                    ai_player.targeting_system.brick_coordinates
-                    if hasattr(ai_player, "targeting_system")
-                    else []
-                )
                 # Примечание: paddle не передается в эту функцию, поэтому логирование движения пропущено
                 # Сбрасываем счетчик отскоков от потолка для следующей проверки
                 ai_player.empty_bounce_tracker["ceiling_bounces"] = 0
@@ -1274,7 +1262,7 @@ def handle_paddle_side_collision(
                 new_score,
                 new_lives_left,
                 new_game_over,
-                game_started,
+                _,
                 new_game_start_time,
             ) = handle_game_restart_training(
                 ball,
@@ -1623,9 +1611,6 @@ def handle_victory_check(
     if bricks:
         return False, None, None, None, None, None, None, None, None, None, None
 
-    game_over = True
-    game_time_seconds = int(time.time() - game_start_time)
-
     # В режиме обучения не показываем экран результатов, сразу перезапускаем
     # Перезапускаем игру в режиме обучения используя модуль game_loop_physics
     (
@@ -1720,7 +1705,7 @@ def process_ball_physics_and_collisions(
         return False, None, None, None, None, None, None, None, None, None, None
 
     # Обновляем физику мяча используя модуль game_loop_physics
-    ball_was_at_top, should_continue = update_ball_physics(
+    _, should_continue = update_ball_physics(
         ball,
         paddle,
         frame_counter,
@@ -1929,7 +1914,7 @@ def process_ball_physics_and_collisions(
             )
 
     # Проверяем столкновения с кирпичами используя модуль game_loop_physics
-    score_increase, destroyed_brick = check_brick_collisions(
+    score_increase, _ = check_brick_collisions(
         ball,
         bricks,
         frame_counter,
@@ -1964,70 +1949,6 @@ def process_ball_physics_and_collisions(
         ai_player,
         logger,
         settings_manager,
-        screen,
-        font,
-        big_font,
-        player_name,
-        highscore_manager,
-        show_victory_splash_func,
-        show_game_results_func,
-        create_ai_player_func,
-        screen_width,
-        screen_height,
-        training_rounds,
-    )
-    if should_exit:
-        return True, None, None, None, None, None, None, None, None, None, None
-    if new_paddle is not None:
-        return (
-            False,
-            new_paddle,
-            new_ball,
-            new_bricks,
-            new_score,
-            new_lives_left,
-            new_game_over,
-            new_game_started,
-            new_game_start_time,
-            new_ai_player,
-            new_training_rounds,
-        )
-
-    # Проверяем победу используя модуль game_loop_physics
-    (
-        should_exit,
-        new_paddle,
-        new_ball,
-        new_bricks,
-        new_score,
-        new_lives_left,
-        new_game_over,
-        new_game_started,
-        new_game_start_time,
-        new_ai_player,
-        new_training_rounds,
-    ) = handle_victory_check(
-        bricks,
-        ball,
-        paddle,
-        score,
-        lives_left,
-        game_start_time,
-        frame_counter,
-        training_mode,
-        ai_player,
-        logger,
-        settings_manager,
-        screen,
-        font,
-        big_font,
-        player_name,
-        highscore_manager,
-        show_victory_splash_func,
-        show_game_results_func,
-        create_ai_player_func,
-        screen_width,
-        screen_height,
         training_rounds,
     )
     if should_exit:
@@ -2060,6 +1981,3 @@ def process_ball_physics_and_collisions(
         None,
         None,
     )
-
-
-# Удалена неиспользуемая функция _process_game_logic_frame_unused - заменена на process_ball_physics_and_collisions
