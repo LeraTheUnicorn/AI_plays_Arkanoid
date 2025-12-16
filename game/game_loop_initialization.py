@@ -25,7 +25,6 @@ try:
     )
     from .game_models import Paddle, Ball
     from .game_utils import build_bricks, create_ai_player, resource_path
-    from .highscores import HighScoreManager
     from .settings import SettingsManager
     from ai.ai_player import AIPlayer
 except ImportError:
@@ -41,7 +40,6 @@ except ImportError:
     )
     from game.game_models import Paddle, Ball
     from game.game_utils import build_bricks, create_ai_player, resource_path
-    from game.highscores import HighScoreManager
     from game.settings import SettingsManager
     from ai.ai_player import AIPlayer
 
@@ -74,16 +72,15 @@ def initialize_pygame() -> (
     return screen, clock, font, big_font
 
 
-def initialize_managers() -> Tuple[HighScoreManager, SettingsManager]:
+def initialize_managers() -> SettingsManager:
     """
     Инициализирует менеджеры игры.
 
     Returns:
-        Tuple: (highscore_manager, settings_manager)
+        SettingsManager: settings_manager
     """
-    highscore_manager = HighScoreManager()
     settings_manager = SettingsManager()
-    return highscore_manager, settings_manager
+    return settings_manager
 
 
 def load_background_music() -> None:

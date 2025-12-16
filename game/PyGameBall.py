@@ -148,7 +148,7 @@ except (ImportError, ModuleNotFoundError):
 with suppress_pkg_resources_warnings():
     import pygame  # type: ignore[reportMissingImports]
 
-# Note: HighScoreManager, SettingsManager, Ball, Paddle, and AIPlayer are not directly imported
+# Note: SettingsManager, Ball, Paddle, and AIPlayer are not directly imported
 # as they are created by factory functions (initialize_managers, initialize_game_objects, etc.)
 
 
@@ -215,9 +215,7 @@ def main() -> None:
     screen, clock, font, big_font = initialize_pygame()
 
     # Инициализация менеджеров
-    _, settings_manager = (
-        initialize_managers()
-    )  # highscore_manager не используется в авторежиме
+    settings_manager = initialize_managers()
 
     # Загрузка фоновой музыки
     load_background_music()
