@@ -13,7 +13,7 @@ def process_keyboard_events(
 ) -> Tuple[bool, bool]:
     """
     Обрабатывает события клавиатуры в игровом цикле.
-    В авторежиме обрабатываются только ESC и QUIT для выхода.
+    В авторежиме обрабатываются ESC, QUIT и M (музыка) для выхода и управления звуком.
 
     Args:
         events: Список событий pygame.
@@ -38,5 +38,11 @@ def process_keyboard_events(
                 running = False
                 exit_game = True
                 break  # Выходим из игрового цикла
+            elif event.key == pygame.K_m:
+                # M переключает музыку
+                if pygame.mixer.music.get_busy():
+                    pygame.mixer.music.stop()
+                else:
+                    pygame.mixer.music.play(-1)
 
     return running, exit_game
