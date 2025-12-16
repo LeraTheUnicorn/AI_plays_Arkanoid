@@ -71,26 +71,18 @@ except ImportError:
 
 # Импортируем функции обработки событий
 try:
-    from .game_loop_events import (
-        process_keyboard_events,
-        process_restart_key,
-    )
+    from .game_loop_events import process_keyboard_events
 except ImportError:
-    from game.game_loop_events import (
-        process_keyboard_events,
-        process_restart_key,
-    )
+    from game.game_loop_events import process_keyboard_events
 
 # Импортируем функции физики и столкновений
 try:
     from .game_loop_physics import (
-        apply_restart_result,
         position_ball_on_paddle,
         process_ball_physics_and_collisions,
     )
 except ImportError:
     from game.game_loop_physics import (
-        apply_restart_result,
         position_ball_on_paddle,
         process_ball_physics_and_collisions,
     )
@@ -128,6 +120,7 @@ import time
 try:
     import logging
     from ai.logging_config import setup_root_logger, get_logger
+
     setup_root_logger()
     # Создаем logger для PyGameBall
     logger = get_logger(__name__)
@@ -137,7 +130,9 @@ try:
     # Удаляем все консольные handlers (StreamHandler), если они есть
     handlers_to_remove = []
     for handler in logger.handlers:
-        if isinstance(handler, logging.StreamHandler) and not isinstance(handler, logging.FileHandler):
+        if isinstance(handler, logging.StreamHandler) and not isinstance(
+            handler, logging.FileHandler
+        ):
             handlers_to_remove.append(handler)
     for handler in handlers_to_remove:
         logger.removeHandler(handler)
@@ -145,17 +140,20 @@ try:
 except (ImportError, ModuleNotFoundError):
     # Если модуль недоступен, настраиваем базовое логирование
     import logging
+
     logging.basicConfig(
         level=logging.DEBUG,
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-        datefmt='%Y-%m-%d %H:%M:%S'
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
     )
     logger = logging.getLogger(__name__)
     logger.propagate = False
     # Удаляем все консольные handlers (StreamHandler), если они есть
     handlers_to_remove = []
     for handler in logger.handlers:
-        if isinstance(handler, logging.StreamHandler) and not isinstance(handler, logging.FileHandler):
+        if isinstance(handler, logging.StreamHandler) and not isinstance(
+            handler, logging.FileHandler
+        ):
             handlers_to_remove.append(handler)
     for handler in handlers_to_remove:
         logger.removeHandler(handler)
@@ -188,13 +186,13 @@ except ImportError:
 # as they are called through render_game_frame from game_loop_rendering
 
 
-
 def main() -> None:
     # Настройка кодировки консоли для Windows (исправление отображения русских символов)
     # В exe файле не выполняем os.system, чтобы не открывать консоль
     if getattr(sys, "frozen", False):
         # В exe файле перенаправляем stdout и stderr в никуда, чтобы не открывать консоль
         import io
+
         try:
             sys.stdout = io.StringIO()
             sys.stderr = io.StringIO()
@@ -202,34 +200,41 @@ def main() -> None:
             # Если не удалось, пробуем другой способ
             try:
                 import os
+
                 devnull = os.devnull
-                sys.stdout = open(devnull, 'w')
-                sys.stderr = open(devnull, 'w')
+                sys.stdout = open(devnull, "w")
+                sys.stderr = open(devnull, "w")
             except:
                 pass
     elif sys.platform == "win32":
         try:
             # Пытаемся установить UTF-8 для консоли
             import io
-            sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
-            sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
+
+            sys.stdout = io.TextIOWrapper(
+                sys.stdout.buffer, encoding="utf-8", errors="replace"
+            )
+            sys.stderr = io.TextIOWrapper(
+                sys.stderr.buffer, encoding="utf-8", errors="replace"
+            )
         except (AttributeError, ValueError):
             # Если не удалось, пробуем через os (только в режиме разработки)
             try:
                 import os
-                os.system('chcp 65001 >nul 2>&1')  # Устанавливаем UTF-8 в консоли
+
+                os.system("chcp 65001 >nul 2>&1")  # Устанавливаем UTF-8 в консоли
             except:
                 pass
-    
+
     # Инициализация pygame и создание основных объектов
     screen, clock, font, big_font = initialize_pygame()
-    
+
     # Инициализация менеджеров
     highscore_manager, settings_manager = initialize_managers()
-    
+
     # Загрузка фоновой музыки
     load_background_music()
-    
+
     # Инициализация переменных состояния игры
     game_vars = initialize_game_variables()
     score = game_vars["score"]
@@ -242,28 +247,25 @@ def main() -> None:
     training_rounds = game_vars["training_rounds"]
     ai_player = game_vars["ai_player"]
     player_name = game_vars["player_name"]
-    key_1_press_count = game_vars["key_1_press_count"]
-    key_1_last_press_time = game_vars["key_1_last_press_time"]
-    KEY_1_RESET_TIME = game_vars["KEY_1_RESET_TIME"]
-    
+
     # Создание объектов игры
     paddle, ball, bricks, score = initialize_game_objects(settings_manager)
     game_over = False
     game_started = False
-    
+
     # Создаем AI-систему для режима обучения
     if training_mode:
         ai_player = create_ai_player_system(logger)
-    
+
     # Устанавливаем жизни для режима обучения
     lives_left = MAX_LIVES  # Всегда 3 жизни в режиме обучения
-    
+
     # Запускаем музыку (если звук включен)
     start_background_music(sound_enabled)
-    
+
     # Отсчет времени игры
     game_start_time = time.time()
-    
+
     # Завершаем настройку игры перед входом в основной цикл используя модуль game_loop_initialization
     game_started = True  # Игра начинается сразу
     finalize_game_setup(
@@ -290,161 +292,182 @@ def main() -> None:
             game_start_time,
             logger,
         )
-    
+
     # КРИТИЧНО: Логируем вход в основной цикл (только в файл, не в консоль)
-    logger.debug(f"[AI DEBUG] Вход в основной цикл игры, running={running}, game_started={game_started}")
-    
+    logger.debug(
+        f"[AI DEBUG] Вход в основной цикл игры, running={running}, game_started={game_started}"
+    )
+
     # Очистка экрана выполняется в основном цикле для корректной отрисовки
 
     while running:
-            frame_counter += 1
+        frame_counter += 1
+        # Отладочное сообщение только в первых 3 кадрах
+        if frame_counter <= 3:
+            logger.debug(
+                f"[AI DEBUG] Кадр {frame_counter}, running={running}, game_started={game_started}"
+            )
+
+        # КРИТИЧНО: Обработка событий должна быть первой и всегда выполняться
+        events = pygame.event.get()
+        running, exit_game = process_keyboard_events(events)
+
+        # Обработка выхода из игры
+        if exit_game:
+            pygame.quit()
+            return
+
+        # Отладочное сообщение только в первых 3 кадрах
+        if frame_counter <= 3:
+            logger.debug(
+                f"[AI DEBUG] После обработки событий, game_started={game_started}, game_over={game_over}, training_mode={training_mode}"
+            )
+
+        # Позиционируем мяч на платформе используя модуль game_loop_physics
+        position_ball_on_paddle(ball, paddle, game_started)
+
+        if not game_over:
             # Отладочное сообщение только в первых 3 кадрах
             if frame_counter <= 3:
-                logger.debug(f"[AI DEBUG] Кадр {frame_counter}, running={running}, game_started={game_started}")
-            
-            # КРИТИЧНО: Обработка событий должна быть первой и всегда выполняться
-            events = pygame.event.get()
-            running, sound_enabled, key_1_press_count, key_1_last_press_time, bricks, game_over, exit_game = process_keyboard_events(
-                events,
-                sound_enabled,
-                ball,
-                settings_manager,
-                training_mode,
-                key_1_press_count,
-                key_1_last_press_time,
-                KEY_1_RESET_TIME,
-                bricks,
-                lives_left,
-            )
-            
-            # Обработка выхода из игры
-            if exit_game:
-                pygame.quit()
-                return
-
-            keys = pygame.key.get_pressed()
-            
-            # Отладочное сообщение только в первых 3 кадрах
-            if frame_counter <= 3:
-                logger.debug(f"[AI DEBUG] После обработки событий, game_started={game_started}, game_over={game_over}, training_mode={training_mode}")
-
-            # Позиционируем мяч на платформе используя модуль game_loop_physics
-            position_ball_on_paddle(ball, paddle, game_started)
-
-            # Обработка перезапуска после окончания игры используя модуль game_loop_events
-            should_restart, new_paddle, new_ball, new_bricks, new_score, new_lives_left, new_game_over, new_game_started, new_ai_player, new_game_start_time = process_restart_key(
-                keys,
-                game_over,
-                settings_manager,
-                logger
-            )
-            if should_restart:
-                paddle, ball, bricks, score, lives_left, game_over, game_started, game_start_time, ai_player = apply_restart_result(
-                    new_paddle, new_ball, new_bricks, new_score, new_lives_left, new_game_over, new_game_started, new_game_start_time, new_ai_player,
-                    paddle, ball, bricks, score, lives_left, game_over, game_started, game_start_time, ai_player,
+                logger.debug(
+                    f"[AI DEBUG] В блоке if not game_over, обновляем состояние игры"
                 )
 
-            if not game_over:
-                # Отладочное сообщение только в первых 3 кадрах
-                if frame_counter <= 3:
-                    logger.debug(f"[AI DEBUG] В блоке if not game_over, обновляем состояние игры")
-                
-                # Обновляем логику AI используя модуль game_loop_ai
-                if training_mode:
-                    assert ai_player is not None, "ai_player должен быть создан в режиме обучения"
-                    update_ai_logic(
-                        ai_player,
-                        ball,
-                        paddle,
-                        bricks,
-                        score,
-                        lives_left,
-                        game_start_time,
-                        frame_counter,
-                        training_mode,
-                        settings_manager,
-                        logger,
-                    )
-                
-                # Обрабатываем управление платформой используя модуль game_loop_ai
-                process_paddle_control(
-                    paddle,
-                    training_mode,
+            # Обновляем логику AI используя модуль game_loop_ai
+            if training_mode:
+                assert (
+                    ai_player is not None
+                ), "ai_player должен быть создан в режиме обучения"
+                update_ai_logic(
                     ai_player,
                     ball,
+                    paddle,
+                    bricks,
+                    score,
+                    lives_left,
+                    game_start_time,
                     frame_counter,
+                    training_mode,
+                    settings_manager,
                     logger,
                 )
 
-                # Обрабатываем физику мяча и столкновения используя модуль game_loop_physics
-                if game_started:
-                    should_exit, new_paddle, new_ball, new_bricks, new_score, new_lives_left, new_game_over, new_game_started, new_game_start_time, new_ai_player, new_training_rounds = process_ball_physics_and_collisions(
-                        ball,
+            # Обрабатываем управление платформой используя модуль game_loop_ai
+            process_paddle_control(
+                paddle,
+                training_mode,
+                ai_player,
+                ball,
+                frame_counter,
+                logger,
+            )
+
+            # Обрабатываем физику мяча и столкновения используя модуль game_loop_physics
+            if game_started:
+                (
+                    should_exit,
+                    new_paddle,
+                    new_ball,
+                    new_bricks,
+                    new_score,
+                    new_lives_left,
+                    new_game_over,
+                    new_game_started,
+                    new_game_start_time,
+                    new_ai_player,
+                    new_training_rounds,
+                ) = process_ball_physics_and_collisions(
+                    ball,
+                    paddle,
+                    bricks,
+                    score,
+                    lives_left,
+                    game_over,
+                    game_started,
+                    game_start_time,
+                    frame_counter,
+                    training_mode,
+                    ai_player,
+                    logger,
+                    settings_manager,
+                    screen,
+                    font,
+                    big_font,
+                    player_name,
+                    highscore_manager,
+                    show_victory_splash,
+                    show_game_results,
+                    create_ai_player,
+                    SCREEN_WIDTH,
+                    SCREEN_HEIGHT,
+                    training_rounds,
+                )
+                if should_exit:
+                    pygame.quit()
+                    return
+                if new_paddle is not None:
+                    (
                         paddle,
+                        ball,
                         bricks,
                         score,
                         lives_left,
                         game_over,
                         game_started,
                         game_start_time,
-                        frame_counter,
-                        training_mode,
                         ai_player,
-                        logger,
-                        settings_manager,
-                        screen,
-                        font,
-                        big_font,
-                        player_name,
-                        highscore_manager,
-                        show_victory_splash,
-                        show_game_results,
-                        create_ai_player,
-                        SCREEN_WIDTH,
-                        SCREEN_HEIGHT,
-                        training_rounds,
+                    ) = apply_restart_result(
+                        new_paddle,
+                        new_ball,
+                        new_bricks,
+                        new_score,
+                        new_lives_left,
+                        new_game_over,
+                        new_game_started,
+                        new_game_start_time,
+                        new_ai_player,
+                        paddle,
+                        ball,
+                        bricks,
+                        score,
+                        lives_left,
+                        game_over,
+                        game_started,
+                        game_start_time,
+                        ai_player,
                     )
-                    if should_exit:
-                        pygame.quit()
-                        return
-                    if new_paddle is not None:
-                        paddle, ball, bricks, score, lives_left, game_over, game_started, game_start_time, ai_player = apply_restart_result(
-                            new_paddle, new_ball, new_bricks, new_score, new_lives_left, new_game_over, new_game_started, new_game_start_time, new_ai_player,
-                            paddle, ball, bricks, score, lives_left, game_over, game_started, game_start_time, ai_player,
-                        )
-                        if new_training_rounds is not None:
-                            training_rounds = new_training_rounds
-                        continue  # Пропускаем остальную обработку кадра
-                    if new_score is not None:
-                        score = new_score
-                    if new_lives_left is not None:
-                        lives_left = new_lives_left
-                    if new_game_over is not None:
-                        game_over = new_game_over
-                    if new_game_started is not None:
-                        game_started = new_game_started
+                    if new_training_rounds is not None:
+                        training_rounds = new_training_rounds
+                    continue  # Пропускаем остальную обработку кадра
+                if new_score is not None:
+                    score = new_score
+                if new_lives_left is not None:
+                    lives_left = new_lives_left
+                if new_game_over is not None:
+                    game_over = new_game_over
+                if new_game_started is not None:
+                    game_started = new_game_started
 
-            # Отрисовка игры используя модуль game_loop_rendering
-            render_game_frame(
-                screen,
-                ball,
-                paddle,
-                bricks,
-                score,
-                lives_left,
-                font,
-                big_font,
-                clock,
-                frame_counter,
-                game_started,
-                training_mode,
-                training_rounds,
-                ai_player,
-                logger,
-            )
+        # Отрисовка игры используя модуль game_loop_rendering
+        render_game_frame(
+            screen,
+            ball,
+            paddle,
+            bricks,
+            score,
+            lives_left,
+            font,
+            big_font,
+            clock,
+            frame_counter,
+            game_started,
+            training_mode,
+            training_rounds,
+            ai_player,
+            logger,
+        )
 
-            # В режиме обучения игра продолжается до завершения
-            
+        # В режиме обучения игра продолжается до завершения
 
     # Сохраняем данные обучения перед выходом используя модуль game_loop_initialization
     save_training_data_on_exit(
@@ -453,7 +476,7 @@ def main() -> None:
         training_rounds,
         logger,
     )
-    
+
     # Закрываем игру
     pygame.quit()
     sys.exit(0)

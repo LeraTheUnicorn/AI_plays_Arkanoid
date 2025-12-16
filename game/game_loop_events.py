@@ -4,58 +4,28 @@
 Содержит функции для обработки событий клавиатуры, мыши и системных событий.
 """
 
-import time
-import pygame
-from typing import Tuple, Optional, Any
-
-try:
-    from .game_config import SCREEN_WIDTH, SCREEN_HEIGHT, MAX_LIVES
-    from .game_models import Ball, Paddle
-    from .game_utils import build_bricks, create_ai_player
-    from .game_ui import trigger_instant_victory
-    from ai.ai_player import AIPlayer
-except ImportError:
-    from game.game_config import SCREEN_WIDTH, SCREEN_HEIGHT, MAX_LIVES
-    from game.game_models import Ball, Paddle
-    from game.game_utils import build_bricks, create_ai_player
-    from game.game_ui import trigger_instant_victory
-    from ai.ai_player import AIPlayer
+import pygame  # pyright: ignore[reportMissingImports]
+from typing import Tuple
 
 
 def process_keyboard_events(
     events: list,
-    sound_enabled: bool,
-    ball: Ball,
-    settings_manager: Any,
-    training_mode: bool,
-    key_1_press_count: int,
-    key_1_last_press_time: float,
-    KEY_1_RESET_TIME: float,
-    bricks: list,
-    lives_left: int,
-) -> Tuple[bool, bool, int, float, list, bool, bool]:
+) -> Tuple[bool, bool]:
     """
     Обрабатывает события клавиатуры в игровом цикле.
-    
+    В авторежиме обрабатываются только ESC и QUIT для выхода.
+
     Args:
         events: Список событий pygame.
-        sound_enabled: Текущее состояние звука.
-        ball: Объект мяча.
-        settings_manager: Менеджер настроек.
-        training_mode: Режим обучения.
-        key_1_press_count: Счетчик нажатий клавиши "1".
-        key_1_last_press_time: Время последнего нажатия "1".
-        KEY_1_RESET_TIME: Время сброса счетчика.
-        bricks: Список кирпичей.
-        lives_left: Количество жизней (для отладки).
-        
+
     Returns:
-        Tuple: (running, sound_enabled, key_1_press_count, key_1_last_press_time, bricks, game_over, exit_game)
+        Tuple: (running, exit_game)
+        running: Продолжать ли игровой цикл
+        exit_game: Выход из игры
     """
     running = True
     exit_game = False
-    game_over = False  # Инициализируем для возврата
-    
+
     for event in events:
         if event.type == pygame.QUIT:
             # QUIT всегда закрывает приложение немедленно
@@ -68,91 +38,7 @@ def process_keyboard_events(
                 running = False
                 exit_game = True
                 break  # Выходим из игрового цикла
-            elif event.key == pygame.K_m:
-                # Переключение всех звуков
-                if sound_enabled:
-                    try:
-                        pygame.mixer.music.stop()
-                    except pygame.error:
-                        pass  # Музыка не загружена или не воспроизводится
-                    sound_enabled = False
-                else:
-                    # Проверяем, загружена ли музыка перед воспроизведением
-                    try:
-                        pygame.mixer.music.play(-1)
-                        sound_enabled = True
-                    except pygame.error:
-                        # Музыка не загружена - звук остается выключенным
-                        sound_enabled = False
-                        if not getattr(__import__('sys'), 'frozen', False):
-                            print("[DEBUG] Не удалось воспроизвести музыку: музыка не загружена")
-            elif event.key == pygame.K_UP:
-                # Увеличение скорости мяча
-                ball.increase_speed(settings_manager)
-            elif event.key == pygame.K_DOWN:
-                # Уменьшение скорости мяча
-                ball.decrease_speed(settings_manager)
-            elif event.key == pygame.K_1 or event.key == ord('1'):
-                # Обработка тройного нажатия "1" для немедленной победы
-                current_time = time.time()
-                # Если прошло больше времени сброса, сбрасываем счетчик
-                if current_time - key_1_last_press_time > KEY_1_RESET_TIME:
-                    key_1_press_count = 0
-                
-                key_1_press_count += 1
-                key_1_last_press_time = current_time
-                
-                # Если нажали три раза подряд
-                if key_1_press_count >= 3:
-                    # Очищаем кирпичи для победы
-                    bricks = []
-                    key_1_press_count = 0  # Сбрасываем счетчик
-                    if not getattr(__import__('sys'), 'frozen', False):
-                        print(f"[CHEAT] Активирована немедленная победа (тройное нажатие '1')")
-                        print(f"[CHEAT] training_mode={training_mode}, lives_left={lives_left}")
-                            # Перезапуск будет обработан в main() через process_restart_key
-    
-    return running, sound_enabled, key_1_press_count, key_1_last_press_time, bricks, game_over, exit_game
+
+    return running, exit_game
 
 
-def process_restart_key(
-    keys: Any,
-    game_over: bool,
-    settings_manager: Any,
-    logger: Any
-) -> Tuple[bool, Optional[Paddle], Optional[Ball], Optional[list], Optional[int], Optional[int], Optional[bool], Optional[bool], Optional[AIPlayer], Optional[float]]:
-    """
-    Обрабатывает нажатие клавиши R для перезапуска игры.
-    
-    Args:
-        keys: Состояние клавиш pygame.
-        game_over: Флаг окончания игры.
-        settings_manager: Менеджер настроек.
-        logger: Логгер.
-        
-    Returns:
-        Tuple: (should_restart, paddle, ball, bricks, score, lives_left, game_over, game_started, ai_player, game_start_time)
-        Если should_restart=False, остальные значения None
-    """
-    if game_over and keys[pygame.K_r]:
-        # Клавиша R перезапускает игру после окончания
-        # Сброс состояния игры
-        paddle = Paddle()
-        ball = Ball()
-        ball_speed = settings_manager.get_ball_speed()
-        ball.set_speed(ball_speed)
-        ball.reset(paddle.rect)
-        ball.vel_y = 0
-        bricks = build_bricks()
-        score = 0
-        lives_left = MAX_LIVES
-        game_over = False
-        game_started = False
-        # Пересоздаем AI для новой игры
-        ai_player = create_ai_player(SCREEN_WIDTH, SCREEN_HEIGHT, debug_mode=True)
-        ai_player.activate()
-        game_start_time = time.time()
-        
-        return True, paddle, ball, bricks, score, lives_left, game_over, game_started, ai_player, game_start_time
-    
-    return False, None, None, None, None, None, None, None, None, None
